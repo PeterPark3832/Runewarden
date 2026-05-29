@@ -1832,6 +1832,8 @@ function updateSellPanel() {
     panel.classList.add('hidden');
     return;
   }
+  // 타워 패널 첫 등장 시 철거·업그레이드 힌트 표시
+  tutorial?.triggerHint('tower_sell_upgrade', i18n.t('hint_sell_title'), i18n.t('hint_sell_text'));
 
   const { col, row } = state.selectedTower;
   const t = towerSystem.getTower(col, row);

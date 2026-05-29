@@ -577,6 +577,9 @@ const _BASE_EN = {
 
   dlc_intro_close:        'Close',
 
+  hint_sell_title:   '🔨 Tower Demolish & Upgrade',
+  hint_sell_text:    'Click any placed tower to open the options panel.\n\n• <b>Sell Tower</b> — recoup 50% of invested gold. Reposition towers that aren\'t earning their place.\n• <b>★ Upgrade</b> — ★2 requires player Lv3, ★3 requires Lv6. Costs: 5g (★2) / 12g (★3).',
+
   hint_shop_title:   '🏪 Shop Guide',
   hint_shop_text:    'Spend gold to add cards to your deck.\n[C] Common · [U] Uncommon · [R] Rare — higher rarity means more power.\nReroll (R key or 🎲) to see new cards (2g each).',
   hint_augment_title:'⬆️ Augment Cards',
