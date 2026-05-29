@@ -11,6 +11,7 @@ import { i18n } from '../i18n/i18n.js';
 
 const TUTORIAL_DONE_KEY  = 'rw_tutorial_v1_done';
 const HINTS_SEEN_KEY     = 'rw_hints_seen_v1';
+const DLC_INTROS_KEY     = 'rw_dlc_intros_v1';
 
 // ── 튜토리얼 스텝 정의 ────────────────────────────────
 // targetSelector: 스포트라이트 대상 CSS 셀렉터 (null = 전체화면 다크)
@@ -144,6 +145,124 @@ export class TutorialUI {
   }
 
   isActive() { return this._active; }
+
+  // ── DLC 전용 인트로 팝업 (첫 DLC Act 진입 시 1회) ────
+  triggerDlcIntro(dlcId) {
+    try {
+      const seen = JSON.parse(localStorage.getItem(DLC_INTROS_KEY) ?? '[]');
+      if (seen.includes(dlcId)) return;
+      seen.push(dlcId);
+      localStorage.setItem(DLC_INTROS_KEY, JSON.stringify(seen));
+    } catch { return; }
+
+    const titleKey = `dlc_${dlcId}_intro_title`;
+    const textKey  = `dlc_${dlcId}_intro_text`;
+    const btnKey   = `dlc_${dlcId}_intro_btn`;
+
+    const overlay = document.createElement('div');
+    overlay.className = 'dlc-intro-overlay';
+
+    const box = document.createElement('div');
+    box.className = 'dlc-intro-box';
+    const title = i18n.t(titleKey);
+    const text  = i18n.t(textKey);
+    const btn   = i18n.t(btnKey);
+    box.innerHTML = `
+      <div class="dlc-intro-title">${title}</div>
+      <div class="dlc-intro-text">${text.replace(/\n/g, '<br>')}</div>
+      <div class="dlc-intro-footer">
+        <button class="dlc-intro-btn" id="dlc-intro-confirm">${btn}</button>
+        <button class="dlc-intro-close" id="dlc-intro-close">${i18n.t('dlc_intro_close')}</button>
+      </div>
+    `;
+    overlay.appendChild(box);
+    document.body.appendChild(overlay);
+
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        overlay.classList.add('show');
+        box.style.animation = 'tutBubblePop 0.4s cubic-bezier(0.34,1.56,0.64,1)';
+      });
+    });
+
+    const close = () => {
+      overlay.classList.remove('show');
+      setTimeout(() => overlay.remove(), 350);
+    };
+    document.getElementById('dlc-intro-confirm')?.addEventListener('click', close);
+    document.getElementById('dlc-intro-close')?.addEventListener('click', close);
+
+    // CSS 주입 (최초 1회)
+    if (!document.getElementById('dlc-intro-styles')) {
+      const s = document.createElement('style');
+      s.id = 'dlc-intro-styles';
+      s.textContent = `
+        .dlc-intro-overlay {
+          position: fixed; inset: 0; z-index: 9200;
+          background: rgba(0,0,0,0); display: flex;
+          align-items: center; justify-content: center;
+          transition: background 0.3s;
+          pointer-events: none;
+        }
+        .dlc-intro-overlay.show {
+          background: rgba(0,0,0,0.72);
+          pointer-events: all;
+        }
+        .dlc-intro-box {
+          background: linear-gradient(160deg, #1a1a3a, #0f0f22);
+          border: 1px solid rgba(212,175,55,0.5);
+          border-radius: 14px;
+          padding: 2rem 2.2rem;
+          width: min(480px, 90vw);
+          box-shadow: 0 20px 60px rgba(0,0,0,0.8);
+        }
+        .dlc-intro-title {
+          font-family: 'Cinzel', serif;
+          font-size: 1.15rem;
+          color: #D4AF37;
+          font-weight: 700;
+          margin-bottom: 1rem;
+          line-height: 1.3;
+        }
+        .dlc-intro-text {
+          font-size: 0.85rem;
+          color: #c0c0d8;
+          line-height: 1.65;
+          margin-bottom: 1.4rem;
+        }
+        .dlc-intro-footer {
+          display: flex;
+          gap: 0.6rem;
+          flex-direction: column;
+        }
+        .dlc-intro-btn {
+          font-family: 'Cinzel', serif;
+          font-size: 0.85rem;
+          padding: 0.6rem 1.5rem;
+          background: linear-gradient(135deg, #8a6f1a, #D4AF37);
+          color: #1A1A2E;
+          border: none;
+          border-radius: 7px;
+          cursor: pointer;
+          font-weight: 700;
+          width: 100%;
+          transition: filter 0.15s;
+        }
+        .dlc-intro-btn:hover { filter: brightness(1.1); }
+        .dlc-intro-close {
+          font-size: 0.7rem;
+          background: transparent;
+          border: none;
+          color: rgba(255,255,255,0.3);
+          cursor: pointer;
+          text-align: center;
+          transition: color 0.15s;
+        }
+        .dlc-intro-close:hover { color: rgba(255,255,255,0.6); }
+      `;
+      document.head.appendChild(s);
+    }
+  }
 
   // ── 일회성 힌트 팝업 (튜토리얼 완료 후에도 표시) ─────
   triggerHint(hintId, title, text) {

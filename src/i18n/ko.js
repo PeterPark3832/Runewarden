@@ -536,7 +536,7 @@ const _BASE_KO = {
 
   // ── 튜토리얼 ─────────────────────────────────────────
   tut_welcome_title: '환영합니다, 워든이여!',
-  tut_welcome_text:  '파도처럼 몰려오는 적들로부터 넥서스를 지켜야 합니다.\n\n<b>카드</b>를 사용해 타워를 소환하고 3개의 웨이브를 살아남으세요.',
+  tut_welcome_text:  '파도처럼 몰려오는 적들로부터 넥서스를 지켜야 합니다.\n\n<b>카드</b>를 사용해 타워를 소환·강화하고, <b>15개의 웨이브</b>(3 Act)를 살아남으세요.\n\n적을 처치할수록 <b>플레이어 레벨(Lv)</b>이 오르고 더 강한 카드를 획득할 수 있습니다.',
   tut_welcome_btn:   '시작하겠습니다!',
   tut_path_title:    '적의 이동 경로',
   tut_path_text:     '적들은 <b style="color:#ff8888">붉게 표시된 경로</b>를 따라 스폰 지점에서 출구로 이동합니다.\n\n넥서스는 ♥♥♥입니다. 적 3마리가 출구에 도달하면 게임 오버!',
@@ -554,10 +554,10 @@ const _BASE_KO = {
   tut_combat_text:   '타워는 <b>자동으로</b> 적을 공격합니다.\n\n전투를 지켜보세요 — 적들은 HP 바가 있으며 파티클 이펙트와 함께 사라집니다!',
   tut_combat_btn:    '멋지네요!',
   tut_hud_title:     '상태 확인',
-  tut_hud_text:      '<b>웨이브</b> — 현재 / 전체 웨이브\n<b>골드</b> — 카드 및 업그레이드에 사용\n<b>넥서스 ♥♥♥</b> — 모두 잃으면 런 종료',
+  tut_hud_text:      '<b>웨이브</b> — 현재 Act / 웨이브 번호\n<b>골드</b> — 카드 구매·업그레이드에 사용\n<b>넥서스 ♥</b> — 모두 잃으면 런 종료\n<b>LV / XP</b> — 적 처치 시 XP 획득 → 레벨업 → 희귀 카드 등장\n\n<b>Tab</b>으로 2배속 토글 (웨이브 종료까지 유지)',
   tut_hud_btn:       '알겠습니다',
   tut_done_title:    '🏆 준비 완료, 워든이여!',
-  tut_done_text:     '웨이브 클리어 후 경로를 선택하세요:\n• <b>🏪 상점</b> — 새 카드 구매\n• <b>⚡ 이벤트</b> — 무작위 선택지\n• <b>🛌 휴식</b> — 카드 제거 또는 골드 획득\n\n행운을 빕니다. 넥서스가 당신을 필요로 합니다.',
+  tut_done_text:     '웨이브 클리어 후 경로를 선택하세요:\n• <b>🏪 상점</b> — 카드 구매, XP 투자, 카드 슬롯 추가(8g)\n• <b>⚡ 이벤트</b> — 무작위 위험·보상 선택지\n• <b>🛌 휴식</b> — 카드 제거(Card Forge) 또는 골드 획득\n\n<b>★ 타워 업그레이드</b>: ★2는 Lv3, ★3는 Lv6 이상 필요!\n\n행운을 빕니다. 넥서스가 당신을 필요로 합니다.',
   tut_done_btn:      '시작!',
   tut_waiting:        '행동을 기다리는 중…',
   tut_manual_advance: '직접 진행',
@@ -565,6 +565,17 @@ const _BASE_KO = {
   tut_hint_select:   '튜토리얼: 핸드에서 궁수 타워 카드를 선택하세요.',
   tut_hint_place:    '튜토리얼: 경로 근처의 초록색 셀을 클릭하세요.',
   tut_hint_wave:     '튜토리얼: 준비가 되면 웨이브 시작을 클릭하세요!',
+
+  // ── DLC 인트로 ──────────────────────────────────────
+  dlc_shadow_intro_title: '🌑 Shadow Realm — Act 4 시작',
+  dlc_shadow_intro_text:  '새로운 공허 영역에 오신 걸 환영합니다!\n\n<b>주요 변화:</b>\n• <b>위장(Camo)</b> 적 증가 — Marksman 또는 Keen Eye 필수\n• <b>Shadow DoT</b> — 독성 지속 피해를 입히는 새 적 등장\n• <b>HP 재생</b> 엘리트 적 — 지속 피해로 대응\n• <b>Phantom Giant</b> — 슬로우 면역 + 피해 감소 탱커\n\n보스: 그림자 거신(Wave 23)',
+  dlc_shadow_intro_btn:   '준비됐습니다!',
+
+  dlc_solar_intro_title:  '☀️ Solar Dominion — Act 5 시작',
+  dlc_solar_intro_text:   '태양 지배령에 오신 걸 환영합니다!\n\n<b>주요 변화:</b>\n• <b>Solar DoT</b> — 태양 화상 지속 피해 (solarImmune 적 무효)\n• <b>Stun</b> — 성전사(Crusader) 타워의 400ms 스턴 공격\n• <b>분열 적</b> — 처치 시 작은 적으로 분열\n• <b>3단계 보스</b> — 태양신(Sun God)은 HP 구간마다 형태 변환\n\n☀️ Solar Warden: cost 2+ 주문 8회 → Solar Beam 자동 발사',
+  dlc_solar_intro_btn:    '맞서겠습니다!',
+
+  dlc_intro_close:        '닫기',
 
   hint_shop_title:   '🏪 상점 안내',
   hint_shop_text:    '골드를 사용해 덱에 카드를 추가하세요.\n[C] 일반 · [U] 고급 · [R] 희귀 — 등급이 높을수록 강력합니다.\n리롤(R키 또는 🎲 버튼)로 새 카드를 확인할 수 있습니다 (2g).',

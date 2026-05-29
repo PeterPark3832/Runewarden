@@ -536,7 +536,7 @@ const _BASE_EN = {
 
   // ── 튜토리얼 ─────────────────────────────────────────
   tut_welcome_title: 'Welcome, Warden!',
-  tut_welcome_text:  'You must defend the Nexus from waves of enemies.\n\nUse <b>cards</b> to summon towers, then survive all 3 waves.',
+  tut_welcome_text:  'Defend the Nexus from waves of enemies.\n\nUse <b>cards</b> to summon and augment towers across <b>15 waves</b> (3 Acts).\n\nDefeating enemies earns <b>XP</b> — level up to unlock rarer cards and stronger tower upgrades.',
   tut_welcome_btn:   "Let's go!",
   tut_path_title:    'The Enemy Path',
   tut_path_text:     'Enemies march along the <b style="color:#ff8888">red highlighted path</b> from SPAWN to EXIT.\n\nYour Nexus has ♥♥♥. If 3 enemies reach the exit — it\'s over.',
@@ -554,10 +554,10 @@ const _BASE_EN = {
   tut_combat_text:   'Your towers attack enemies <b>automatically</b>.\n\nWatch the combat — enemies have HP bars and die with particle effects!',
   tut_combat_btn:    'Cool!',
   tut_hud_title:     'Track Your Status',
-  tut_hud_text:      '<b>WAVE</b> — current / total waves\n<b>GOLD</b> — spend on cards & upgrades\n<b>NEXUS ♥♥♥</b> — lose all 3 and it\'s over',
+  tut_hud_text:      '<b>WAVE</b> — Act / Wave number\n<b>GOLD</b> — spend on cards & upgrades\n<b>NEXUS ♥</b> — lose all HP and the run ends\n<b>LV / XP</b> — gain XP by killing enemies → level up → rarer cards appear\n\n<b>Tab</b> toggles 2× speed (persists until toggled off)',
   tut_hud_btn:       'Got it',
   tut_done_title:    "🏆 You're Ready, Warden!",
-  tut_done_text:     'After clearing a wave, choose your path:\n• <b>🏪 Shop</b> — buy new cards\n• <b>⚡ Event</b> — random choices\n• <b>🛌 Rest</b> — remove cards or get gold\n\nGood luck. The Nexus needs you.',
+  tut_done_text:     'After clearing a wave, choose your path:\n• <b>🏪 Shop</b> — buy cards, invest XP, add card slots (8g)\n• <b>⚡ Event</b> — risk/reward random encounters\n• <b>🛌 Rest</b> — remove or forge cards\n\n<b>★ Tower Upgrades</b>: ★2 requires Lv3, ★3 requires Lv6!\n\nGood luck. The Nexus needs you.',
   tut_done_btn:      'Begin!',
   tut_waiting:        'Waiting for your action…',
   tut_manual_advance: 'Continue manually',
@@ -565,6 +565,17 @@ const _BASE_EN = {
   tut_hint_select:   'Tutorial: Select an Archer Tower card from your hand.',
   tut_hint_place:    'Tutorial: Click a green cell near the path.',
   tut_hint_wave:     'Tutorial: Click Start Wave when ready!',
+
+  // ── DLC Intros ──────────────────────────────────────
+  dlc_shadow_intro_title: '🌑 Shadow Realm — Act 4 Begins',
+  dlc_shadow_intro_text:  'Welcome to the void!\n\n<b>Key changes:</b>\n• <b>Camo</b> enemies increase — Marksman or Keen Eye relic required\n• <b>Shadow DoT</b> — new enemies deal poison damage over time\n• <b>HP Regen</b> elites — use sustained damage / DoT effects\n• <b>Phantom Giant</b> — slow-immune + damage reduction tank\n\nFinal boss: Shadow Colossus (Wave 23)',
+  dlc_shadow_intro_btn:   "I'm ready!",
+
+  dlc_solar_intro_title:  '☀️ Solar Dominion — Act 5 Begins',
+  dlc_solar_intro_text:   'The sun burns all!\n\n<b>Key changes:</b>\n• <b>Solar DoT</b> — radiant burn damage (ineffective on solarImmune)\n• <b>Stun</b> — Crusader towers stun every enemy on hit (400ms)\n• <b>Split enemies</b> — some enemies spawn smaller units on death\n• <b>3-phase boss</b> — Sun God changes form at each HP threshold\n\n☀️ Solar Warden: 8 cost-2+ spells → auto-fire Solar Beam',
+  dlc_solar_intro_btn:    "Face the sun!",
+
+  dlc_intro_close:        'Close',
 
   hint_shop_title:   '🏪 Shop Guide',
   hint_shop_text:    'Spend gold to add cards to your deck.\n[C] Common · [U] Uncommon · [R] Rare — higher rarity means more power.\nReroll (R key or 🎲) to see new cards (2g each).',

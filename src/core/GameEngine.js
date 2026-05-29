@@ -909,6 +909,9 @@ function beginWave() {
   updateHUD();
   tutorial?.triggerEvent('wave_started');
   if (state.wave === 11) tutorial?.triggerHint('camo_wave', i18n.t('hint_camo_title'), i18n.t('hint_camo_text'));
+  // DLC Act 진입 시 일회성 소개 팝업
+  if (state.wave === 16) tutorial?.triggerDlcIntro('shadow');
+  if (state.wave === 24) tutorial?.triggerDlcIntro('solar');
 }
 
 // ── 웨이브 클리어 ─────────────────────────────────────
