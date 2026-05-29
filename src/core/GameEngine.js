@@ -152,6 +152,59 @@ function _updateSpeedBtn() {
   btn.classList.toggle('speed-active', gameSpeed === 2);
 }
 
+// ── 런 통계 오버레이 ──────────────────────────────────
+function _toggleStatsOverlay() {
+  const el = $('stats-overlay');
+  if (!el) return;
+  if (!el.classList.contains('hidden')) {
+    el.classList.add('hidden');
+    return;
+  }
+  _renderStatsOverlay(el);
+  el.classList.remove('hidden');
+}
+
+function _renderStatsOverlay(el) {
+  if (!state) return;
+  const st = state.stats ?? {};
+
+  // 타워 타입별 개수 집계
+  const towerCounts = {};
+  if (towerSystem) {
+    for (const t of towerSystem.towers.values()) {
+      const name = t.def?.name ?? t.def?.id ?? '?';
+      towerCounts[name] = (towerCounts[name] ?? 0) + 1;
+    }
+  }
+  const towerRows = Object.entries(towerCounts)
+    .sort((a, b) => b[1] - a[1])
+    .map(([n, c]) => `<div class="stats-row"><span>${n}</span><span class="sv">${c}</span></div>`)
+    .join('') || '<div class="stats-row"><span style="opacity:0.5">—</span></div>';
+
+  // 메타 레벨/XP
+  const rank      = meta?.rank ?? '—';
+  const totalXP   = meta?.totalXP ?? 0;
+  const xpToNext  = meta?.xpToNextRank ?? 0;
+  const xpDisplay = rank >= 20 ? 'MAX' : `${totalXP} (+${xpToNext} to next)`;
+
+  el.innerHTML = `
+    <div class="stats-title">⚔ Run Statistics</div>
+    <div class="stats-row"><span>Wave</span><span class="sv">${state.wave ?? 0} / ${shared.maxWaves ?? '?'}</span></div>
+    <div class="stats-row"><span>Enemies killed</span><span class="sv">${st.enemiesKilled ?? 0} (this wave: ${st.enemiesKilledThisWave ?? 0})</span></div>
+    <div class="stats-row"><span>Gold earned</span><span class="sv">${st.goldEarned ?? 0}</span></div>
+    <div class="stats-row"><span>Spells cast</span><span class="sv">${st.totalSpellsCast ?? 0}</span></div>
+    <div class="stats-section">
+      <div class="stats-row" style="color:var(--gold);font-size:0.72rem;letter-spacing:0.04em">TOWERS PLACED</div>
+      ${towerRows}
+    </div>
+    <div class="stats-section">
+      <div class="stats-row"><span>Player rank</span><span class="sv">${rank}</span></div>
+      <div class="stats-row"><span>XP</span><span class="sv">${xpDisplay}</span></div>
+    </div>
+    <div class="stats-hint">[S] or [Esc] to close</div>
+  `;
+}
+
 
 
 
@@ -2142,6 +2195,9 @@ document.addEventListener('keydown', (e) => {
 
   // ── ESC ───────────────────────────────────────────
   if (key === 'Escape') {
+    if (!$('stats-overlay')?.classList.contains('hidden')) {
+      $('stats-overlay').classList.add('hidden'); return;
+    }
     if (!$('screen-deck-view')?.classList.contains('hidden')) {
       $('screen-deck-view').classList.add('hidden'); return;
     }
@@ -2199,6 +2255,14 @@ document.addEventListener('keydown', (e) => {
   if (key === 'd' || key === 'D') {
     if (phase !== 'wave') openDeckView();
     return;
+  }
+
+  // ── S: 런 통계 패널 토글 (준비/웨이브 단계) ────────
+  if (key === 's' || key === 'S') {
+    if (phase === 'pre' || phase === 'wave') {
+      _toggleStatsOverlay();
+      return;
+    }
   }
 
   // ── 노드 선택 ─────────────────────────────────────
