@@ -291,6 +291,8 @@ function startRun() {
   CardSystem._uidCounter = 0;
   // 이전 런 정리
   if (rafId) cancelAnimationFrame(rafId);
+  // 새 런 시작 시 속도 1×로 초기화
+  resetGameSpeed();
   // hitStop 타이머가 이전 런에서 살아남아 새 런 gameSpeed를 덮어쓰지 않도록 클리어
   clearTimeout(_hitStopTimer);
   _hitStopTimer = null;
@@ -912,7 +914,7 @@ function beginWave() {
 // ── 웨이브 클리어 ─────────────────────────────────────
 function onWaveCleared() {
   state.phase = 'post';
-  resetGameSpeed();
+  // 속도는 플레이어가 수동으로 변경할 때까지 유지 (리셋 안 함)
 
   // 기본 웨이브 보상 + 유물 + 난이도 보정
   const badgeEffect    = getRelicEffect('wave_clear_gold');
