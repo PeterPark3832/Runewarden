@@ -715,6 +715,16 @@ html, body { width: 100%; height: 100%; overflow: hidden; background: var(--bg);
 .card-desc { font-size: 0.82rem; color: #c0c0d0; line-height: 1.35; }
 .card-icon { font-size: 1.4rem; margin-bottom: 0.15rem; }
 
+/* ── 카드 아트 존 ──────────────────────────────────────── */
+.card-art {
+  margin: -0.5rem -0.6rem 0.4rem;
+  height: 54px;
+  border-radius: 5px 5px 0 0;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+.card-art svg { display: block; width: 100%; height: 100%; }
+
 /* Rarity borders */
 .card[data-rarity="common"]    { border-left: 3px solid var(--common); }
 .card[data-rarity="uncommon"]  { border-left: 3px solid var(--uncommon); }
@@ -1088,6 +1098,17 @@ kbd {
 }
 
 .shop-card-icon { font-size: 1.5rem; flex-shrink: 0; line-height: 1; }
+
+/* 상점 카드 아트 존 */
+.shop-card-art {
+  width: 44px;
+  height: 44px;
+  flex-shrink: 0;
+  border-radius: 4px;
+  overflow: hidden;
+  background: rgba(255,255,255,0.03);
+}
+.shop-card-art svg { display: block; width: 100%; height: 100%; }
 
 .shop-card-info { flex: 1; min-width: 0; }
 .shop-card-name {

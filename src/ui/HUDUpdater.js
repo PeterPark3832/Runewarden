@@ -110,6 +110,38 @@ export function updateHUD() {
   renderHand();
 }
 
+// ── 카드 아트 SVG 생성 ─────────────────────────────────
+export function makeCardArtSVG(card) {
+  const W = 100, H = 50, cx = 50, cy = 25;
+  const ic = card.icon ?? '◆';
+  const hexPts = (r) => Array.from({ length: 6 }, (_, i) => {
+    const a = i * Math.PI / 3 - Math.PI / 6;
+    return `${(cx + r * Math.cos(a)).toFixed(1)},${(cy + r * Math.sin(a)).toFixed(1)}`;
+  }).join(' ');
+
+  if (card.type === 'summon') {
+    return `<svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg"><polygon points="${hexPts(22)}" fill="rgba(39,174,96,.10)" stroke="rgba(39,174,96,.40)" stroke-width="1.2"/><polygon points="${hexPts(12)}" fill="rgba(39,174,96,.08)" stroke="rgba(39,174,96,.22)" stroke-width="1"/><text x="${cx}" y="${cy + 8}" text-anchor="middle" font-size="20" opacity=".88">${ic}</text></svg>`;
+  }
+  if (card.type === 'spell') {
+    const sp = Array.from({ length: 8 }, (_, i) => {
+      const a = i * Math.PI / 4;
+      return `<line x1="${(cx + 10 * Math.cos(a)).toFixed(1)}" y1="${(cy + 10 * Math.sin(a)).toFixed(1)}" x2="${(cx + 21 * Math.cos(a)).toFixed(1)}" y2="${(cy + 21 * Math.sin(a)).toFixed(1)}" stroke="rgba(231,76,60,.35)" stroke-width="1"/>`;
+    }).join('');
+    return `<svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg"><circle cx="${cx}" cy="${cy}" r="22" fill="rgba(231,76,60,.08)" stroke="rgba(231,76,60,.40)" stroke-width="1.2"/>${sp}<circle cx="${cx}" cy="${cy}" r="10" fill="rgba(231,76,60,.07)" stroke="rgba(231,76,60,.22)" stroke-width="1"/><text x="${cx}" y="${cy + 8}" text-anchor="middle" font-size="20" opacity=".88">${ic}</text></svg>`;
+  }
+  if (card.type === 'augment') {
+    const sp = Array.from({ length: 6 }, (_, i) => {
+      const a = i * Math.PI / 3;
+      return `<line x1="${cx}" y1="${cy}" x2="${(cx + 21 * Math.cos(a)).toFixed(1)}" y2="${(cy + 21 * Math.sin(a)).toFixed(1)}" stroke="rgba(155,89,182,.35)" stroke-width="1.2"/>`;
+    }).join('');
+    return `<svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg"><polygon points="${hexPts(22)}" fill="rgba(155,89,182,.08)" stroke="rgba(155,89,182,.40)" stroke-width="1.2"/>${sp}<circle cx="${cx}" cy="${cy}" r="9" fill="rgba(155,89,182,.12)" stroke="rgba(155,89,182,.28)" stroke-width="1"/><text x="${cx}" y="${cy + 8}" text-anchor="middle" font-size="20" opacity=".88">${ic}</text></svg>`;
+  }
+  if (card.type === 'curse') {
+    return `<svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg"><circle cx="${cx}" cy="${cy}" r="21" fill="rgba(120,0,140,.10)" stroke="rgba(180,0,180,.35)" stroke-width="1.2" stroke-dasharray="4 2"/><line x1="${cx}" y1="${cy - 21}" x2="${cx + 4}" y2="${cy - 7}" stroke="rgba(180,0,180,.50)" stroke-width="1.2"/><line x1="${cx + 4}" y1="${cy - 7}" x2="${cx - 3}" y2="${cy + 5}" stroke="rgba(180,0,180,.50)" stroke-width="1.2"/><line x1="${cx - 3}" y1="${cy + 5}" x2="${cx + 2}" y2="${cy + 21}" stroke="rgba(180,0,180,.50)" stroke-width="1.2"/><text x="${cx}" y="${cy + 8}" text-anchor="middle" font-size="20" opacity=".82">${ic}</text></svg>`;
+  }
+  return `<svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg"><polygon points="${cx},${cy - 22} ${cx + 16},${cy} ${cx},${cy + 22} ${cx - 16},${cy}" fill="rgba(212,175,55,.10)" stroke="rgba(212,175,55,.40)" stroke-width="1.2"/><text x="${cx}" y="${cy + 8}" text-anchor="middle" font-size="20" opacity=".88">${ic}</text></svg>`;
+}
+
 // ── 카드 핸드 렌더링 ──────────────────────────────────
 export function renderHand() {
   const { state, cardSystem } = shared;
@@ -159,8 +191,9 @@ export function renderHand() {
     el.dataset.type   = card.type;
 
     el.innerHTML = `
+      <div class="card-art">${makeCardArtSVG(card)}</div>
       <div class="card-header">
-        <span class="card-name">${card.icon} ${cName}${forgedBadge}</span>
+        <span class="card-name">${cName}${forgedBadge}</span>
         <span class="card-cost">${isCurse ? '—' : (effectiveCost > 0 ? effectiveCost + 'g' : i18n.t('free').toUpperCase())}</span>
       </div>
       <div class="card-type-badge">${i18n.t('card_type_' + card.type) ?? card.type}${surcharge && !isCurse ? ' (' + i18n.t('card_surcharge_label') + ')' : ''}${isBanned ? ' 🚫' : ''}</div>
