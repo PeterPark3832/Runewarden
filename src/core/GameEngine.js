@@ -464,10 +464,13 @@ function startRun() {
   const svg = $('game-svg');
   svg.innerHTML = '';
 
-  // 맵 선택 — 자동저장 복원 시 저장된 맵 사용, 그 외 랜덤
+  // 맵 선택 — 자동저장 복원 시 저장된 맵 사용, 데일리 선택 맵, 그 외 랜덤
   const selectedMap = shared._savedRunData?.mapId
     ? (getMapById(shared._savedRunData.mapId) ?? pickRandomMap())
-    : pickRandomMap();
+    : shared._selectedMapId
+      ? (getMapById(shared._selectedMapId) ?? pickRandomMap())
+      : pickRandomMap();
+  shared._selectedMapId = null;  // 소비 후 초기화
   setActiveMap(selectedMap.path, selectedMap);
   state.mapId   = selectedMap.id;
   state.mapName = selectedMap.name;
@@ -1582,6 +1585,11 @@ function endGame(victory) {
   state.phase = 'over';
   if (rafId) cancelAnimationFrame(rafId);
   clearTimeout(_waveClearedTimer); _waveClearedTimer = null;
+  // 데일리 챌린지 완료 저장 (승리 시만)
+  if (victory && shared._dailyChallengeKey) {
+    localStorage.setItem(shared._dailyChallengeKey, '1');
+    shared._dailyChallengeKey = null;
+  }
   // 런 종료 시 자동저장 클리어 (승리/패배 모두)
   localStorage.removeItem('rw_autosave');
   // 열려 있는 모든 오버레이(노드 선택, 상점, 이벤트, 휴식 등) 닫기
@@ -2121,6 +2129,66 @@ $('btn-how').addEventListener('click', () => {
   $('screen-howto').classList.remove('hidden');
 });
 $('btn-codex').addEventListener('click', openCodex);
+
+// ── 데일리 챌린지 설정 ──────────────────────────────────
+(function _initDailyChallenge() {
+  const btn = $('btn-daily');
+  if (!btn) return;
+
+  const now   = new Date();
+  const year  = now.getFullYear();
+  const month = now.getMonth() + 1;
+  const day   = now.getDate();
+  const seed  = year * 10000 + month * 100 + day;
+  const dateKey = `${year}${String(month).padStart(2,'0')}${String(day).padStart(2,'0')}`;
+  const doneKey = `rw_daily_done_${dateKey}`;
+
+  // 시드로 선택지 결정 (DLC 워든 제외 — 기본 4종)
+  const baseWardens = WARDEN_DEFS.filter(w => !w.dlc);
+  const warden     = baseWardens[seed % baseWardens.length];
+  const diffId     = seed % 2 === 0 ? 'standard' : 'veteran';
+  const difficulty = getDifficultyById(diffId);
+
+  // 기본 게임 맵 ID 목록 (DLC 맵 제외)
+  const BASE_MAP_IDS = ['crossroads', 'serpent', 'gauntlet', 'twin_peaks', 'labyrinth'];
+  const mapId = BASE_MAP_IDS[seed % BASE_MAP_IDS.length];
+
+  // 챌린지 2개 선택 (시드 기반, run 카테고리 제외)
+  const pickable = CHALLENGE_DEFS.filter(c => c.category !== 'run');
+  const ch1 = pickable[seed % pickable.length];
+  const ch2 = pickable[(seed * 7 + 3) % pickable.length];
+  const challenges = ch1.id === ch2.id ? [ch1.id] : [ch1.id, ch2.id];
+
+  const dateStr = `${year}-${String(month).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
+
+  function _refreshDailyBtn() {
+    const done = !!localStorage.getItem(doneKey);
+    const wardenName = i18n.lang === 'ko' ? (warden.nameKo ?? warden.name) : warden.name;
+    const diffLabel  = i18n.t('diff_' + diffId) ?? diffId;
+    if (done) {
+      btn.innerHTML = `<span>${i18n.t('daily_done')}</span><span class="btn-daily-sub">${dateStr}</span>`;
+      btn.disabled = true;
+    } else {
+      btn.innerHTML = `<span>${i18n.t('daily_challenge')}</span><span class="btn-daily-sub">${i18n.t('daily_modifiers', wardenName, diffLabel, dateStr)}</span>`;
+      btn.disabled = false;
+    }
+  }
+  _refreshDailyBtn();
+  i18n.onChange(_refreshDailyBtn);
+
+  btn.addEventListener('click', () => {
+    if (!!localStorage.getItem(doneKey)) return;
+    audio.play('ui_click');
+    shared.selectedWarden     = warden;
+    shared.selectedDifficulty = difficulty;
+    shared.selectedAscension  = 0;
+    shared.selectedChallenges = challenges;
+    shared._selectedMapId     = mapId;
+    shared._dailyChallengeKey = doneKey;
+    startRun();
+  });
+})();
+
 $('btn-replay-tut').addEventListener('click', () => {
   TutorialUI.reset();
   shared.selectedWarden = WARDEN_DEFS[0];  // 튜토리얼은 Iron Warden으로

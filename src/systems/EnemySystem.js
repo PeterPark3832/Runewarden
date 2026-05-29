@@ -7,7 +7,7 @@ import { HEX_W } from '../config/constants.js'; // eslint-disable-line no-unused
 // 모듈 로드 시에는 기본 경로로 초기화
 let WAYPOINTS = ENEMY_PATH.current.map(([c, r]) => hexToPixel(c, r));
 
-const WAVE_CONFIGS = [
+export const WAVE_CONFIGS = [
   // ── Act 1 ────────────────────────────────────────────
   // Wave 1: 그런트 3 + 고블린 4 (소형 스와머 첫 등장)
   [{ type: 'grunt', count: 3, interval: 1500 }, { type: 'goblin', count: 4, interval: 800 }],
@@ -125,7 +125,7 @@ function _getAmbushGroup(waveIndex) {
   return                     { type: 'solar_ember',  count: 6, interval: 300 };
 }
 
-const ENEMY_DEFS = {
+export const ENEMY_DEFS = {
   //                              HP    speed  color          size  reward
   grunt:      { name: 'Grunt',      hp:   48, speed:  44, color: '#8B4513', size: 12, reward:  1 },
   fast:       { name: 'Runner',     hp:   30, speed:  85, color: '#C0392B', size: 10, reward:  1 },

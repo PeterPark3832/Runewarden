@@ -11,6 +11,7 @@ import { DIFFICULTY_DEFS, getDifficultyById } from '../data/difficulty.js';
 import { ASCENSION_DEFS } from '../data/ascension.js';
 import { CHALLENGE_DEFS, getChallengeXPBonus } from '../data/challenges.js';
 import { CODEX_UNLOCKS, xpForLevel, MAX_RANK } from '../systems/MetaSystem.js';
+import { ENEMY_DEFS, WAVE_CONFIGS } from '../systems/EnemySystem.js';
 
 const $ = id => document.getElementById(id);
 
@@ -373,10 +374,19 @@ export function openCodex() {
         <div class="codex-stat-item"><span>${meta.totalKills}</span> ${i18n.t('codex_stat_slain')}</div>
         <div class="codex-stat-item"><span>${meta.runsPlayed > 0 ? ((meta.runsWon/meta.runsPlayed)*100).toFixed(0) : 0}%</span> ${i18n.t('codex_stat_winrate')}</div>
       </div>
-      <div class="codex-grid">
-        ${CODEX_UNLOCKS.map(u => _buildCodexItem(u, rank)).join('')}
+      <div class="codex-tabs">
+        <button class="codex-tab active" data-tab="unlocks">${i18n.t('codex_tab_unlocks')}</button>
+        <button class="codex-tab" data-tab="enemies">${i18n.t('codex_tab_enemies')}</button>
       </div>
-      ${_buildCodexRunHistory(meta)}
+      <div class="codex-tab-panel" id="codex-panel-unlocks">
+        <div class="codex-grid">
+          ${CODEX_UNLOCKS.map(u => _buildCodexItem(u, rank)).join('')}
+        </div>
+        ${_buildCodexRunHistory(meta)}
+      </div>
+      <div class="codex-tab-panel hidden" id="codex-panel-enemies">
+        ${_buildCodexEnemyTab()}
+      </div>
       <div class="codex-footer">
         <button class="btn-primary codex-close-btn" id="btn-codex-close">${i18n.t('howto_close')}</button>
       </div>
@@ -385,6 +395,15 @@ export function openCodex() {
 
   $('btn-codex-close').addEventListener('click', () => {
     container.classList.add('hidden');
+  });
+
+  container.querySelectorAll('.codex-tab').forEach(tab => {
+    tab.addEventListener('click', () => {
+      container.querySelectorAll('.codex-tab').forEach(t => t.classList.remove('active'));
+      container.querySelectorAll('.codex-tab-panel').forEach(p => p.classList.add('hidden'));
+      tab.classList.add('active');
+      $(`codex-panel-${tab.dataset.tab}`)?.classList.remove('hidden');
+    });
   });
 }
 
@@ -406,6 +425,78 @@ function _buildCodexRunHistory(meta) {
     <div class="codex-run-history-title">${isKo ? '최근 런' : 'Recent Runs'}</div>
     <div class="codex-run-history-list">${items}</div>
   </div>`;
+}
+
+// ── 코덱스 적 탭 헬퍼 ────────────────────────────────────
+// 기본 게임(Act 1~3) 적 타입만 표시 — DLC 적은 제외
+const _BASE_ENEMY_TYPES = [
+  'grunt','goblin','fast','tank','elite','shielded','berserker',
+  'boss','stone_golem','necromancer','plague_carrier',
+  'void_wraith','void_stalker','juggernaut','siege_beast',
+  'phantom','colossus','shadow_elite','void_titan','abyssal_dragon',
+];
+
+/** 각 타입이 처음 등장하는 1-indexed 웨이브 번호 계산 */
+function _computeFirstWave() {
+  const map = {};
+  WAVE_CONFIGS.forEach((groups, idx) => {
+    const waveNum = idx + 1;
+    groups.forEach(g => {
+      if (!(g.type in map)) map[g.type] = waveNum;
+    });
+  });
+  return map;
+}
+
+function _buildCodexEnemyTab() {
+  const firstWave = _computeFirstWave();
+
+  const rows = _BASE_ENEMY_TYPES.map(type => {
+    const def = ENEMY_DEFS[type];
+    if (!def) return '';
+
+    // 이름 (i18n 키 사용, 없으면 def.name 폴백)
+    const nameKey = `codex_enemy_${type}`;
+    const name = i18n.t(nameKey) ?? def.name;
+
+    // 적 색상 원
+    const circle = `<span class="codex-enemy-icon" style="background:${def.color}"></span>`;
+
+    // 특성 뱃지
+    const traits = [];
+    if (def.isBoss)           traits.push(i18n.t('codex_enemy_trait_boss'));
+    if (def.isElite)          traits.push(i18n.t('codex_enemy_trait_elite'));
+    if (def.camo)             traits.push(i18n.t('codex_enemy_trait_camo'));
+    if (def.slowImmune)       traits.push(i18n.t('codex_enemy_trait_slow_immune'));
+    if (def.enrageThreshold)  traits.push(i18n.t('codex_enemy_trait_enrage'));
+    if (def.regenDps)         traits.push(i18n.t('codex_enemy_trait_regen'));
+    if (def.damageReduction)  traits.push(i18n.t('codex_enemy_trait_dmg_red'));
+    if (def.shieldHits)       traits.push(i18n.t('codex_enemy_trait_shield'));
+    if (def.splitOnDeath)     traits.push(i18n.t('codex_enemy_trait_split'));
+    if (def.solarImmune)      traits.push(i18n.t('codex_enemy_trait_solar_immune'));
+
+    const traitBadges = traits.map(t => `<span class="codex-enemy-badge">${t}</span>`).join('');
+    const wave = firstWave[type] ?? '?';
+
+    return `
+      <div class="codex-enemy-row">
+        <div class="codex-enemy-left">
+          ${circle}
+          <div class="codex-enemy-info">
+            <div class="codex-enemy-name">${name}</div>
+            <div class="codex-enemy-traits">${traitBadges}</div>
+          </div>
+        </div>
+        <div class="codex-enemy-stats">
+          <span class="codex-enemy-stat"><span class="ces-label">${i18n.t('codex_enemy_hp')}</span>${def.hp}</span>
+          <span class="codex-enemy-stat"><span class="ces-label">${i18n.t('codex_enemy_spd')}</span>${def.speed}</span>
+          <span class="codex-enemy-stat"><span class="ces-label">${i18n.t('codex_enemy_reward')}</span>${def.reward}</span>
+          <span class="codex-enemy-first">${i18n.t('codex_enemy_first_wave', wave)}</span>
+        </div>
+      </div>`;
+  }).join('');
+
+  return `<div class="codex-enemy-list">${rows}</div>`;
 }
 
 function _buildCodexItem(unlock, currentRank) {
