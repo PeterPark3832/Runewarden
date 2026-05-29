@@ -44,7 +44,7 @@ Build your spell deck, summon towers, and survive endless waves.
 
 [b]덱빌딩 깊이[/b]
 [list]
-[*] 30종 카드 (Common / Uncommon / Rare)
+[*] 60종 카드 (Common / Uncommon / Rare)
 [*] 상점 리롤, 카드 제거로 덱 최적화
 [*] 웨이브 중 카드 플레이 가능 (골드 +1 추가 비용)
 [/list]
@@ -54,11 +54,11 @@ Build your spell deck, summon towers, and survive endless waves.
 [h2]콘텐츠[/h2]
 [list]
 [*] [b]6종 타워[/b]: Archer · Cannon · Frost Mage · Fire Drake (번 DoT) · Tesla Coil (체인 번개) · Druid Grove (슬로우 + 인접 버프)
-[*] [b]30종 카드[/b]: 소환 6 · 강화 10 · 주문 14
+[*] [b]60종 카드[/b]: 소환 6 · 강화 10 · 주문 14
 [*] [b]5웨이브 Act 1[/b] — Wave 5: Ironclad 보스 (HP 700, 황금 글로우)
 [*] [b]5종 적[/b]: Grunt · Runner · Tank · Elite · Ironclad Boss
 [*] [b]메타 진행[/b]: Warden Rank 1~20, Codex 언락 9종, 영구 보너스
-[*] [b]Steam 업적[/b] 20개
+[*] [b]Steam 업적[/b] 40개
 [/list]
 
 [h2]게임의 차별점[/h2]
@@ -193,7 +193,7 @@ Anime (제거)
 - [ ] Library Capsule (600×900) ✅
 - [ ] 스토어 설명문 (한국어+영어) ✅
 - [ ] 시스템 요구 사양 ✅
-- [ ] 업적 20개 등록 ✅
+- [ ] 업적 40개 등록 ✅
 
 ### 출시 2-3주 전
 - [ ] 크리에이터 50명 키 배포 (유튜브/트위치)

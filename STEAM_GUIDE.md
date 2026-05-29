@@ -7,8 +7,8 @@
 | Electron 래핑 | ✅ 완료 | v42.1.0 |
 | 게임 실행 | ✅ 완료 | `npm start` |
 | 빌드 설정 | ✅ 완료 | electron-builder |
-| Steam 업적 구조 | ✅ 완료 | 20개 정의 |
-| Steam Deck CSS | ✅ 완료 | @media 1280px/800px |
+| Steam 업적 구조 | ✅ 완료 | 40개 정의 (워든, 챌린지, 시너지, 마일스톤) |
+| Steam Deck CSS | ✅ 완료 | @media 1280px/800px + 1024px |
 | Steamworks SDK | ⏳ 미통합 | 아래 단계 참고 |
 | Steam 앱 ID | ⏳ 미확정 | 개발 테스트용 480 사용 중 |
 | DLC 기술 기반 | ✅ 완료 | `src/dlc/shadow_realm/` |

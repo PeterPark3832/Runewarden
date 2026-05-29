@@ -12,7 +12,7 @@
 | **장르** | Tower Defense × Deck Building × Roguelike |
 | **플랫폼** | PC (Windows / macOS / Linux), Steam Deck |
 | **출시** | 2027년 예정 |
-| **가격** | $9.99 |
+| **가격** | $9.99 (기본) / DLC 각 $4.99 |
 | **개발사** | 인디 솔로 개발 |
 | **연락처** | phj8973@gmail.com |
 | **Steam** | [위시리스트 추가 링크] |
@@ -46,22 +46,42 @@ Runewarden은 **타워 디펜스, 덱빌딩, 로그라이크**를 하나의 유�
 | 🏹 Archer Tower | 빠른 공격, 긴 사거리 |
 | 💣 Cannon Tower | 고피해 + 범위 스플래시 |
 | ❄️ Frost Mage | 45% 이동 감속 |
-| 🐉 Fire Drake | 번 DoT (8DPS/2.5초) |
+| 🐉 Fire Drake | 번 DoT (11DPS/2.5초) |
 | ⚡ Tesla Coil | 체인 번개 2체인 |
-| 🌿 Druid Grove | 슬로우 + 인접 타워 +15% 대미지 |
+| 🌿 Druid Grove | 인접 타워 +15% 대미지 오라 |
 
-### 30종 카드
-- Common 13종 / Uncommon 12종 / Rare 5종
-- 웨이브 간 상점에서 구매, 리롤, 제거
-- 시작 덱 14장 → 최대 30+ 장
+### 60종 카드 (기본 게임)
+- Common / Uncommon / Rare 등급
+- 인-런 플레이어 레벨(Lv1–8)에 따라 상점 등급 확률 상승
+- 웨이브 간 상점에서 구매, 리롤, 카드 슬롯 추가, XP 투자
+- 시작 덱 14장 → 런 내 최대 30+ 장
+
+### 인-런 성장 시스템
+- 적 처치 시 XP 획득 → 레벨업 (Lv1–8)
+- 레벨이 높을수록 상점에 희귀 카드 등장 확률 증가
+- 타워 별 업그레이드: ★2(Lv3 필요), ★3(Lv6 필요)
+
+### 6명의 워든 (캐릭터)
+| 워든 | 스타일 | 패시브 |
+|------|--------|--------|
+| 🛡️ Iron Warden | 균형 | 표준 |
+| ⚡ Storm Warden | 공격형 | 적 처치 시 골드 +1 |
+| 🔮 Arcane Warden | 제어형 | 주문 코스트 −1 |
+| 🌑 Shadow Warden | 희생형 | 버린 카드당 골드 +1 |
+| 👁️ Shadow Realm Warden | 암흑형 | 10킬 → Shadow Beam 자동 발사 |
+| ☀️ Solar Warden | 태양형 | 주문 8회 → Solar Beam 자동 발사 |
 
 ### 메타 진행
-- Warden Rank 1-20 (XP 누적)
-- Codex 언락 9종 (카드/타워/보너스)
-- 런마다 달라지는 무작위 이벤트 10종
+- Warden Rank 1–20 (XP 누적)
+- Codex 언락: 카드, 타워 보너스, 패시브 업그레이드
+- 런마다 달라지는 무작위 이벤트
+- Ascension I–V 하드코어 모드
 
-### Steam 업적 20개
-Ironclad Breaker, Flawless Warden, Swift Justice 등 도전적인 목표
+### 13종 챌린지 시스템
+자발적 핸디캡으로 XP 배율 최대 ×3.45 획득
+
+### Steam 업적 40개
+워든별 승리, 챌린지 클리어, 시너지 덱 구성, 전투 마일스톤 등
 
 ---
 
@@ -71,8 +91,16 @@ Ironclad Breaker, Flawless Warden, Swift Justice 등 도전적인 목표
 |------|---------------------|
 | **Balatro** | 공간적 배치 요소(헥스 그리드) + 실시간 타워 전투 추가 |
 | **Slay the Spire** | 덱이 만든 타워가 자동으로 싸우는 "살아있는 결과" |
-| **Kingdom Rush** | 덱빌딩으로 매 런 덱이 달라지는 근본적 재플레이 |
+| **Kingdom Rush** | 덱빌딩으로 매 런 덱이 달라지는 근본적 재플레이성 |
 | **Vampire Survivors** | 파도 중 능동적 카드 플레이로 전술 개입 가능 |
+
+---
+
+## 접근성
+
+- 색맹 지원: 카드 희귀도 텍스트 배지 [C] [U] [R]
+- 완전한 키보드 지원
+- 해상도 1024×768 ~ 4K 대응
 
 ---
 
@@ -80,19 +108,20 @@ Ironclad Breaker, Flawless Warden, Swift Justice 등 도전적인 목표
 
 *[실제 스크린샷 5장 — 출시 전 별도 제공]*
 
-1. 웨이브 중 전투 장면
+1. 웨이브 중 전투 장면 (부유 데미지 텍스트, 화면 흔들림 효과)
 2. 카드 핸드 + 덱빌딩
-3. 상점 화면
-4. Wave 5 Ironclad 보스전
-5. Warden Codex 화면
+3. 상점 화면 (인-런 레벨, XP, 카드+1 버튼)
+4. Wave 10 공허의 거인(Void Titan) 보스전
+5. 패배 화면 (웨이브별 공략 힌트)
 
 ---
 
 ## 기술 정보
 
-- **엔진**: HTML5 / SVG (Electron 래핑)
-- **해상도**: 1024×600 최소, 1920×1080 권장
-- **저장**: 로컬 저장 (Steam Cloud 예정)
+- **엔진**: HTML5 / SVG (Electron v42 래핑)
+- **해상도**: 1024×768 최소, 1920×1080 권장
+- **저장**: 로컬 저장 + 자동 저장 (Steam Cloud 예정)
+- **테스트**: 197개 자동 테스트 (7개 파일)
 - **개발 기간**: 12개월 (솔로)
 
 ---

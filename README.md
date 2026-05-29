@@ -5,7 +5,7 @@
 [![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20macOS%20%7C%20Linux-blue)](#system-requirements)
 [![Steam Deck](https://img.shields.io/badge/Steam%20Deck-Planned-1b2838?logo=steam)](#)
 [![License](https://img.shields.io/badge/license-UNLICENSED-red)](#)
-[![Version](https://img.shields.io/badge/version-0.4.0-gold)](#)
+[![Version](https://img.shields.io/badge/version-0.5.0-gold)](#)
 
 A **Tower Defense × Deck Building × Roguelike** hybrid — every card you play is a tower action.
 
@@ -15,7 +15,7 @@ A **Tower Defense × Deck Building × Roguelike** hybrid — every card you play
 
 Runewarden fuses three genres into one tight loop:
 
-- **Deck Building** — Construct your spell deck from 30+ cards across runs
+- **Deck Building** — Construct your spell deck from 60+ cards across runs
 - **Tower Defense** — Place and upgrade towers on a hex grid to stop enemy waves
 - **Roguelike** — No two runs are the same. Every choice is permanent.
 
@@ -37,35 +37,45 @@ Runewarden fuses three genres into one tight loop:
 | 🏹 Archer Tower | Fast attack, long range |
 | 💣 Cannon Tower | High damage + AoE splash |
 | ❄️ Frost Mage | 45% slow on hit |
-| 🐉 Fire Drake | Burn DoT (8 DPS / 2.5s) |
+| 🐉 Fire Drake | Burn DoT (11 DPS / 2.5s) |
 | ⚡ Tesla Coil | Chain lightning, 2 targets |
-| 🌿 Druid Grove | Slow + +15% damage aura to adjacent towers |
+| 🌿 Druid Grove | +15% damage aura to adjacent towers |
 
-### 🃏 30 Cards
-- **Common** (13) · **Uncommon** (12) · **Rare** (5)
+### 🃏 60 Cards (Base Game)
+- **Common** · **Uncommon** · **Rare**
 - Buy, reroll, and remove cards between waves
+- Shop card rarity scales with in-run player level (Lv1–8)
 - Build focused synergy decks or flexible generalist builds
 
 ### 🗺️ Roguelike Structure
 After each wave, choose a node:
-- **Shop** — Buy and reroll cards (up to 2 rerolls)
+- **Shop** — Buy cards, spend XP to level up, add card slots (8g)
 - **Event** — 10 random events with risk/reward tradeoffs
-- **Rest Site** — Remove a card from your deck or scavenge gold
+- **Rest Site** — Remove or forge a card from your deck
+- **Path Fork** — Choose your route after each Act boss
 
-### ⚔️ 4 Wardens (Characters)
-Each Warden starts with a unique deck and passive ability, unlocked through meta progression.
+### 📈 In-Run Player Level System
+Earn XP by defeating enemies. Level up (Lv1–8) to:
+- Unlock higher-rarity card offerings in the shop
+- Upgrade tower star level (★2 requires Lv3, ★3 requires Lv6)
+- Spend XP directly in shop for power boosts
 
-| Warden | Style | Passive |
-|--------|-------|---------|
-| 🛡️ Iron Warden | Balanced | Standard starting conditions |
-| ⚡ Storm Warden | Aggressive | +1 gold per kill, 6-card hand |
-| 🔮 Arcane Warden | Control | All spell costs −1 |
-| 🌑 Shadow Warden | Sacrifice | +1 gold per card discarded at wave end |
+### ⚔️ 6 Wardens (Characters)
+Each Warden starts with a unique deck and passive ability.
+
+| Warden | Style | Passive | Unlock |
+|--------|-------|---------|--------|
+| 🛡️ Iron Warden | Balanced | Standard starting conditions | Default |
+| ⚡ Storm Warden | Aggressive | +1 gold per kill, 6-card hand | Rank 5 |
+| 🔮 Arcane Warden | Control | All spell costs −1 | Rank 10 |
+| 🌑 Shadow Warden | Sacrifice | +1 gold per card discarded at wave end | Rank 15 |
+| 👁️ Shadow Realm Warden | Dark | 10 kills → auto Shadow Beam | DLC 1 |
+| ☀️ Solar Warden | Radiant | 8 cost-2+ spells → auto Solar Beam | DLC 2 |
 
 ### 📈 Meta Progression
 - Warden Rank 1–20 (XP across runs)
 - Codex unlocks: new cards, tower bonuses, passive upgrades
-- Difficulty Ascension system (I–III) for hardcore runs
+- Difficulty Ascension system (I–V) for hardcore runs
 - Run history tracking with Quick Restart
 
 ### ⚔️ Challenge System
@@ -81,15 +91,24 @@ Optional self-imposed handicaps that stack XP bonuses on completion.
 Stack multiple challenges to multiply XP rewards — e.g. Perfect Defense + Silence = **×1.75 XP**.
 
 ### 🎨 Visual Polish
-- Color grading + ambient occlusion vignette on the map
+- Floating damage numbers on every hit (color-coded by type)
+- Screen shake on Nexus hit and boss death
+- Color-grading + ambient occlusion vignette on the map
 - Enemy enrage rim glow (color-coded per type)
 - Hit-stop on boss/elite kills with impact flash burst
 - Nexus critical pulse when HP = 1
 - Wave-clear gold flash + HUD gold punch animation
-- Enhanced death particles
+- Card shimmer effects and map theme art direction
 
-### 🏆 20 Steam Achievements
-*Ironclad Breaker · Flawless Warden · Swift Justice · and more*
+### 🏆 40 Steam Achievements
+Including warden-specific wins, challenge clears, synergy builds, and combat milestones.
+
+*Ironclad Breaker · Flawless Warden · Swift Justice · Triple Threat · Chain Lightning · and more*
+
+### ♿ Accessibility
+- Colorblind-friendly rarity badges [C] / [U] / [R] on all cards
+- Keyboard & Mouse only — full keyboard shortcut coverage
+- Font size and layout tested at 1024×768 through 4K
 
 ---
 
@@ -100,8 +119,10 @@ Stack multiple challenges to multiply XP rewards — e.g. Perfect Defense + Sile
 | 🃏 Deck View | Press `D` during a run to inspect your full deck by type |
 | ⚡ Quick Restart | Restart instantly with the same Warden + difficulty from the run summary |
 | 🔊 Split Volume | BGM and SFX volume controlled independently in the pause menu |
-| 🏃 2× Speed | Toggle fast-forward during waves with `Tab` |
+| 🏃 2× Speed | Toggle fast-forward — persists between waves until manually changed |
 | 💾 Auto-Save | Run progress saved automatically — resume where you left off |
+| 💡 Wave Hints | Contextual tips shown on defeat screen (e.g. camo enemies, boss strategy) |
+| 🎓 Tutorial Hints | One-shot in-game tips for shop, augments, and camo enemies |
 
 ---
 
@@ -115,16 +136,18 @@ Stack multiple challenges to multiply XP rewards — e.g. Perfect Defense + Sile
 
 Veteran difficulty features enemy regen, boss HP scaling, and enrage at ×2.0 speed.
 
+Post-Wave 8 enemy HP scales an additional +12% per wave to force tower upgrades.
+
 ---
 
 ## DLC 1 — Shadow Realm
 
 **Runewarden: Shadow Realm** expands the base game with:
 
-- Act 4 (8 additional waves) with a new Shadow Realm biome
-- 3 new towers with dark-magic mechanics
-- New spell and augment cards
-- 🌑 Shadow Warden character with unique passive
+- Act 4 (8 additional waves, waves 16–23) with a new Shadow Realm biome
+- 5 new towers with dark-magic mechanics
+- 38 new cards and 15 new relics
+- 🌑 Shadow Realm Warden — 10 kills → auto Shadow Beam
 
 ---
 
@@ -134,7 +157,7 @@ Veteran difficulty features enemy regen, boss HP scaling, and enrage at ×2.0 sp
 
 - Act 5 (8 additional waves, waves 24–31) with a new Solar biome
 - 12 new solar enemies including the 3-phase **Sun God** final boss
-- 4 new towers: Divine Cannon, Solar Scythe, Light Prism, Crusader
+- 4 new towers: Divine Cannon, Solar Scythe (태양 낫), Light Prism, Crusader
 - 38 new cards (summons, augments, spells) — solar DoT, divine shield, stun
 - 15 new relics
 - ☀️ **Solar Warden** — charges Solar Energy with every cost-2+ spell; 8 charges auto-fire Solar Beam
@@ -148,7 +171,7 @@ Veteran difficulty features enemy regen, boss HP scaling, and enrage at ×2.0 sp
 | `Space` | Start Wave |
 | `1`–`5` | Select / play card from hand |
 | `F` | Deselect card |
-| `Tab` | Toggle 2× speed (during wave) |
+| `Tab` | Toggle 2× speed (persists across waves) |
 | `D` | Open Deck View |
 | `1`–`3` | Node choice · Shop buy · Event pick |
 | `R` | Reroll shop |
@@ -186,7 +209,7 @@ npm run dev
 # Run in production mode
 npm start
 
-# Run unit tests (105 tests across 5 files)
+# Run unit tests (197 tests across 7 files)
 npm test
 
 # Build Windows installer

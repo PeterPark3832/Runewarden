@@ -59,7 +59,7 @@ No two runs play the same.
 [h2]Features[/h2]
 [list]
 [*] [b]60 cards[/b] — Summon towers, augment their stats, cast powerful spells
-[*] [b]4 Wardens[/b] — Each with a unique starter deck and passive ability
+[*] [b]6 Wardens[/b] — Each with a unique starter deck and passive ability
 [*] [b]29 Relics[/b] — Passive bonuses that define your run's identity
 [*] [b]30 Events[/b] — Branching choices with real risk and reward
 [*] [b]12 Tower types[/b] — Archer, Cannon, Frost Mage, Tesla Coil, Shadow Strike, and more
@@ -156,14 +156,14 @@ Runewarden은 [b]타워 디펜스[/b], [b]로그라이크[/b], [b]덱빌딩[/b]�
 [h2]주요 특징[/h2]
 [list]
 [*] [b]60종 카드[/b] — 타워 소환, 능력치 강화, 강력한 주문 시전
-[*] [b]4명의 워든[/b] — 각자 고유한 시작 덱과 패시브 능력 보유
+[*] [b]6명의 워든[/b] — 각자 고유한 시작 덱과 패시브 능력 보유
 [*] [b]29개 유물[/b] — 런의 정체성을 결정하는 패시브 보너스
 [*] [b]30종 이벤트[/b] — 진짜 위험과 보상이 공존하는 분기 선택
 [*] [b]12종 타워[/b] — 궁수, 대포, 서리 마법사, 테슬라 코일, 암격 타워 등
 [*] [b]20종 이상의 적[/b] — 광전사, 팬텀, 공성 야수, 보스 3종 포함
 [*] [b]5종 랜덤 맵[/b] — 매 런 다른 목 지점과 경로
 [*] [b]어센션 모드[/b] — 베테랑을 위한 3단계 추가 도전
-[*] [b]Steam 업적 20개[/b]
+[*] [b]Steam 업적 40개[/b]
 [*] [b]한국어/영어 완전 지원[/b]
 [*] [b]Steam Deck 지원[/b]
 [/list]
