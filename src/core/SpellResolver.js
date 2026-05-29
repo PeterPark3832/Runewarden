@@ -383,6 +383,57 @@ const BASE_HANDLERS = {
     }
     log(i18n.t('spell_solar_corona', effect.dps ?? 12, (effect.duration ?? 3000) / 1000), 'good');
   },
+
+  // ── v0.5 크로스 아키타입 콤보 스펠 ───────────────────
+  damage_and_slow(effect, { enemySystem, log, i18n }) {
+    enemySystem.dealDamageToAll(effect.amount);
+    enemySystem.slowAll(effect.slow, effect.duration);
+    log(i18n.t('spell_damage_all', effect.amount) + ` + ${Math.round(effect.slow * 100)}% slow`, 'good');
+  },
+
+  wave_dmg_buff(effect, { towerSystem, log, state }) {
+    if (towerSystem?.setGlobalDmgMult) {
+      towerSystem.setGlobalDmgMult((towerSystem._globalDmgMult ?? 1) * effect.mult);
+      if (!state._waveBuffRestore) state._waveBuffRestore = [];
+      state._waveBuffRestore.push({ type: 'dmg_mult', mult: effect.mult });
+    }
+    log(`모든 타워 피해 +${Math.round((effect.mult - 1) * 100)}% (이번 웨이브)`, 'good');
+  },
+
+  burn_all(effect, { enemySystem, log }) {
+    const { enemies } = enemySystem;
+    enemies.forEach(e => enemySystem.applyBurn(e.id, effect.burnDps, effect.burnDuration));
+    log(`모든 적에게 화상 DoT ${effect.burnDps}DPS/${effect.burnDuration / 1000}초 부여!`, 'good');
+  },
+
+  discard_draw_hand(effect, { cardSystem, renderHand, log }) {
+    const count = cardSystem.hand.length;
+    if (count === 0) return;
+    cardSystem.discardPile.push(...cardSystem.hand);
+    cardSystem.hand = [];
+    cardSystem.drawHand(count);
+    renderHand?.();
+    log(`손패 ${count}장 버리고 ${count}장 드로우.`, 'good');
+  },
+
+  arcane_surge(effect, { cardSystem, addGold, towerSystem, renderHand, log }) {
+    cardSystem.drawHand(3);
+    addGold(8, null);
+    if (towerSystem?.resetAllCooldowns) towerSystem.resetAllCooldowns();
+    renderHand?.();
+    log('비전 파동: 카드 3장 드로우 + 8골드 + 타워 쿨다운 초기화!', 'good');
+  },
+
+  tactical_reposition(effect, { state, log }) {
+    // 웨이브 중 사용 불가 — GameEngine에서 phase 체크 후 호출되어야 하므로 여기선 안내만
+    if (state?.phase === 'wave') {
+      log('전술 재배치: 웨이브 중 사용 불가', 'bad');
+      return;
+    }
+    // 실제 철거 선택은 GameEngine의 타워 클릭 흐름에 위임
+    state._tacticalRepositionPending = true;
+    log('전술 재배치: 타워를 클릭하여 회수하세요.', 'good');
+  },
 };
 
 /**

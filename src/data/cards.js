@@ -903,6 +903,111 @@ const BASE_CARD_DEFS = [
     effect: { type: 'slow_all', amount: 0.55, duration: 5000, label: 'decay' },
   },
 
+  // ════════════════════════════════════════════════════
+  // ── v0.5 CROSS-ARCHETYPE COMBO CARDS (12) ────────
+  // 서로 다른 빌드 아키타입을 연결하는 시너지 카드
+  // ════════════════════════════════════════════════════
+
+  // ── 강화 (5) — 크로스 아키타입 버프 ──────────────────
+  {
+    id: 'aug_frozen_rounds',
+    name: 'Frozen Rounds',        nameKo: '얼음 탄환',
+    type: 'augment', rarity: 'uncommon', cost: 3, icon: '❄️🏹',
+    desc: 'Cannon towers apply 20% slow for 1.5s on each hit.',
+    descKo: '대포 타워 명중 시 20% 감속 1.5초를 부여합니다.',
+    effect: { type: 'tower_tag_add_slow', tag: 'cannon', slow: 0.20, duration: 1500 },
+  },
+  {
+    id: 'aug_inferno_arc',
+    name: 'Inferno Arc',          nameKo: '화염 호',
+    type: 'augment', rarity: 'uncommon', cost: 3, icon: '🔥⚡',
+    desc: 'Tesla Coil chains spread burn DoT (4 DPS / 2s) to chained targets.',
+    descKo: 'Tesla Coil 체인 대상에게 화상 DoT (4DPS/2초)를 추가로 부여합니다.',
+    effect: { type: 'tesla_chain_burn', burnDps: 4, burnDuration: 2000 },
+  },
+  {
+    id: 'aug_natures_fury',
+    name: "Nature's Fury",        nameKo: '자연의 분노',
+    type: 'augment', rarity: 'rare', cost: 4, icon: '🌿🔥',
+    desc: 'Druid Grove aura also deals 5 DPS burn to adjacent enemies.',
+    descKo: 'Druid Grove 오라 범위 내 적에게 5DPS 화상 DoT를 추가로 적용합니다.',
+    effect: { type: 'druid_aura_burn', burnDps: 5 },
+  },
+  {
+    id: 'aug_storm_mantle',
+    name: 'Storm Mantle',         nameKo: '폭풍 망토',
+    type: 'augment', rarity: 'uncommon', cost: 3, icon: '⚡🛡️',
+    desc: 'Archer towers have +40% attack speed for 8s after any spell is cast.',
+    descKo: '주문 시전 직후 8초 동안 궁수 타워 공격 속도 +40%.',
+    effect: { type: 'spell_trigger_tower_haste', tag: 'archer', mult: 1.4, duration: 8000 },
+  },
+  {
+    id: 'aug_glacial_shards',
+    name: 'Glacial Shards',       nameKo: '빙하 파편',
+    type: 'augment', rarity: 'uncommon', cost: 2, icon: '❄️💣',
+    desc: 'Cannon AoE splash applies 15% slow for 1s.',
+    descKo: '대포 범위 스플래시 폭발이 15% 감속 1초를 추가로 적용합니다.',
+    effect: { type: 'cannon_splash_slow', slow: 0.15, duration: 1000 },
+  },
+
+  // ── 주문 (7) — 복합 효과 ──────────────────────────────
+  {
+    id: 'spell_thunder_hail',
+    name: 'Thunder Hail',         nameKo: '번개 우박',
+    type: 'spell', rarity: 'rare', cost: 4, icon: '⛈️',
+    desc: 'Deal 20 damage to all enemies and slow them 30% for 2s.',
+    descKo: '모든 적에게 20 피해 + 30% 감속 2초.',
+    effect: { type: 'damage_and_slow', amount: 20, slow: 0.30, duration: 2000 },
+  },
+  {
+    id: 'spell_druid_call',
+    name: 'Druid Call',           nameKo: '드루이드의 부름',
+    type: 'spell', rarity: 'uncommon', cost: 2, icon: '🌿',
+    desc: 'All towers gain +20% damage for the current wave only.',
+    descKo: '이번 웨이브 동안 모든 타워 피해 +20%.',
+    effect: { type: 'wave_dmg_buff', mult: 1.20 },
+  },
+  {
+    id: 'spell_cryo_shock',
+    name: 'Cryo Shock',           nameKo: '냉충격',
+    type: 'spell', rarity: 'uncommon', cost: 3, icon: '❄️⚡',
+    desc: 'Freeze all enemies for 2s, then deal 25 lightning damage to all.',
+    descKo: '모든 적을 2초 빙결 후 번개 피해 25.',
+    effect: { type: 'freeze_damage', duration: 2000, damage: 25 },
+  },
+  {
+    id: 'spell_ember_storm',
+    name: 'Ember Storm',          nameKo: '불씨 폭풍',
+    type: 'spell', rarity: 'uncommon', cost: 3, icon: '🌪️🔥',
+    desc: 'Apply burn DoT (8 DPS / 3s) to all enemies.',
+    descKo: '모든 적에게 화상 DoT (8DPS/3초) 부여.',
+    effect: { type: 'burn_all', burnDps: 8, burnDuration: 3000 },
+  },
+  {
+    id: 'spell_tactical_reposition',
+    name: 'Tactical Reposition',  nameKo: '전술 재배치',
+    type: 'spell', rarity: 'rare', cost: 3, icon: '🔄',
+    desc: 'Remove a placed tower and get a refund card of it in hand (no gold). Cannot be used during waves.',
+    descKo: '배치된 타워 1기를 철거하고 해당 소환 카드를 손패에 추가합니다 (골드 없이). 웨이브 중 사용 불가.',
+    effect: { type: 'tactical_reposition' },
+  },
+  {
+    id: 'spell_recycle',
+    name: 'Recycle',              nameKo: '재활용',
+    type: 'spell', rarity: 'common', cost: 1, icon: '♻️',
+    desc: 'Discard your hand and draw the same number of cards.',
+    descKo: '손패를 모두 버리고 같은 수만큼 드로우합니다.',
+    effect: { type: 'discard_draw_hand' },
+  },
+  {
+    id: 'spell_arcane_surge',
+    name: 'Arcane Surge',         nameKo: '비전 파동',
+    type: 'spell', rarity: 'rare', cost: 5, icon: '🔮✨',
+    desc: 'Draw 3 cards, gain 8 gold, and reset all tower cooldowns.',
+    descKo: '카드 3장 드로우 + 골드 8 획득 + 모든 타워 쿨다운 초기화.',
+    effect: { type: 'arcane_surge' },
+  },
+
   // ── CURSE CARDS (added to deck via events — never in shop/draft pool) ──
   {
     id: 'curse_dead_weight',
