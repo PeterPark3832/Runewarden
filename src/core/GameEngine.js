@@ -1030,6 +1030,7 @@ function onWaveCleared() {
 
 // ── 노드 선택 화면 ────────────────────────────────────
 function openNodeSelection() {
+  if (state.phase === 'over') return;
   state.phase = 'node';
   setWaveButton(i18n.t('btn_start_wave_n', state.wave + 1), true);
 
@@ -1046,6 +1047,7 @@ function openNodeSelection() {
 
 // ── 경로 분기 화면 (보스 웨이브 클리어 후) ─────────────
 function openPathFork() {
+  if (state.phase === 'over') return;
   state.phase = 'node';
   setWaveButton(i18n.t('btn_start_wave_n', state.wave + 1), true);
   const actNum = Math.ceil(state.wave / ACT_SIZE);
