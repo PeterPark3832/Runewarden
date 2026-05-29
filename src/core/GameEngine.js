@@ -30,6 +30,7 @@ import { shared } from './GameState.js';
 import { updateHUD, renderHand, onBossUpdate, updateShadowChargeHUD, showClearBanner, showAmbushBanner, updateMenuRank } from '../ui/HUDUpdater.js';
 import { showScreen, openWardenSelect, openDifficultySelect, openCodex, openDeckView } from '../ui/UIOrchestrator.js';
 import { registerDLC, hasDLC, clearDLCs } from '../systems/DLCRegistry.js';
+import { MAX_PLAYER_LEVEL, getWaveXpGrant, getLevelFromXp, XP_THRESHOLDS } from '../systems/PlayerLevelSystem.js';
 
 function rangeToPixel(hexRange) { return hexRange * HEX_W * 0.75; }
 
@@ -40,7 +41,7 @@ const MAX_WAVES_DLC2  = 31;  // + Act 5(8) — DLC Solar Dominion
 const ACT_SIZE    = 5;   // 액트당 웨이브 수
 const NEXUS_HP    = 3;
 const START_GOLD  = 25;
-const WAVE_GOLD   = 8;
+const WAVE_GOLD   = 6;
 const BOSS_WAVES_BASE = new Set([5, 10, 15]);
 const BOSS_WAVES_DLC  = new Set([5, 10, 15, 23]);       // DLC1 보스 웨이브
 const BOSS_WAVES_DLC2 = new Set([5, 10, 15, 23, 31]);   // DLC2 보스 웨이브 (Solar Titan: W28도 특수)
@@ -168,7 +169,7 @@ function saveCheckpoint() {
       augments: t.augments.map(a => JSON.parse(JSON.stringify(a))),
     }));
     const cp = {
-      v: 3, ts: Date.now(),
+      v: 4, ts: Date.now(),
       wardenId: state.warden.id,
       diffId:   state.difficulty.id,
       mapId:    state.mapId,
@@ -179,6 +180,8 @@ function saveCheckpoint() {
       gold:     state.gold,
       nexusHp:  state.nexusHp,
       maxNexusHp: state.maxNexusHp,
+      playerLevel: state.playerLevel,
+      playerXP:    state.playerXP,
       relicIds: state.relics.map(r => r.id),
       deck, towers,
       handIds: cardSystem.hand.map(c => c.id),
@@ -204,11 +207,19 @@ function _restoreFromSave(save) {
     save.towers.forEach(t => { t.starLevel = t.starLevel ?? 1; });
     console.info('[AutoSave] v2 migrated: starLevel=1 injected for all towers');
   }
+  // v3→v4 마이그레이션: playerLevel/XP 없는 세이브에 기본값 주입
+  if (save.v === 3) {
+    save.playerLevel = 1;
+    save.playerXP    = 0;
+    console.info('[AutoSave] v3 migrated: playerLevel=1, playerXP=0 injected');
+  }
   try {
     state.wave       = Math.max(0, Math.min(shared.maxWaves, save.wave));
     state.gold       = Math.max(0, save.gold);
     state.nexusHp    = Math.max(1, Math.min(save.maxNexusHp ?? save.nexusHp, save.nexusHp));
     state.maxNexusHp = Math.max(1, save.maxNexusHp ?? state.maxNexusHp);
+    state.playerLevel = Math.min(MAX_PLAYER_LEVEL, Math.max(1, save.playerLevel ?? 1));
+    state.playerXP    = Math.max(0, save.playerXP ?? 0);
     state.stats = { ...save.stats, towerTypesUsed: new Set(save.stats.towerTypesUsed) };
 
     // 유물 복원
@@ -331,6 +342,8 @@ function startRun() {
     challenges:     [...shared.selectedChallenges],
     challengeMods,
     ascMods,                     // 누적 핸디캡 mods
+    playerLevel: 1,
+    playerXP:    0,
     phase:       'pre',
     selectedCard: null,
     selectedTower: null,
@@ -991,6 +1004,17 @@ function onWaveCleared() {
     return;
   }
 
+  // 런 내 플레이어 XP 지급
+  const _waveXp   = getWaveXpGrant(state.wave);
+  state.playerXP += _waveXp;
+  const _newLevel  = getLevelFromXp(state.playerXP);
+  if (_newLevel > state.playerLevel) {
+    state.playerLevel = _newLevel;
+    log(i18n.t('log_level_up', state.playerLevel), 'gold');
+    audio.play('shop_buy');
+  }
+  updateHUD();
+
   // 웨이브 클리어 체크포인트 저장
   saveCheckpoint();
 
@@ -1270,6 +1294,26 @@ function onShopBuy(card) {
     spendGold(card._rerollCost);
     shopUI.updateGold(state.gold);
     audio.play('shop_reroll');
+    return;
+  }
+  if (card._addCardCost) {
+    spendGold(card._addCardCost);
+    shopUI.updateGold(state.gold);
+    return;
+  }
+  if (card._xpPurchase) {
+    spendGold(card.cost);
+    state.playerXP += card.xpAmount;
+    const newLevel = getLevelFromXp(state.playerXP);
+    if (newLevel > state.playerLevel) {
+      state.playerLevel = newLevel;
+      log(i18n.t('log_level_up', state.playerLevel), 'gold');
+      audio.play('shop_buy');
+    }
+    shopUI.updateGold(state.gold);
+    shopUI._refreshXpBtn?.();
+    updateHUD();
+    log(i18n.t('log_xp_purchased', card.xpAmount, state.playerXP), 'gold');
     return;
   }
   spendGold(card.cost);
@@ -1790,16 +1834,38 @@ function updateSellPanel() {
 
   const sellValue = Math.floor((t.investedGold ?? 0) * 0.5);
   const tName = i18n.lang === 'ko' ? (t.def.nameKo || t.def.name) : t.def.name;
+  const starStr  = '★'.repeat(t.starLevel);
+  const canUpg   = t.starLevel < 3;
+  const upgCost  = t.starLevel * 5;
+  const reqLv    = t.starLevel === 1 ? 3 : 6; // 2★: Lv3+, 3★: Lv6+
+  const canAffd  = state.gold >= upgCost;
+  const canUnlk  = (state.playerLevel ?? 1) >= reqLv;
+  const upgReady = canAffd && canUnlk;
+  const upgLabel = canUpg
+    ? (canUnlk ? `↑ ${upgCost}g (공격력+1.5배)` : `🔒 Lv${reqLv} 필요 (현재 Lv${state.playerLevel ?? 1})`)
+    : '';
   panel.classList.remove('hidden');
   panel.innerHTML = `
-    <div class="sell-panel-header">${t.def.icon ?? '🏰'} ${tName}</div>
+    <div class="sell-panel-header">${t.def.icon ?? '🏰'} ${tName} ${starStr}</div>
     <div class="sell-panel-aug">${t.augments.length > 0 ? `+${t.augments.length} ${i18n.t('tower_sell_aug')}` : ''}</div>
+    ${canUpg ? `<button id="btn-upgrade-tower" class="sell-panel-upgrade-btn"${upgReady ? '' : ' disabled'}>
+      ${upgLabel}
+    </button>` : '<div class="sell-panel-max">★★★ MAX</div>'}
     <div class="sell-panel-value">${i18n.t('tower_sell_value', sellValue)}</div>
     <div class="sell-panel-btns">
       <button id="btn-sell-tower">${i18n.t('tower_sell_btn')}</button>
       <button id="btn-sell-cancel">${i18n.t('tower_sell_cancel')}</button>
     </div>
   `;
+  panel.querySelector('#btn-upgrade-tower')?.addEventListener('click', () => {
+    if (!canUnlk || state.gold < upgCost || !towerSystem.upgradeStar(col, row)) return;
+    spendGold(upgCost);
+    renderer.setTowerStar(col, row, t.starLevel);
+    log(i18n.t('tower_star_upgraded', tName, t.starLevel), 'good');
+    audio.play('shop_buy');
+    updateHUD();
+    updateSellPanel();
+  });
   panel.querySelector('#btn-sell-tower').addEventListener('click', onSellTower);
   panel.querySelector('#btn-sell-cancel').addEventListener('click', () => {
     state.selectedTower = null;

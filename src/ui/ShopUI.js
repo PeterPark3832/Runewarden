@@ -1,6 +1,8 @@
 // 웨이브 간 상점 UI
 import { CARD_DEFS } from '../data/cards.js';
 import { i18n } from '../i18n/i18n.js';
+import { weightedPickRarity, MAX_PLAYER_LEVEL } from '../systems/PlayerLevelSystem.js';
+import { shared } from '../core/GameState.js';
 
 const SHOP_SIZE    = 3;   // 카드 슬롯 수
 const REROLL_COST  = 2;
@@ -43,10 +45,12 @@ export class ShopUI {
 
         <div id="shop-upgrade" class="shop-upgrade"></div>
         <div class="shop-footer">
+          <button id="shop-buy-xp" class="btn-secondary shop-xp-btn"></button>
           <button id="shop-reroll" class="btn-reroll">
             ${i18n.t('shop_reroll')} <span id="reroll-cost">(2g)</span>
             <span id="reroll-remaining" class="reroll-remain"></span>
           </button>
+          <button id="shop-add-card" class="btn-secondary shop-addcard-btn">카드+1 (8g)</button>
           <button id="shop-leave" class="btn-primary shop-leave-btn">
             ${i18n.t('shop_leave')}
           </button>
@@ -57,7 +61,9 @@ export class ShopUI {
       </div>
     `;
 
+    this.container.querySelector('#shop-buy-xp').addEventListener('click', () => this._buyXp());
     this.container.querySelector('#shop-reroll').addEventListener('click', () => this._reroll());
+    this.container.querySelector('#shop-add-card').addEventListener('click', () => this._addCard());
     this.container.querySelector('#shop-leave').addEventListener('click', () => this.onLeave());
   }
 
@@ -79,6 +85,8 @@ export class ShopUI {
     this._refreshGold();
     this._refreshRerollBtn();
     this._renderUpgrades();
+    this._refreshXpBtn();
+    this._refreshAddCardBtn();
 
     // 입장 애니메이션
     const box = this.container.querySelector('.shop-box');
@@ -98,6 +106,8 @@ export class ShopUI {
     this._refreshGold();
     this._refreshCardAffordability();
     this._renderUpgrades();
+    this._refreshXpBtn();
+    this._refreshAddCardBtn();
   }
 
   // ── 카드 진열 ─────────────────────────────────────
@@ -135,21 +145,37 @@ export class ShopUI {
     this._offered = [];
     const used = new Set();
     // Wave 16+: 마지막 슬롯은 Elite(레어) 전용으로 예약 — 기존 슬롯은 size-1개
-    const regularSize = (this._waveNum >= 16 && size >= 4) ? size - 1 : size;
+    const _plevel     = shared.state?.playerLevel ?? 1;
+    const _commonOnly = this._challengeMods?.maxCardRarity === 'common';
+    const regularSize = (this._waveNum >= 16 && size >= 4 && !_commonOnly) ? size - 1 : size;
+    // 레벨별 첫 슬롯 보장 등급 (common_only 챌린지 제외)
+    const _guaranteedRarity = (!_commonOnly && _plevel >= 6) ? 'rare'
+      : (!_commonOnly && _plevel >= 4) ? 'uncommon' : null;
+
     for (let i = 0; i < regularSize && pool.length > 0; i++) {
-      // 같은 카드 ID 중복 방지
-      let idx, card, tries = 0;
-      do {
-        idx  = Math.floor(Math.random() * pool.length);
-        card = pool[idx];
-        tries++;
-      } while (used.has(card.id) && tries < 20);
+      let card;
+      let targetRarity;
+      if (_commonOnly) {
+        targetRarity = 'common';
+      } else if (i === 0 && _guaranteedRarity) {
+        // 첫 슬롯: 레벨 보장 (Lv4+: uncommon, Lv6+: rare)
+        targetRarity = _guaranteedRarity;
+      } else {
+        targetRarity = weightedPickRarity(_plevel);
+      }
+      // targetRarity 풀에서 선택, 없으면 전체 풀로 폴백
+      const rarityPool = pool.filter(c => c.rarity === targetRarity && !used.has(c.id));
+      const pickPool   = rarityPool.length > 0 ? rarityPool : pool.filter(c => !used.has(c.id));
+      if (pickPool.length === 0) break;
+      card = pickPool[Math.floor(Math.random() * pickPool.length)];
+      if (!card) break;
       used.add(card.id);
-      pool.splice(idx, 1);
+      const _idx = pool.indexOf(card);
+      if (_idx !== -1) pool.splice(_idx, 1);
       this._offered.push({ ...card, uid: Math.random() });
     }
     // Wave 16+ Elite 슬롯: rare 카드 1장, 비용 +7g (최소 12g)
-    if (this._waveNum >= 16 && size >= 4) {
+    if (this._waveNum >= 16 && size >= 4 && !_commonOnly) {
       const rarePool = CARD_DEFS.filter(c => c.rarity === 'rare' && !used.has(c.id));
       if (rarePool.length > 0) {
         const pick = rarePool[Math.floor(Math.random() * rarePool.length)];
@@ -265,6 +291,7 @@ export class ShopUI {
     btn.disabled = this._gold < cost;
     const costSpan = this.container.querySelector('#reroll-cost');
     if (costSpan) costSpan.textContent = `(${cost}g)`;
+    this._refreshXpBtn();
   }
 
   _refreshCardAffordability() {
@@ -276,61 +303,69 @@ export class ShopUI {
     return Math.min(2 * this._rerolls + 1, 10);
   }
 
-  _renderUpgrades() {
-    const panel = this.container.querySelector('#shop-upgrade');
-    if (!panel) return;
-    panel.innerHTML = '';
-    if (!this._placedTowers?.length) { panel.style.display = 'none'; return; }
-    panel.style.display = '';
+  _addCard() {
+    const ADD_COST = 8;
+    if (this._gold < ADD_COST) return;
+    const usedIds = new Set(this._offered.map(c => c.id));
+    const _plevel = shared.state?.playerLevel ?? 1;
+    const _commonOnly = this._challengeMods?.maxCardRarity === 'common';
 
-    const title = document.createElement('div');
-    title.className = 'shop-upgrade-title';
-    title.textContent = i18n.t('shop_upgrade_tower');
-    panel.appendChild(title);
+    let pool = this._unlockedIds
+      ? CARD_DEFS.filter(c => {
+          const aU = this._unlockedIds.includes('__all_uncommon__');
+          const aR = this._unlockedIds.includes('__all_rare__');
+          return this._unlockedIds.includes(c.id) || (aU && c.rarity === 'uncommon') || (aR && c.rarity === 'rare');
+        })
+      : [...CARD_DEFS];
+    if (_commonOnly) pool = pool.filter(c => c.rarity === 'common');
+    const available = pool.filter(c => !usedIds.has(c.id));
+    if (available.length === 0) return;
 
-    // 같은 종류+등급 타워를 묶어서 표시
-    const groupMap = new Map();
-    for (const t of this._placedTowers) {
-      const key = `${t.def.id}-${t.starLevel}`;
-      if (!groupMap.has(key)) groupMap.set(key, []);
-      groupMap.get(key).push(t);
-    }
+    const targetRarity = _commonOnly ? 'common' : weightedPickRarity(_plevel);
+    const candidates = available.filter(c => c.rarity === targetRarity);
+    const pick = candidates.length > 0
+      ? candidates[Math.floor(Math.random() * candidates.length)]
+      : available[Math.floor(Math.random() * available.length)];
 
-    for (const towers of groupMap.values()) {
-      const t      = towers[0];
-      const count  = towers.length;
-      const isMax  = t.starLevel >= 3;
-      const cost   = t.starLevel === 1 ? 5 : 12;
-      const name   = i18n.lang === 'ko' ? (t.def.nameKo ?? t.def.name) : t.def.name;
-      const starStr = '★'.repeat(t.starLevel);
-
-      const row = document.createElement('div');
-      row.className = 'shop-upgrade-row';
-      const btn = document.createElement('button');
-      btn.className = 'shop-upgrade-btn';
-      btn.disabled  = isMax || this._gold < cost;
-      const nextMult = isMax ? '' : (t.starLevel === 1 ? ' ×1.4' : ' ×1.6');
-      btn.textContent = isMax
-        ? i18n.t('shop_tower_max_star')
-        : `${i18n.t('shop_tower_upgrade_btn', cost)}${nextMult}`;
-
-      const label = document.createElement('span');
-      label.className = 'shop-upgrade-name';
-      label.textContent = count > 1
-        ? `${name} ${starStr} ×${count}`
-        : `${name} ${starStr}`;
-
-      if (!isMax) {
-        btn.addEventListener('click', () => {
-          if (this.onUpgradeTower?.(t.col, t.row, cost)) {
-            t.starLevel++;
-            this._renderUpgrades();
-          }
-        });
-      }
-      row.appendChild(label);
-      row.appendChild(btn);
-      panel.appendChild(row);
-    }
+    this.onBuy({ _addCardCost: ADD_COST });
+    this._offered.push({ ...pick, uid: Math.random() });
+    this._renderCards();
+    this._refreshAddCardBtn();
   }
+
+  _refreshAddCardBtn() {
+    const btn = this.container.querySelector('#shop-add-card');
+    if (!btn) return;
+    btn.disabled = this._gold < 8;
+    btn.style.opacity = this._gold < 8 ? '0.45' : '1';
+  }
+
+  _buyXp() {
+    const cost     = 5;
+    const xpAmount = 10;
+    if (this._gold < cost) return;
+    // onBuy → onShopBuy → spendGold → shopUI.updateGold(state.gold) 순서로 실행됨
+    // updateGold()가 this._gold를 state.gold로 재설정하므로 여기서 차감 금지
+    this.onBuy({ _xpPurchase: true, cost, xpAmount });
+    this._refreshXpBtn();
+  }
+
+  _refreshXpBtn() {
+    const btn = this.container.querySelector('#shop-buy-xp');
+    if (!btn) return;
+    const level = shared.state?.playerLevel ?? 1;
+    const atMax = level >= MAX_PLAYER_LEVEL;
+    btn.disabled = this._gold < 5 || atMax;
+    btn.textContent = atMax
+      ? i18n.t('shop_xp_max')
+      : i18n.t('shop_buy_xp', 10, 5);
+  }
+
+  _renderUpgrades() {
+    // 타워 업그레이드는 맵에서 타워 클릭으로 처리 — 상점 패널 비활성화
+    const panel = this.container.querySelector('#shop-upgrade');
+    if (panel) panel.style.display = 'none';
+  }
+
 }
+
