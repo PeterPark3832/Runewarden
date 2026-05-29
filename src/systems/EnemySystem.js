@@ -1065,10 +1065,16 @@ export class EnemySystem {
     });
     g.appendChild(hpBar);
 
+    // 상태이상 뱃지 컨테이너 (HP 바 위)
+    const badgesEl = svgEl('g', { class: 'status-badges' });
+    g.appendChild(badgesEl);
+
     g.setAttribute('transform', `translate(${start.x},${start.y})`);
     this.layer.appendChild(g);
     enemy.el = g;
     enemy.hpBar = hpBar;
+    enemy.badgesEl = badgesEl;
+    enemy._statusKey = '';
     this.enemies.push(enemy);
   }
 
@@ -1080,10 +1086,40 @@ export class EnemySystem {
     e.hpBar.setAttribute('fill', ratio > 0.5 ? '#2ecc71' : ratio > 0.25 ? '#f39c12' : '#e74c3c');
   }
 
+  _refreshStatusBadges(e) {
+    if (!e.badgesEl) return;
+    const badges = [];
+    if ((e.burns?.length ?? 0) > 0)      badges.push({ fill: '#FF8C00', icon: '🔥' }); // 🔥
+    if (e.slowTimer > 0)                 badges.push({ fill: '#7EC8E3', icon: '❅' });        // ❅
+    if ((e.solarDots?.length ?? 0) > 0)  badges.push({ fill: '#F5C518', icon: '★' });        // ★
+    if (e.stunned > 0)                   badges.push({ fill: '#FFD700', icon: '✶' });        // ✶
+    if (e.frozen > 0)                    badges.push({ fill: '#B0E0FF', icon: '✳' });        // ✳
+
+    const key = badges.map(b => b.icon).join('');
+    if (key === e._statusKey) return;
+    e._statusKey = key;
+
+    while (e.badgesEl.firstChild) e.badgesEl.removeChild(e.badgesEl.firstChild);
+    const y = -e.size - 13;
+    badges.forEach((b, i) => {
+      const x = (i - (badges.length - 1) / 2) * 11;
+      const circ = svgEl('circle', { cx: x.toFixed(1), cy: y.toFixed(1), r: '5', fill: b.fill, opacity: '0.92' });
+      const txt  = svgEl('text', {
+        x: x.toFixed(1), y: y.toFixed(1),
+        'text-anchor': 'middle', 'dominant-baseline': 'central',
+        'font-size': '6', 'pointer-events': 'none',
+      });
+      txt.textContent = b.icon;
+      e.badgesEl.appendChild(circ);
+      e.badgesEl.appendChild(txt);
+    });
+  }
+
   _updateEnemySVG(e) {
     if (!e.el) return;
     e.el.setAttribute('transform', `translate(${e.x.toFixed(1)},${e.y.toFixed(1)})`);
     this._updateHpBar(e);
+    this._refreshStatusBadges(e);
 
     if (e.bodyEl) {
       const wantFill = e.slowTimer > 0 ? '#7EC8E3' : e.color;
@@ -1145,6 +1181,16 @@ export class EnemySystem {
 
     const cx = e.x, cy = e.y;
 
+    // 원소별 파티클 색상 팔레트
+    const ELEMENT_COLORS = {
+      fire:      ['#FF8C00', '#FF4500', '#FFD700'],
+      frost:     ['#7EC8E3', '#B0E0FF', '#DDEEFF'],
+      lightning: ['#FFD700', '#00FFFF', '#FFFFFF'],
+      shadow:    ['#9B59B6', '#7D3C98', '#D7BDE2'],
+      solar:     ['#F5C518', '#E8791A', '#FFF3CD'],
+    };
+    const palette = ELEMENT_COLORS[e._killingElement] ?? null;
+
     // 1) 몸통 팽창 후 소멸
     el.style.transformOrigin = `${cx}px ${cy}px`;
     el.style.animation = 'enemyDeath 0.4s ease-out forwards';
@@ -1160,11 +1206,12 @@ export class EnemySystem {
       const dx    = (Math.cos(angle) * dist).toFixed(1);
       const dy    = (Math.sin(angle) * dist).toFixed(1);
       const r     = (isBig ? 3.5 : 2.0) + Math.random() * (isBig ? 3.0 : 2.2);
+      const fill  = palette ? palette[i % palette.length] : e.color;
 
       const pid = `particle-${this._idCounter}-${i}`;
       const particle = svgEl('circle', {
         id: pid, cx: cx.toFixed(1), cy: cy.toFixed(1), r: r.toFixed(1),
-        fill: e.color, opacity: 0.9,
+        fill, opacity: 0.9,
         'pointer-events': 'none',
         style: `--dx:${dx}px;--dy:${dy}px;animation:${anim} ${particleDur}s ease-out forwards`,
       });
@@ -1369,6 +1416,7 @@ export class EnemySystem {
     }
 
     if (e.hp <= 0) {
+      e._killingElement = dmgType;
       // Cursed Wave 'revive': 엘리트 처치 시 HP 30%로 1회 부활
       if (this._cursedWaveRevive && e.isElite && !e._revived && !e.isSplitChild) {
         e.hp      = Math.ceil(e.maxHp * 0.30);
