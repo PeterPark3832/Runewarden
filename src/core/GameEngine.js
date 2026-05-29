@@ -277,6 +277,20 @@ function _restoreFromSave(save) {
   }
 }
 
+// ── 무한 모드 리더보드 ────────────────────────────────
+const ENDLESS_LB_KEY = 'rw_endless_leaderboard_v1';
+function _saveEndlessRecord(wardenId, wave, diffId) {
+  try {
+    const lb = JSON.parse(localStorage.getItem(ENDLESS_LB_KEY) ?? '[]');
+    lb.push({ wardenId, wave, diffId, ts: Date.now() });
+    lb.sort((a, b) => b.wave - a.wave);
+    localStorage.setItem(ENDLESS_LB_KEY, JSON.stringify(lb.slice(0, 20)));
+  } catch {}
+}
+export function getEndlessLeaderboard() {
+  try { return JSON.parse(localStorage.getItem(ENDLESS_LB_KEY) ?? '[]'); } catch { return []; }
+}
+
 // ── 런 초기화 ─────────────────────────────────────────
 function startRun() {
   // 모든 오버레이 즉시 강제 닫기
@@ -1009,7 +1023,16 @@ function onWaveCleared() {
   showClearBanner(state.wave, false, isActEnd);
 
   if (isFinal) {
-    setTimeout(() => endGame(true), 2000);
+    if (state.endlessMode) {
+      // 무한 모드: 계속 진행, HP 스케일만 누적
+      state.wave++;
+      state._endlessMaxWave = Math.max(state._endlessMaxWave ?? 0, state.wave - 1);
+      _saveEndlessRecord(state.warden?.id, state._endlessMaxWave, state.difficulty?.id);
+      const delay = 1400;
+      _waveClearedTimer = setTimeout(() => openNodeSelection(), delay);
+    } else {
+      setTimeout(() => endGame(true), 2000);
+    }
     return;
   }
 
