@@ -985,7 +985,11 @@ function onWaveCleared() {
 
   log(i18n.t('log_wave_clear', state.wave, totalWaveGold), 'good');
   audio.play(isFinal ? 'victory' : 'wave_clear');
-  if (!isFinal) music.crossfadeTo('game');
+  if (!isFinal) {
+    // Act 3 (Wave 11+): intense, foreboding; Act 2 (Wave 6–10): darker/faster; Act 1: base game
+    const bgmTrack = state.wave >= 11 ? 'act3' : state.wave >= 6 ? 'act2' : 'game';
+    music.crossfadeTo(bgmTrack);
+  }
   // QW#1: 웨이브 클리어 골드 플래시
   const mapArea = document.getElementById('map-area');
   if (mapArea) {
@@ -1625,6 +1629,10 @@ function endGame(victory) {
     diffIcon:     state.difficulty.icon,
     diffName:    i18n.t('diff_' + state.difficulty.id),
   });
+
+  // 승리 시 victory BGM, 패배 시 음악 정지
+  if (victory) music.crossfadeTo('victory');
+  else         music.stop(false);
 
   // 기존 게임오버 화면 대신 요약 화면 표시
   summaryUI.show(runStats, { ...metaResult, runHistory: meta.runHistory }, {

@@ -517,9 +517,12 @@ class MusicSystem {
     );
 
     const tracks = {
-      menu:  () => this._buildMenuTrack(),
-      game:  () => this._buildGameTrack(),
-      boss:  () => this._buildBossTrack(),
+      menu:    () => this._buildMenuTrack(),
+      game:    () => this._buildGameTrack(),
+      boss:    () => this._buildBossTrack(),
+      act2:    () => this._buildAct2Track(),
+      act3:    () => this._buildAct3Track(),
+      victory: () => this._buildVictoryTrack(),
     };
     tracks[trackName]?.();
   }
@@ -724,6 +727,222 @@ class MusicSystem {
     shriek.connect(sLPF); sLPF.connect(sG);
     this._lfo({ rate: 0.07, depth: 0.022, target: sG.gain });
     shriek.start();
+  }
+
+  // ══════════════════════════════════════════════════════
+  //  TRACK: ACT 2 — 어둡고 긴박한 전투 루프
+  //  Key: D minor | BPM: ~90 | Loop: ~14s
+  // ══════════════════════════════════════════════════════
+  _buildAct2Track() {
+    const ctx = this._ctx;
+
+    // 1) 빠른 톱니파 드론 (90 BPM 긴장감)
+    const drone = this._osc({ freq: 73.4, type: 'sawtooth' }); // D2
+    const dLPF  = this._lpf(220, 0.9);
+    const dGain = this._g(0.10);
+    drone.connect(dLPF); dLPF.connect(dGain);
+    this._lfo({ rate: 0.55, depth: 0.05, target: dGain.gain }); // 빠른 LFO
+    drone.start();
+
+    // 2) 단5도 불협음 레이어 (긴장감 증폭)
+    const disso = this._osc({ freq: 110.0, type: 'square', detune: -10 }); // A2 플랫 (단2도 하)
+    const disLPF = this._lpf(300, 1.2);
+    const disGain = this._g(0.05);
+    disso.connect(disLPF); disLPF.connect(disGain);
+    this._lfo({ rate: 0.28, depth: 0.03, target: disGain.gain });
+    disso.start();
+
+    // 3) 90 BPM 리듬 (0.667s 간격, 4/4박)
+    const beatInterval = 0.667; // 90 BPM
+    const scheduleBeat = () => {
+      const now = ctx.currentTime;
+      for (let i = 0; i < 16; i++) {
+        const t   = now + i * beatInterval;
+        const acc = i % 4 === 0; // 강박
+        const sub = i % 2 === 0; // 2분 박
+
+        const o   = ctx.createOscillator();
+        const env = ctx.createGain();
+        o.frequency.setValueAtTime(acc ? 90 : 65, t);
+        o.frequency.exponentialRampToValueAtTime(28, t + 0.12);
+        o.type = 'sine';
+        o.connect(env); env.connect(this._musicGain);
+        o.start(t); o.stop(t + 0.18);
+        env.gain.setValueAtTime(acc ? 0.26 : (sub ? 0.14 : 0.08), t);
+        env.gain.exponentialRampToValueAtTime(0.0001, t + 0.16);
+        this._nodes.push(o, env);
+      }
+      const loopMs = 16 * beatInterval * 1000;
+      const tid = setTimeout(scheduleBeat, loopMs - 300);
+      this._timers.push(tid);
+    };
+    scheduleBeat();
+
+    // 4) 단조 오스티나토 — Dm 코드 긴박한 모티프 (8분음표)
+    // D3-F3-A3-C4 단조 아르페지오 반복
+    const ostNotes = [146.8, 174.6, 220.0, 261.6, 220.0, 174.6, 146.8, 110.0];
+    const ostInterval = 0.333; // 90 BPM 8분음표
+    const scheduleOst = () => {
+      const now = ctx.currentTime;
+      ostNotes.forEach((freq, i) => {
+        const t = now + i * ostInterval;
+        this._note({ freq, vol: 0.042, dur: 0.22, attack: 0.015, t0: t, type: 'triangle' });
+      });
+      const tid = setTimeout(scheduleOst, ostNotes.length * ostInterval * 1000 - 200);
+      this._timers.push(tid);
+    };
+    scheduleOst();
+  }
+
+  // ══════════════════════════════════════════════════════
+  //  TRACK: ACT 3 — 강렬하고 불길한 전투 루프
+  //  Key: D minor (added b9 dissonance) | BPM: ~100 | Loop: ~12.8s
+  // ══════════════════════════════════════════════════════
+  _buildAct3Track() {
+    const ctx = this._ctx;
+
+    // 1) 깊고 무거운 드론 3중 레이어 (D minor + 불협 b9)
+    const drones = [
+      { freq: 73.4,  type: 'sawtooth', vol: 0.13 }, // D2
+      { freq: 77.8,  type: 'square',   vol: 0.07 }, // Eb2 (단2도 위 — 강한 불협)
+      { freq: 110.0, type: 'sine',     vol: 0.06 }, // A2
+    ];
+    for (const { freq, type, vol } of drones) {
+      const o   = this._osc({ freq, type });
+      const lpf = this._lpf(250, 1.0);
+      const g   = this._g(vol);
+      o.connect(lpf); lpf.connect(g);
+      this._lfo({ rate: 0.45 + Math.random() * 0.2, depth: 0.055, target: g.gain });
+      o.start();
+    }
+
+    // 2) 빠른 트레몰로 패드 (공포감)
+    const trem = this._osc({ freq: 146.8, type: 'triangle' }); // D3
+    const tLPF = this._lpf(500, 2);
+    const tG   = this._g(0.065);
+    trem.connect(tLPF); tLPF.connect(tG);
+    this._lfo({ rate: 8.0, depth: 0.06, target: tG.gain }); // 매우 빠른 트레몰로
+    trem.start();
+
+    // 3) 100 BPM 무거운 드럼 패턴 (0.6s 간격)
+    const beatInterval = 0.6; // 100 BPM
+    const pattern = [0, 0.6, 1.2, 1.5, 1.8, 2.4, 3.0, 3.3]; // 16분음표 혼합 패턴
+    const scheduleHits = () => {
+      const now = ctx.currentTime;
+      for (let rep = 0; rep < 2; rep++) {
+        const offset = rep * (beatInterval * 8);
+        for (const beat of pattern) {
+          const t   = now + offset + beat;
+          const acc = beat === 0 || beat === (rep === 0 ? 0 : 0);
+          const o   = ctx.createOscillator();
+          const env = ctx.createGain();
+          o.frequency.setValueAtTime(acc ? 100 : 70, t);
+          o.frequency.exponentialRampToValueAtTime(25, t + 0.1);
+          o.type = 'sine';
+          o.connect(env); env.connect(this._musicGain);
+          o.start(t); o.stop(t + 0.15);
+          env.gain.setValueAtTime(acc ? 0.30 : 0.18, t);
+          env.gain.exponentialRampToValueAtTime(0.0001, t + 0.13);
+          this._nodes.push(o, env);
+        }
+      }
+      const loopMs = 2 * beatInterval * 8 * 1000;
+      const tid = setTimeout(scheduleHits, loopMs - 400);
+      this._timers.push(tid);
+    };
+    scheduleHits();
+
+    // 4) 불협 멜로디 오스티나토 (반음 충돌 포함)
+    // D3-Eb3-D3-A3-G#3-A3-D3-C4 (b9/b2 크로매틱 긴장)
+    const ostNotes = [146.8, 155.6, 146.8, 220.0, 207.7, 220.0, 146.8, 261.6];
+    const ostInterval = 0.3; // 100 BPM 8분음표
+    const scheduleOst = () => {
+      const now = ctx.currentTime;
+      ostNotes.forEach((freq, i) => {
+        const t = now + i * ostInterval;
+        this._note({ freq, vol: 0.045, dur: 0.20, attack: 0.01, t0: t, type: 'sawtooth' });
+      });
+      const tid = setTimeout(scheduleOst, ostNotes.length * ostInterval * 1000 - 200);
+      this._timers.push(tid);
+    };
+    scheduleOst();
+
+    // 5) 고음 불협 페달 (으스스한 분위기)
+    const shriek = this._osc({ freq: 293.7, type: 'sine', detune: 20 }); // D4 디튠
+    const sLPF   = this._lpf(600, 4);
+    const sG     = this._g(0.022);
+    shriek.connect(sLPF); sLPF.connect(sG);
+    this._lfo({ rate: 0.09, depth: 0.018, target: sG.gain });
+    shriek.start();
+  }
+
+  // ══════════════════════════════════════════════════════
+  //  TRACK: VICTORY — 승리 팡파르 루프
+  //  Key: F major (따뜻하고 밝음) | BPM: ~80 | Loop: ~12s
+  // ══════════════════════════════════════════════════════
+  _buildVictoryTrack() {
+    const ctx = this._ctx;
+
+    // 1) 따뜻한 패드 베이스 (F2 = 87.3 Hz)
+    const droneFreqs = [87.3, 130.8, 174.6]; // F2, C3, F3
+    for (const freq of droneFreqs) {
+      const o   = this._osc({ freq, type: 'sine' });
+      const lpf = this._lpf(600, 0.7);
+      const g   = this._g(freq === 87.3 ? 0.10 : 0.05);
+      o.connect(lpf); lpf.connect(g);
+      this._lfo({ rate: 0.20, depth: 0.025, target: g.gain }); // 부드러운 진동
+      o.start();
+    }
+
+    // 2) 빛나는 상위 하모닉스 패드 (C4)
+    const padO   = this._osc({ freq: 261.6, type: 'triangle', detune: 6 }); // C4
+    const padLPF = this._lpf(1200, 1.0);
+    const padG   = this._g(0.055);
+    padO.connect(padLPF); padLPF.connect(padG);
+    this._lfo({ rate: 0.14, depth: 0.03, target: padG.gain });
+    padO.start();
+
+    // 3) 80 BPM 경쾌한 리듬 (0.75s 간격, 가볍게)
+    const beatInterval = 0.75; // 80 BPM
+    const scheduleBeat = () => {
+      const now = ctx.currentTime;
+      for (let i = 0; i < 8; i++) {
+        const t   = now + i * beatInterval;
+        const acc = i % 4 === 0;
+
+        const o   = ctx.createOscillator();
+        const env = ctx.createGain();
+        o.frequency.setValueAtTime(acc ? 130.8 : 87.3, t); // C3 / F2
+        o.frequency.exponentialRampToValueAtTime(50, t + 0.18);
+        o.type = 'sine';
+        o.connect(env); env.connect(this._musicGain);
+        o.start(t); o.stop(t + 0.22);
+        env.gain.setValueAtTime(acc ? 0.18 : 0.10, t);
+        env.gain.exponentialRampToValueAtTime(0.0001, t + 0.20);
+        this._nodes.push(o, env);
+      }
+      const loopMs = 8 * beatInterval * 1000;
+      const tid = setTimeout(scheduleBeat, loopMs - 300);
+      this._timers.push(tid);
+    };
+    scheduleBeat();
+
+    // 4) 밝은 F장조 아르페지오 멜로디
+    // F4-A4-C5-F5-C5-A4-G4-A4 (따뜻한 밝은 진행)
+    const arpNotes    = [349.2, 440.0, 523.3, 698.5, 523.3, 440.0, 392.0, 440.0];
+    const arpInterval = 0.75; // 80 BPM 4분음표
+    const scheduleArp = (startOffset = 0) => {
+      const now = ctx.currentTime;
+      arpNotes.forEach((freq, i) => {
+        const t  = now + startOffset + i * arpInterval;
+        const hi = i === 3 || i === 7;
+        this._note({ freq, vol: hi ? 0.072 : 0.048, dur: 0.6, attack: 0.04, t0: t, type: 'sine' });
+      });
+      const loopLen = arpNotes.length * arpInterval;
+      const tid = setTimeout(() => scheduleArp(), (startOffset + loopLen) * 1000 - 500);
+      this._timers.push(tid);
+    };
+    scheduleArp(0.3);
   }
 }
 
