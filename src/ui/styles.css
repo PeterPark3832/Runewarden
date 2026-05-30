@@ -1298,6 +1298,41 @@ kbd {
 }
 #btn-sell-cancel:hover { color: var(--text); }
 
+/* ── 타워 업그레이드 버튼 ───────────────────────────── */
+.sell-panel-upgrade-btn {
+  font-family: 'Cinzel', serif;
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  padding: 0.45rem 0.8rem;
+  width: 100%;
+  border-radius: 6px;
+  cursor: pointer;
+  background: linear-gradient(135deg, #6a4a00, #c8860a);
+  border: 1px solid #e8a020;
+  color: #fff8e1;
+  transition: filter 0.15s, background 0.15s;
+  white-space: nowrap;
+}
+.sell-panel-upgrade-btn:hover:not(:disabled) {
+  filter: brightness(1.18);
+  background: linear-gradient(135deg, #7a5500, #e09a10);
+}
+.sell-panel-upgrade-btn:disabled {
+  background: rgba(60,40,0,0.45);
+  border-color: rgba(160,100,0,0.4);
+  color: rgba(200,170,80,0.55);
+  cursor: not-allowed;
+}
+.sell-panel-max {
+  font-family: 'Cinzel', serif;
+  font-size: 0.75rem;
+  color: var(--gold);
+  letter-spacing: 0.06em;
+  padding: 0.3rem 0;
+  text-align: center;
+}
+
 #wave-clear-banner {
   position: fixed;
   top: 50%;
