@@ -235,9 +235,13 @@ const BASE_HANDLERS = {
   },
 
   shadow_nova(effect, { enemySystem, log, i18n }) {
-    const enemies = [...enemySystem.enemies];
+    const MAX_NOVA_TARGETS = 20;
+    const targets = [...enemySystem.enemies]
+      .filter(e => !enemySystem._pendingRemove?.has(e.id))
+      .sort((a, b) => b.waypointIndex - a.waypointIndex || b.progress - a.progress)
+      .slice(0, MAX_NOVA_TARGETS);
     let totalDmg = 0;
-    for (const e of enemies) {
+    for (const e of targets) {
       const missing = Math.max(0, e.maxHp - e.hp);
       const dmg = Math.max(1, Math.ceil(missing * effect.pct));
       enemySystem.dealDamage(e.id, dmg, 'shadow');
@@ -258,9 +262,13 @@ const BASE_HANDLERS = {
   },
 
   soul_feast(effect, { enemySystem, addGold, log, i18n }) {
+    const MAX_FEAST_TARGETS = 8;
     const threshold = effect.hpThreshold ?? 0.25;
     const goldEach  = effect.goldPerKill ?? 3;
-    const targets   = enemySystem.enemies.filter(e => e.hp / e.maxHp <= threshold);
+    const targets = [...enemySystem.enemies]
+      .filter(e => !enemySystem._pendingRemove?.has(e.id) && e.hp / e.maxHp <= threshold)
+      .sort((a, b) => b.waypointIndex - a.waypointIndex)
+      .slice(0, MAX_FEAST_TARGETS);
     let gained = 0;
     for (const e of targets) {
       enemySystem.dealDamage(e.id, e.hp + 9999);
@@ -433,87 +441,6 @@ const BASE_HANDLERS = {
     // 실제 철거 선택은 GameEngine의 타워 클릭 흐름에 위임
     state._tacticalRepositionPending = true;
     log('전술 재배치: 타워를 클릭하여 회수하세요.', 'good');
-  },
-
-  // ── DLC 3 Storm Imperium 핸들러 ─────────────────────
-  thunderstrike(effect, { enemySystem, log }) {
-    const dmg = effect.damage ?? 80;
-    const groundDur = effect.groundingDuration ?? 3000;
-    let hit = 0;
-    for (const e of [...(enemySystem?.enemies ?? [])]) {
-      if (e.flying || enemySystem._groundedSet?.has(e.id)) {
-        enemySystem.dealDamage(e.id, dmg);
-        enemySystem.applyGrounding?.(e.id, groundDur);
-        hit++;
-      }
-    }
-    enemySystem._flushPendingRemovals?.();
-    log(`⚡ 낙뢰: 비행 적 ${hit}마리에 ${dmg} 피해 + ${groundDur / 1000}초 착지!`, 'good');
-  },
-
-  wind_shear(effect, { enemySystem, log }) {
-    const slowAmt = effect.slowAmount ?? 0.5;
-    const dur     = effect.duration ?? 3000;
-    for (const e of (enemySystem?.enemies ?? [])) {
-      if (!e.windImmune) enemySystem.applySlow(e.id, slowAmt, dur);
-    }
-    log(`🌬️ 바람 가르기: 모든 적 ${Math.round(slowAmt * 100)}% 감속 ${dur / 1000}초!`, 'good');
-  },
-
-  gold_per_flying(effect, { enemySystem, addGold, log }) {
-    const mult = effect.mult ?? 3;
-    const flyingCount = (enemySystem?.enemies ?? []).filter(e => e.flying || enemySystem._groundedSet?.has(e.id)).length;
-    const gained = Math.min(flyingCount * mult, effect.cap ?? 36);
-    addGold(gained, null);
-    log(`🌩️ 폭풍 세금: 비행 적 ${flyingCount}마리 × ${mult}g = ${gained}g!`, 'gold');
-  },
-
-  grounding_bolt(effect, { enemySystem, log }) {
-    const dmg      = effect.damage ?? 60;
-    const groundDur = effect.groundingDuration ?? 5000;
-    const lead = enemySystem?.getLeadEnemy?.(0, 0, Infinity, false, true);
-    if (!lead) { log('착지 볼트: 대상 없음.', 'bad'); return; }
-    enemySystem.dealDamage(lead.id, dmg);
-    enemySystem.applyGrounding?.(lead.id, groundDur);
-    enemySystem._flushPendingRemovals?.();
-    log(`⚡ 착지 볼트: 선두 적 ${dmg} 피해 + ${groundDur / 1000}초 착지!`, 'good');
-  },
-
-  cyclone_burst(effect, { enemySystem, log }) {
-    const baseDmg   = effect.damage ?? 35;
-    const flyingMult = effect.flyingMult ?? 2;
-    for (const e of [...(enemySystem?.enemies ?? [])]) {
-      const isFlying = e.flying || enemySystem._groundedSet?.has(e.id);
-      enemySystem.dealDamage(e.id, isFlying ? baseDmg * flyingMult : baseDmg);
-    }
-    enemySystem._flushPendingRemovals?.();
-    log(`🌪️ 회오리 폭발: 전체 ${baseDmg} 피해 (비행 적 ×${flyingMult})!`, 'good');
-  },
-
-  lightning_storm(effect, { enemySystem, log }) {
-    const groundDur = effect.groundingDuration ?? 5000;
-    const dotDps    = effect.windDotDps ?? 20;
-    const dotDur    = effect.windDotDuration ?? 5000;
-    let count = 0;
-    for (const e of (enemySystem?.enemies ?? [])) {
-      if (e.flying || enemySystem._groundedSet?.has(e.id)) {
-        enemySystem.applyGrounding?.(e.id, groundDur);
-        if (!e.windImmune) enemySystem.applyWindDot?.(e.id, dotDps, dotDur);
-        count++;
-      }
-    }
-    log(`⛈️ 번개 폭풍: 비행 적 ${count}마리 전부 착지 + 바람 DoT!`, 'good');
-  },
-
-  push_back_flying(effect, { enemySystem, log }) {
-    const count  = effect.count ?? 3;
-    const pushed = (enemySystem?.enemies ?? [])
-      .filter(e => e.flying || enemySystem._groundedSet?.has(e.id))
-      .slice(0, count);
-    for (const e of pushed) {
-      e.waypointIndex = Math.max(1, e.waypointIndex - 2);
-    }
-    log(`💨 밀쳐내기: 비행 적 ${pushed.length}마리 경로 후퇴!`, 'good');
   },
 };
 
