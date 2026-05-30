@@ -15,7 +15,7 @@ export const STORM_RELICS = [
   },
   {
     id: 'aerial_bane',
-    icon: '🦅', rarity: 'rare', category: 'attack',
+    icon: '🦅', rarity: 'uncommon', category: 'attack',
     // 모든 타워 비행 적 피해 +25%
     effect: { type: 'flying_dmg_bonus', extraMult: 0.25 },
     dlc: 'storm_imperium',
@@ -47,7 +47,7 @@ export const STORM_RELICS = [
     id: 'storm_tribute',
     icon: '💛', rarity: 'uncommon', category: 'economy',
     // 웨이브 클리어마다 골드 +5
-    effect: { type: 'wave_clear_gold', amount: 5 },
+    effect: { type: 'wave_clear_gold', amount: 4 },
     dlc: 'storm_imperium',
   },
   {
@@ -76,13 +76,13 @@ export const STORM_RELICS = [
   {
     id: 'sky_bastion',
     icon: '🏰', rarity: 'rare', category: 'defense',
-    // 웨이브당 넥서스 최대 1회 피격
-    effect: { type: 'iron_fortress' },
+    // 웨이브당 지상 적의 넥서스 피격 최대 1회 (비행 적 제외)
+    effect: { type: 'iron_fortress_ground_only' },
     dlc: 'storm_imperium',
   },
   {
     id: 'grounding_amulet',
-    icon: '🌀', rarity: 'uncommon', category: 'defense',
+    icon: '🌀', rarity: 'rare', category: 'defense',
     // 바람 감속 35% 이상 시 비행 적 착지
     effect: { type: 'grounding_threshold', threshold: 0.35 },
     dlc: 'storm_imperium',

@@ -909,6 +909,7 @@ function beginWave() {
 
   // Iron Fortress: 웨이브별 넥서스 피격 카운터 리셋
   state._waveNexusDamageCount = 0;
+  state._waveGroundNexusDamageCount = 0;
   // PERFECT_WAVE 업적 추적: 웨이브 시작 시 피격 여부 초기화
   state._nexusHitThisWave = false;
 
@@ -1468,7 +1469,7 @@ function onShopLeave() {
 }
 
 // ── 적 처리 콜백 ──────────────────────────────────────
-function onEnemyReachEnd({ type: enemyType, displayName, isBoss = false } = {}) {
+function onEnemyReachEnd({ type: enemyType, displayName, isBoss = false, flying = false } = {}) {
   state._nexusHitThisWave = true;  // PERFECT_WAVE 업적: 이번 웨이브 넥서스 피격 기록
 
   // DLC 2: Divine Shield — 넥서스 무적 상태
@@ -1514,6 +1515,16 @@ function onEnemyReachEnd({ type: enemyType, displayName, isBoss = false } = {}) 
       return;
     }
     state._waveNexusDamageCount = (state._waveNexusDamageCount ?? 0) + 1;
+  }
+
+  // Sky Bastion (DLC 3): 지상 적의 넥서스 피격 웨이브당 최대 1회 (비행 적 제외)
+  if (hasRelic('sky_bastion') && !flying) {
+    if ((state._waveGroundNexusDamageCount ?? 0) >= 1) {
+      log(i18n.t('log_iron_fortress'), 'good');
+      shakeNexus();
+      return;
+    }
+    state._waveGroundNexusDamageCount = (state._waveGroundNexusDamageCount ?? 0) + 1;
   }
 
   state.nexusHp--;

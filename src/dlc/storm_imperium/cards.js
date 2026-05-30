@@ -92,7 +92,7 @@ export const STORM_CARDS = [
   {
     id: 'spell_thunderstrike',
     name: 'Thunderstrike',      nameKo: '낙뢰',
-    type: 'spell', rarity: 'rare', cost: 4, icon: '⚡',
+    type: 'spell', rarity: 'rare', cost: 5, icon: '⚡',
     desc:   'Deal 80 damage to all flying enemies and ground them for 3s.',
     descKo: '모든 비행 적에게 80 피해 및 3초간 착지 상태.',
     effect: { type: 'thunderstrike', damage: 80, groundDuration: 3000 }, dlc: 'storm_imperium',

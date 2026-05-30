@@ -115,21 +115,21 @@ export const WAVE_CONFIGS = [
   // Wave 32: 비행 적 첫 등장 (교육 웨이브)
   [{ type: 'gust_sprite', count: 8, interval: 350 }, { type: 'storm_hawk', count: 3, interval: 1200 },
    { type: 'thunder_berserker', count: 4, interval: 1000 }],
-  // Wave 33: 위장+비행 tempest_wraith 첫 등장
-  [{ type: 'gust_sprite', count: 10, interval: 300 }, { type: 'tempest_wraith', count: 4, interval: 900 },
-   { type: 'storm_golem', count: 1, interval: 5000 }],
+  // Wave 33: 위장+비행 tempest_wraith 첫 등장 + 지상 혼합
+  [{ type: 'gust_sprite', count: 5, interval: 300 }, { type: 'tempest_wraith', count: 4, interval: 900 },
+   { type: 'storm_golem', count: 1, interval: 5000 }, { type: 'gale_slasher', count: 3, interval: 850 }],
   // Wave 34: squall_knight(windImmune) 첫 등장
   [{ type: 'storm_hawk', count: 4, interval: 1100 }, { type: 'squall_knight', count: 2, interval: 2500 },
    { type: 'gale_slasher', count: 3, interval: 900 }],
-  // Wave 35: lightning_drake 첫 등장 (비행 탱커)
+  // Wave 35: lightning_drake 첫 등장 (비행 탱커) + 지상 지원
   [{ type: 'tempest_wraith', count: 5, interval: 800 }, { type: 'lightning_drake', count: 1, interval: 8000 },
-   { type: 'squall_knight', count: 2, interval: 2200 }],
-  // Wave 36: Typhoon Warlord 중간보스
+   { type: 'squall_knight', count: 2, interval: 2200 }, { type: 'storm_golem', count: 2, interval: 4500 }],
+  // Wave 36: Typhoon Warlord 중간보스 + 지상 호위
   [{ type: 'gust_sprite', count: 8, interval: 350 }, { type: 'storm_hawk', count: 3, interval: 1200 },
-   { type: 'typhoon_warlord', count: 1, interval: 10000 }],
-  // Wave 37: cyclone_rider(분열형) 등장
+   { type: 'gale_slasher', count: 3, interval: 900 }, { type: 'typhoon_warlord', count: 1, interval: 10000 }],
+  // Wave 37: cyclone_rider(분열형) 등장 + 지상 혼합
   [{ type: 'cyclone_rider', count: 2, interval: 5000 }, { type: 'lightning_drake', count: 2, interval: 7000 },
-   { type: 'squall_knight', count: 3, interval: 2000 }],
+   { type: 'squall_knight', count: 3, interval: 2000 }, { type: 'storm_sentinel', count: 2, interval: 3500 }],
   // Wave 38: 최종보스 직전 총공세
   [{ type: 'gust_sprite', count: 8, interval: 300 }, { type: 'tempest_wraith', count: 4, interval: 700 },
    { type: 'storm_hawk', count: 4, interval: 1000 }, { type: 'cyclone_rider', count: 2, interval: 4000 },
@@ -268,7 +268,7 @@ export const ENEMY_DEFS = {
   storm_hawk:     { name: 'Storm Hawk',    hp: 180, speed: 130, color: '#00B4D8', size: 12, reward:  4, flying: true, isElite: true, enrageThreshold: 0.55 },
   squall_knight:  { name: 'Squall Knight', hp: 420, speed:  45, color: '#0077B6', size: 16, reward:  8, flying: true, isElite: true, shieldHits: 3, windImmune: true },
   tempest_wraith: { name: 'Tempest Wraith',hp:  90, speed: 150, color: '#48CAE4', size:  9, reward:  3, flying: true, camo: true, damageReduction: 0.20 },
-  lightning_drake:{ name: 'Lightning Drake',hp: 900, speed: 22, color: '#0096C7', size: 26, reward: 10, flying: true, windImmune: true, damageReduction: 0.20 },
+  lightning_drake:{ name: 'Lightning Drake',hp: 900, speed: 22, color: '#0096C7', size: 26, reward: 15, flying: true, windImmune: true, damageReduction: 0.20 },
   cyclone_rider:  { name: 'Cyclone Rider', hp: 600, speed:  35, color: '#023E8A', size: 20, reward: 12, flying: true, isElite: true, splitOnDeath: { type: 'gust_sprite', count: 4 } },
 
   // Ground enemies (4)
@@ -751,7 +751,7 @@ export class EnemySystem {
       if (e.reached) reachedEnd.push(e);
     }
     for (const e of reachedEnd) {
-      const reachInfo = { type: e.type, displayName: ENEMY_DEFS[e.type]?.name ?? e.type, isBoss: e.isBoss };
+      const reachInfo = { type: e.type, displayName: ENEMY_DEFS[e.type]?.name ?? e.type, isBoss: e.isBoss, flying: !!ENEMY_DEFS[e.type]?.flying };
       this._removeEnemy(e, false);
       this.onEnemyReachEnd(reachInfo);
     }
