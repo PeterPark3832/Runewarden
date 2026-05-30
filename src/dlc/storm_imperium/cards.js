@@ -7,15 +7,23 @@
 export const STORM_CARDS = [
 
   // ════════════════════════════════════════════════════
-  // ── SUMMON (2) ───────────────────────────────────
+  // ── SUMMON (4) ───────────────────────────────────
   // ════════════════════════════════════════════════════
   {
     id: 'summon_storm_ballista',
     name: 'Storm Ballista',     nameKo: '폭풍 발리스타',
-    type: 'summon', rarity: 'rare', cost: 5, icon: '⚡',
+    type: 'summon', rarity: 'rare', cost: 4, icon: '⚡',
     desc:   'Place a Storm Ballista. Targets flying enemies. Deals +40% bonus damage to flying foes.',
     descKo: '폭풍 발리스타를 배치합니다. 비행 적을 타겟합니다. 비행 적에게 +40% 추가 피해.',
     tower: 'storm_ballista', dlc: 'storm_imperium',
+  },
+  {
+    id: 'summon_tempest_tower',
+    name: 'Tempest Tower',      nameKo: '폭풍 타워',
+    type: 'summon', rarity: 'rare', cost: 5, icon: '🌪️',
+    desc:   'Place a Tempest Tower. Splash attack that targets flying enemies. Applies wind DoT (5 DPS / 3s).',
+    descKo: '폭풍 타워를 배치합니다. 비행 적 타겟 가능 범위 공격. 바람 DoT 적용 (5 DPS / 3초).',
+    tower: 'tempest_tower', dlc: 'storm_imperium',
   },
   {
     id: 'summon_wind_anchor',
@@ -24,6 +32,14 @@ export const STORM_CARDS = [
     desc:   'Place a Wind Anchor. Forces flying enemies in radius 2.5 hex to land (grounded) for 3.5s.',
     descKo: '바람 닻을 배치합니다. 반경 2.5헥스 내 비행 적을 착지 상태로 3.5초간 강제합니다.',
     tower: 'wind_anchor', dlc: 'storm_imperium',
+  },
+  {
+    id: 'summon_storm_conduit',
+    name: 'Storm Conduit',      nameKo: '폭풍 도관',
+    type: 'summon', rarity: 'uncommon', cost: 3, icon: '🌩️',
+    desc:   'Place a Storm Conduit. Boosts nearby Storm towers\' wind DoT. Also targets flying enemies.',
+    descKo: '폭풍 도관을 배치합니다. 주변 Storm 타워의 바람 DoT를 강화합니다. 비행 적도 타겟합니다.',
+    tower: 'storm_conduit', dlc: 'storm_imperium',
   },
 
   // ════════════════════════════════════════════════════

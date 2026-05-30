@@ -38,7 +38,7 @@ export const STORM_TOWER_DEFS = {
     range:         3.8,
     attackSpeed:   1400,
     splash:        1.4,
-    windDotDps:    8,
+    windDotDps:    5,
     windDotDur:    3000,
     canTargetFlying: true,
     tags:          ['Storm'],
@@ -68,7 +68,7 @@ export const STORM_TOWER_DEFS = {
   },
 
   // ── 4. Storm Conduit (폭풍 도관) ─────────────────────
-  // 낮은 직접 피해. 오라로 주변 타워 Wind DoT 부여 강화.
+  // 오라로 주변 타워 Wind DoT 부여 강화. 직접 피해도 적당히 기여.
   storm_conduit: {
     id:              'storm_conduit',
     name:            'Storm Conduit',
@@ -76,7 +76,7 @@ export const STORM_TOWER_DEFS = {
     icon:            '🌩️',
     color:           '#0a1a2a',
     accentColor:     '#0096C7',
-    damage:          10,
+    damage:          15,
     range:           3.5,
     attackSpeed:     1000,
     splash:          0,
