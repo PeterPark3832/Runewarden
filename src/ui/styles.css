@@ -1084,6 +1084,25 @@ kbd {
 .shop-card-slot[data-rarity="rare"]      { border-left: 3px solid var(--rare); }
 .shop-card-slot[data-rarity="legendary"] { border-left: 3px solid var(--legendary); box-shadow: 0 0 12px rgba(243,156,18,0.2); }
 
+/* Elite slot (Wave 16+) */
+.shop-card-elite {
+  border: 2px solid var(--gold);
+  box-shadow: 0 0 8px rgba(212,175,55,0.6);
+}
+.shop-card-elite .shop-rarity-bar { background: linear-gradient(90deg, var(--gold-dim), var(--gold)); }
+.elite-slot-label {
+  display: inline-block;
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  color: #1a1a1a;
+  background: var(--gold);
+  padding: 1px 6px;
+  border-radius: 3px;
+  margin-bottom: 0.3rem;
+  text-transform: uppercase;
+}
+
 .shop-card-inner {
   padding: 0.75rem 0.75rem 0.5rem;
   flex: 1;

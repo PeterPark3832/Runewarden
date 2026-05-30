@@ -1,7 +1,6 @@
 /** Runewarden — 한국어 (ko) */
 import dlcShadowKo from '../dlc/shadow_realm/i18n/ko.js';
 import dlcSolarKo  from '../dlc/solar_dominion/i18n/ko.js';
-import { dlcStormKo } from '../dlc/storm_imperium/i18n/ko.js';
 
 const _BASE_KO = {
   // ── 메인 메뉴 ───────────────────────────────────────
@@ -51,6 +50,7 @@ const _BASE_KO = {
   shop_not_enough_gold: '리롤할 골드가 부족합니다.',
   shop_bought:        (name) => `구매: ${name} (덱+1)`,
   shop_rerolled:      (left) => `상점을 재진열했습니다. (${left}회 남음)`,
+  shop_elite_slot:    '엘리트',
 
   // ── 노드 선택 ────────────────────────────────────────
   node_title:     '경로를 선택하세요',
@@ -902,4 +902,4 @@ const _BASE_KO = {
 };
 
 // DLC 번역 병합
-export default { ..._BASE_KO, ...dlcShadowKo, ...dlcSolarKo, ...dlcStormKo };
+export default { ..._BASE_KO, ...dlcShadowKo, ...dlcSolarKo };

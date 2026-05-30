@@ -1,7 +1,6 @@
 /** Runewarden — English (en) */
 import dlcShadowEn from '../dlc/shadow_realm/i18n/en.js';
 import dlcSolarEn  from '../dlc/solar_dominion/i18n/en.js';
-import { dlcStormEn } from '../dlc/storm_imperium/i18n/en.js';
 
 const _BASE_EN = {
   // ── 메인 메뉴 ───────────────────────────────────────
@@ -51,6 +50,7 @@ const _BASE_EN = {
   shop_not_enough_gold: 'Not enough gold to reroll.',
   shop_bought:        (name) => `Bought: ${name} (+1 to deck)`,
   shop_rerolled:      (left) => `Rerolled the shop. (${left} rerolls left)`,
+  shop_elite_slot:    'Elite',
 
   // ── 노드 선택 ────────────────────────────────────────
   node_title:     'Choose Your Path',
@@ -902,4 +902,4 @@ const _BASE_EN = {
 };
 
 // DLC 번역 병합
-export default { ..._BASE_EN, ...dlcShadowEn, ...dlcSolarEn, ...dlcStormEn };
+export default { ..._BASE_EN, ...dlcShadowEn, ...dlcSolarEn };
