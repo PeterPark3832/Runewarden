@@ -33,6 +33,7 @@
 
 import { SHADOW_RELICS } from '../dlc/shadow_realm/relics.js';
 import { SOLAR_RELICS }  from '../dlc/solar_dominion/relics.js';
+import { STORM_RELICS }  from '../dlc/storm_imperium/relics.js';
 
 const _BASE_RELIC_DEFS = [
 
@@ -302,7 +303,7 @@ export const RELIC_SYNERGIES = [
 ];
 
 // DLC 유물 병합
-export const RELIC_DEFS = [..._BASE_RELIC_DEFS, ...SHADOW_RELICS, ...SOLAR_RELICS];
+export const RELIC_DEFS = [..._BASE_RELIC_DEFS, ...SHADOW_RELICS, ...SOLAR_RELICS, ...STORM_RELICS];
 
 /** id로 유물 찾기 */
 export function getRelicById(id) {

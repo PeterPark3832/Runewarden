@@ -299,6 +299,58 @@ export function updateShadowChargeHUD() {
   `;
 }
 
+// ── Solar Charge HUD (DLC 2) ──────────────────────────
+export function updateSolarChargeHUD(n, max) {
+  const { state } = shared;
+  let bar = document.getElementById('solar-charge-bar');
+  if (state?.warden?.passive !== 'solar_charge_solar') {
+    if (bar) bar.style.display = 'none';
+    return;
+  }
+  if (!bar) {
+    bar = document.createElement('div');
+    bar.id = 'solar-charge-bar';
+    bar.className = 'shadow-charge-bar';
+    bar.style.cssText = '--charge-color:#F5C518;--charge-bg:#2e1800;';
+    const hud = document.getElementById('hud');
+    if (hud) hud.appendChild(bar);
+  }
+  bar.style.display = '';
+  const pct = max > 0 ? Math.round((n / max) * 100) : 0;
+  bar.innerHTML = `
+    <div class="sc-label">☀️ ${n}/${max}</div>
+    <div class="sc-track">
+      <div class="sc-fill" style="width:${pct}%;background:#F5C518"></div>
+    </div>
+  `;
+}
+
+// ── Storm Charge HUD (DLC 3) ──────────────────────────
+export function updateStormChargeHUD(n, max) {
+  const { state } = shared;
+  let bar = document.getElementById('storm-charge-bar');
+  if (state?.warden?.passive !== 'storm_charge') {
+    if (bar) bar.style.display = 'none';
+    return;
+  }
+  if (!bar) {
+    bar = document.createElement('div');
+    bar.id = 'storm-charge-bar';
+    bar.className = 'shadow-charge-bar';
+    bar.style.cssText = '--charge-color:#4ECDC4;--charge-bg:#0a1a2a;';
+    const hud = document.getElementById('hud');
+    if (hud) hud.appendChild(bar);
+  }
+  bar.style.display = '';
+  const pct = max > 0 ? Math.round((n / max) * 100) : 0;
+  bar.innerHTML = `
+    <div class="sc-label">⚡ ${n}/${max}</div>
+    <div class="sc-track">
+      <div class="sc-fill" style="width:${pct}%;background:#4ECDC4"></div>
+    </div>
+  `;
+}
+
 // ── 웨이브 클리어 배너 ────────────────────────────────
 export function showClearBanner(waveNum, isBossStart = false, isActEnd = false) {
   const existing = document.getElementById('wave-clear-banner');
@@ -313,6 +365,7 @@ export function showClearBanner(waveNum, isBossStart = false, isActEnd = false) 
     const BOSS_BANNER_KEY = {
       5: 'banner_boss_ironclad', 10: 'banner_boss_titan', 15: 'banner_boss_dragon',
       23: 'banner_boss_shadow_colossus', 28: 'banner_boss_solar_titan', 31: 'banner_boss_sun_god',
+      36: 'banner_boss_typhoon_warlord', 39: 'banner_boss_tempest_sovereign',
     };
     const bossName = i18n.t(BOSS_BANNER_KEY[waveNum] ?? 'banner_boss_dragon');
     banner.classList.add('boss-banner');

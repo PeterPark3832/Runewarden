@@ -4,6 +4,7 @@
 
 import { SHADOW_CARDS } from '../dlc/shadow_realm/cards.js';
 import { SOLAR_CARDS }  from '../dlc/solar_dominion/cards.js';
+import { STORM_CARDS }  from '../dlc/storm_imperium/cards.js';
 
 const BASE_CARD_DEFS = [
   // ════════════════════════════════════════════════════
@@ -1034,7 +1035,7 @@ const BASE_CARD_DEFS = [
 ];
 
 // DLC 카드 병합
-export const CARD_DEFS = [...BASE_CARD_DEFS, ...SHADOW_CARDS, ...SOLAR_CARDS];
+export const CARD_DEFS = [...BASE_CARD_DEFS, ...SHADOW_CARDS, ...SOLAR_CARDS, ...STORM_CARDS];
 
 // 시작 덱 (14장) — v0.3: 타워 6 + 강화 4 + 주문 4
 export function buildStarterDeck() {
