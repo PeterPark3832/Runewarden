@@ -292,12 +292,12 @@ export class EnemySystem {
     return this._pool[type]?.pop() ?? null;
   }
 
-  _poolReturn(el, type, bodyEl, hpBar) {
+  _poolReturn(el, type, bodyEl, hpBar, badgesEl) {
     if (!this._pool[type]) this._pool[type] = [];
     if (this._pool[type].length < 10) {
       el.setAttribute('transform', 'translate(-9999,-9999)');
       el.removeAttribute('style');
-      this._pool[type].push({ el, bodyEl, hpBar });
+      this._pool[type].push({ el, bodyEl, hpBar, badgesEl: badgesEl ?? null });
     } else {
       el.remove();
     }
@@ -512,6 +512,8 @@ export class EnemySystem {
       }
     }
     this._pendingRemove.clear();
+    // flush 후 정렬 캐시 재구축 — TowerSystem이 이후 호출하는 getLeadEnemy에 신선한 목록 제공
+    this._sortedByProgress = [...this.enemies].sort((a, b) => b.waypointIndex - a.waypointIndex);
   }
 
   _moveEnemy(e, delta) {
@@ -611,6 +613,16 @@ export class EnemySystem {
         // 위장 적 시각 처리
         g.style.opacity = def.camo ? '0.4' : '';
         pooled.bodyEl.setAttribute('stroke-dasharray', def.camo ? '3,2' : 'none');
+        // 상태이상 뱃지 재사용 — 풀 원소의 badgesEl을 찾아 초기화
+        let badgesEl = pooled.badgesEl ?? g.querySelector('.status-badges');
+        if (!badgesEl) {
+          badgesEl = svgEl('g', { class: 'status-badges' });
+          g.appendChild(badgesEl);
+        } else {
+          while (badgesEl.firstChild) badgesEl.removeChild(badgesEl.firstChild);
+        }
+        enemy.badgesEl = badgesEl;
+        enemy._statusKey = '';
         this.layer.appendChild(g);  // bring to front (z-order)
         this.enemies.push(enemy);
         return;
@@ -1195,7 +1207,7 @@ export class EnemySystem {
       this._dying.add(e.id);
       this._playDeathAnim(e);
     } else if (this._canPool(ENEMY_DEFS[e.type] ?? {})) {
-      this._poolReturn(e.el, e.type, e.bodyEl, e.hpBar);
+      this._poolReturn(e.el, e.type, e.bodyEl, e.hpBar, e.badgesEl);
     } else {
       e.el.remove();
     }
@@ -1251,11 +1263,11 @@ export class EnemySystem {
     if (e.isBoss) this._bossSlainfanfare(cx, cy, e);
 
     // 3) 정리 — 풀 가능한 타입은 반환, 아니면 제거
-    const { type, bodyEl, hpBar } = e;
+    const { type, bodyEl, hpBar, badgesEl } = e;
     const canPool = this._canPool(ENEMY_DEFS[type] ?? {});
     setTimeout(() => {
       if (canPool) {
-        this._poolReturn(el, type, bodyEl, hpBar);
+        this._poolReturn(el, type, bodyEl, hpBar, badgesEl);
       } else {
         el.remove();
       }
@@ -1699,9 +1711,11 @@ export class EnemySystem {
   }
 
   getEnemiesInRange(px, py, radiusPx) {
+    const r2 = radiusPx * radiusPx;
     return this.enemies.filter(e => {
+      if (this._pendingRemove.has(e.id) || this._dying.has(e.id)) return false;
       const dx = e.x - px, dy = e.y - py;
-      return Math.sqrt(dx*dx + dy*dy) <= radiusPx;
+      return dx * dx + dy * dy <= r2;
     });
   }
 
@@ -1710,6 +1724,7 @@ export class EnemySystem {
     // _sortedByProgress는 update() 시작 시 진행도 내림차순으로 캐싱됨 — 첫 일치 즉시 반환 O(1)~O(n)
     const list = this._sortedByProgress.length ? this._sortedByProgress : this.enemies;
     for (const e of list) {
+      if (this._pendingRemove.has(e.id) || this._dying.has(e.id)) continue;
       if (!canDetectCamo && e.camo) continue;
       const dx = e.x - px, dy = e.y - py;
       if (dx * dx + dy * dy <= r2) return e;
