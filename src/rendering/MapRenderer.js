@@ -78,15 +78,6 @@ export function svgEl(tag, attrs = {}) {
   return el;
 }
 
-// ── 색상 유틸 ──────────────────────────────────────────
-function _lightenHex(hex, amount) {
-  const r = parseInt(hex.slice(1, 3), 16);
-  const g = parseInt(hex.slice(3, 5), 16);
-  const b = parseInt(hex.slice(5, 7), 16);
-  const toHex = v => Math.min(255, v + Math.round(amount * 255)).toString(16).padStart(2, '0');
-  return `#${toHex(r)}${toHex(g)}${toHex(b)}`;
-}
-
 // ── MapRenderer 클래스 ─────────────────────────────────
 export class MapRenderer {
   constructor(svgEl, onCellClick, onCellHover) {
@@ -113,7 +104,7 @@ export class MapRenderer {
     // SVG defs — 헥스 깊이감용 radialGradient 정의
     const defs = svgEl('defs');
     // 기본 헥스 그라디언트 (중앙 약간 밝음) — 맵 테마 반영
-    const hexBase   = _mapHexColor ? _lightenHex(_mapHexColor, 0.07) : '#222240';
+    const hexBase   = _mapHexColor ?? '#222240';
     const hexOuter  = _mapHexColor ?? '#141428';
     const rg = svgEl('radialGradient', { id: 'hexGrad', cx: '50%', cy: '40%', r: '60%' });
     rg.appendChild(this._mkStop('0%',   hexBase));
@@ -385,17 +376,19 @@ export class MapRenderer {
         fill: col, stroke: acc, 'stroke-width': sw,
       }));
 
-    } else if (id === 'cannon' || id === 'ballista') {
+    } else if (id === 'cannon' || id === 'ballista' || id === 'divine_cannon' || def.shape === 'cannon') {
       // 육각형 — 묵직한 포격 계열
       g.appendChild(svgEl('polygon', {
         points: this._polyPts(x, y, r, 6, -Math.PI / 6),
         fill: col, stroke: acc, 'stroke-width': sw,
       }));
-      // 포구 돌출 (작은 직사각형)
-      g.appendChild(svgEl('rect', {
+      // 포구 돌출 (작은 직사각형) — 별도 그룹으로 분리하여 회전 가능
+      const barrelGroup = svgEl('g', { class: 'tower-barrel' });
+      barrelGroup.appendChild(svgEl('rect', {
         x: x - 3, y: y - r - 5, width: 6, height: 7,
         fill: acc, rx: 1,
       }));
+      g.appendChild(barrelGroup);
 
     } else if (id === 'frost' || id === 'glacial' || id === 'frost_giant') {
       // 팔각형 — 얼음 결정 실루엣
@@ -592,6 +585,12 @@ export class MapRenderer {
       this._selectedCell = null;
     }
     this.hideRange();
+  }
+
+  // ── 포구 요소 접근자 (cannon/ballista/divine_cannon 회전용) ──
+  getTowerBarrel(col, row) {
+    const tg = document.getElementById(`tower-${col}-${row}`);
+    return tg?.querySelector('.tower-barrel') ?? null;
   }
 
   // ── 적 레이어 접근자 ──────────────────────────────────

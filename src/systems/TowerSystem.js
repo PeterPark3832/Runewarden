@@ -32,11 +32,12 @@ function ensureFilters(svg) {
 }
 
 export class TowerSystem {
-  constructor(projectileLayer, enemySystem, onLog) {
+  constructor(projectileLayer, enemySystem, onLog, renderer = null) {
     this.towers = new Map();
     this.projectileLayer = projectileLayer;
     this.enemySystem = enemySystem;
     this.onLog = onLog;
+    this.renderer = renderer;
     this._projId = 0;
     this._effectId = 0;
     // 글로벌 임시 버프 (스펠)
@@ -320,6 +321,13 @@ export class TowerSystem {
       void tg.offsetWidth;
       tg.style.animation = 'towerKick 0.14s ease-out';
       setTimeout(() => { if (tg) tg.style.animation = ''; }, 150);
+    }
+
+    // ── 포구 회전 (cannon / divine_cannon / ballista) ────
+    if (tid === 'cannon' || tid === 'divine_cannon' || tid === 'ballista' || tower.def.shape === 'cannon') {
+      const angleDeg = Math.atan2(ey - ty, ex - tx) * 180 / Math.PI + 90;
+      const barrel = this.renderer?.getTowerBarrel(tower.col, tower.row);
+      if (barrel) barrel.setAttribute('transform', `rotate(${angleDeg.toFixed(1)}, ${tx.toFixed(1)}, ${ty.toFixed(1)})`);
     }
 
     // ── 발사체 타입별 처리 ───────────────────────────────
