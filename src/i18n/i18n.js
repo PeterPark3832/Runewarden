@@ -10,16 +10,18 @@
 
 import en from './en.js';
 import ko from './ko.js';
+import zh from './zh.js';
 
-const TRANSLATIONS = { en, ko };
+const TRANSLATIONS = { en, ko, zh };
 const STORAGE_KEY  = 'rw_lang';
-const SUPPORTED    = ['en', 'ko'];
+const SUPPORTED    = ['en', 'ko', 'zh'];
 
 class I18n {
   constructor() {
     // 저장된 언어 → 브라우저 언어 → 기본 영어
     const saved    = localStorage.getItem(STORAGE_KEY);
-    const browser  = navigator.language?.startsWith('ko') ? 'ko' : 'en';
+    const nav      = navigator.language ?? '';
+    const browser  = nav.startsWith('ko') ? 'ko' : nav.startsWith('zh') ? 'zh' : 'en';
     this._lang     = SUPPORTED.includes(saved) ? saved : browser;
     this._dict     = TRANSLATIONS[this._lang];
     this._listeners = [];
