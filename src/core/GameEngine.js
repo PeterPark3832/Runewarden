@@ -498,6 +498,7 @@ function startRun() {
     renderer.getProjectileLayer(),
     enemySystem,
     (msg, cls) => log(msg, cls),
+    renderer,
   );
 
   // 요약 UI (매 런마다 재생성)
@@ -895,6 +896,7 @@ function beginWave() {
     showClearBanner(state.wave, true);
     audio.play('boss_warning');
     music.crossfadeTo('boss');
+    _showBossEntry(_getBossNameForWave(state.wave), state.wave);
   } else {
     log(i18n.t('log_wave_start', state.wave, actNum), 'bad');
     audio.play('wave_start');
@@ -2025,6 +2027,30 @@ function addGold(amount, xy, silent = false) {
       goldEl.classList.add('gold-punch');
     }
   }
+  if (amount >= 1) _spawnCoinParticles(amount);
+}
+
+// ── Gold Coin Particle Effect ─────────────────────────────
+let _lastCoinSpawnTime = 0;
+function _spawnCoinParticles(amount) {
+  if (typeof document === 'undefined') return;
+  const now = Date.now();
+  if (now - _lastCoinSpawnTime < 200) return;
+  _lastCoinSpawnTime = now;
+
+  const canvas = document.getElementById('game-canvas') ?? document.body;
+  const count = amount >= 10 ? 3 : amount >= 5 ? 2 : 1;
+  const rect = canvas.getBoundingClientRect();
+  for (let i = 0; i < count; i++) {
+    const el = document.createElement('div');
+    el.className = 'coin-particle';
+    el.textContent = 'g';
+    el.style.left = `${rect.width * 0.75 + (Math.random() - 0.5) * 60}px`;
+    el.style.top = `${rect.height * 0.08 + (Math.random() - 0.5) * 20}px`;
+    el.style.animationDelay = `${i * 80}ms`;
+    canvas.appendChild(el);
+    el.addEventListener('animationend', () => el.remove(), { once: true });
+  }
 }
 
 function spendGold(amount) {
@@ -2098,6 +2124,37 @@ function _triggerShadowAutoSpell() {
   log(`👁️ ${i18n.t('dlc_sr_log_auto_cast', i18n.lang === 'ko' ? (card.nameKo || card.name) : card.name)}`, 'gold');
   audio?.play('spell_cast');
   resolveSpell({ ...card.effect, _isAutocast: true });   // 무료 자동 발동 — 골드 소모 없음, 연쇄 차단
+}
+
+// ── Boss Entry Cinematic ──────────────────────────────
+function _getBossNameForWave(wave) {
+  const bossNames = {
+    5: 'Ironclad',
+    10: 'Void Titan',
+    15: 'Abyssal Dragon',
+    23: 'Shadow Colossus',
+    28: 'Solar Titan',
+    31: 'Sun God',
+  };
+  return bossNames[wave] ?? 'Boss';
+}
+
+function _showBossEntry(name, wave) {
+  if (typeof document === 'undefined') return;
+  const existing = document.getElementById('boss-entry-overlay');
+  if (existing) existing.remove();
+  const overlay = document.createElement('div');
+  overlay.id = 'boss-entry-overlay';
+  const nameEl = document.createElement('div');
+  nameEl.className = 'boss-entry-name';
+  nameEl.textContent = name;
+  const waveEl = document.createElement('div');
+  waveEl.className = 'boss-entry-wave';
+  waveEl.textContent = `Wave ${wave}`;
+  overlay.appendChild(nameEl);
+  overlay.appendChild(waveEl);
+  document.body.appendChild(overlay);
+  overlay.addEventListener('animationend', () => overlay.remove(), { once: true });
 }
 
 // ── 이벤트 리스너 ─────────────────────────────────────

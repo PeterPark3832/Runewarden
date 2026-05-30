@@ -3359,3 +3359,72 @@ kbd {
   90%  { transform: translate( 1px, -1px); }
 }
 .screen-shake { animation: screenShake 0.25s ease-out; }
+
+/* ── Gold Coin Particles ─────────────────────────────────── */
+@keyframes coinFloat {
+  0%   { opacity: 1; transform: translateY(0) scale(1); }
+  60%  { opacity: 0.8; transform: translateY(-28px) scale(1.1); }
+  100% { opacity: 0; transform: translateY(-48px) scale(0.7); }
+}
+.coin-particle {
+  position: absolute;
+  pointer-events: none;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--gold, #D4AF37);
+  border: 2px solid #F5C518;
+  font-size: 9px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #7a5c00;
+  font-weight: bold;
+  animation: coinFloat 0.75s ease-out forwards;
+  z-index: 200;
+}
+
+/* ── Boss Entry Cinematic ────────────────────────────────── */
+@keyframes bossEntryIn {
+  0%   { opacity: 0; }
+  30%  { opacity: 1; }
+  70%  { opacity: 1; }
+  100% { opacity: 0; }
+}
+@keyframes bossNameReveal {
+  0%   { opacity: 0; transform: translateY(20px) scale(0.9); letter-spacing: 0.3em; }
+  25%  { opacity: 1; transform: translateY(0) scale(1); letter-spacing: 0.15em; }
+  75%  { opacity: 1; transform: translateY(0) scale(1); letter-spacing: 0.15em; }
+  100% { opacity: 0; transform: translateY(-10px) scale(1.05); letter-spacing: 0.2em; }
+}
+#boss-entry-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9000;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.72);
+  animation: bossEntryIn 2.2s ease-in-out forwards;
+  pointer-events: none;
+}
+#boss-entry-overlay .boss-entry-name {
+  font-family: 'Cinzel', serif;
+  font-size: clamp(2rem, 6vw, 4rem);
+  color: #D4AF37;
+  text-shadow: 0 0 30px rgba(212,175,55,0.8), 0 0 60px rgba(212,175,55,0.4);
+  letter-spacing: 0.15em;
+  animation: bossNameReveal 2.2s ease-in-out forwards;
+  text-align: center;
+  padding: 0 2rem;
+}
+#boss-entry-overlay .boss-entry-wave {
+  font-family: 'Cinzel', serif;
+  font-size: clamp(0.9rem, 2vw, 1.2rem);
+  color: #95A5A6;
+  letter-spacing: 0.3em;
+  margin-top: 0.75rem;
+  animation: bossEntryIn 2.2s ease-in-out forwards;
+  text-transform: uppercase;
+}
