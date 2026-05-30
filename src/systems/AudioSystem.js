@@ -7,6 +7,11 @@
  *   audio.play('card_play');
  *   audio.setMasterVolume(0.5);
  */
+
+// 폴리포니 제한 상수
+const MAX_POLYPHONY   = 3;   // 동일 사운드 최대 동시 3개
+const MIN_INTERVAL_MS = 50;  // 동일 사운드 50ms 이내 재호출 차단
+
 export class AudioSystem {
   constructor() {
     this._ctx     = null;
@@ -16,6 +21,8 @@ export class AudioSystem {
     this._volume  = 0.7;
     this._sfxVol  = 0.70;
     this._bgmVol  = 0.28;
+    this._activeCount  = {};  // { soundKey: number } — 동시 재생 중인 노드 수
+    this._lastPlayTime = {};  // { soundKey: number (ms timestamp) } — 마지막 재생 시각
     this._init();
   }
 
@@ -93,8 +100,21 @@ export class AudioSystem {
     if (!this._ctx || this._muted) return;
     this._resume();
     const fn = this._sounds[id];
-    if (fn) fn.call(this, opts);
-    else console.warn('[AudioSystem] Unknown sound:', id);
+    if (!fn) { console.warn('[AudioSystem] Unknown sound:', id); return; }
+
+    // 폴리포니 가드 — 같은 프레임 내 동일 사운드 중복 차단
+    const now = performance.now();
+    if ((this._lastPlayTime[id] ?? 0) > now - MIN_INTERVAL_MS) return;
+    if ((this._activeCount[id]  ?? 0) >= MAX_POLYPHONY) return;
+    this._lastPlayTime[id] = now;
+    this._activeCount[id]  = (this._activeCount[id] ?? 0) + 1;
+
+    fn.call(this, opts);
+  }
+
+  /** 폴리포니 카운터 감소 헬퍼 (onended 콜백에서 호출) */
+  _releaseCount(id) {
+    if (this._activeCount[id] > 0) this._activeCount[id]--;
   }
 
   // ── 내부 합성 헬퍼 ─────────────────────────────────
@@ -254,16 +274,23 @@ export class AudioSystem {
       this._noise({ vol: 0.4, dur: 0.12, decay: 0.1, filterFreq: 200, filterQ: 0.5 });
       this._tone({ freq: 110, type: 'sine', vol: 0.2, dur: 0.15, decay: 0.12 });
     },
-    /** 보스 사망 (웅장하게) */
+    /** 보스 사망 (웅장하게) — 노드 생성을 30ms 간격으로 분산 */
     boss_die() {
-      const t = this._ctx_t();
-      // 폭발음
-      this._noise({ vol: 0.7, dur: 0.4, attack: 0.003, decay: 0.38, filterFreq: 200, filterQ: 0.3, t0: t });
-      // 하강 톤
-      this._sweep({ startFreq: 400, endFreq: 50, type: 'sawtooth', vol: 0.4, dur: 0.5, t0: t });
-      // 승리 음정 (딜레이)
+      // 1단계: 폭발음 + 하강 톤 (즉시)
+      const t0 = this._ctx_t();
+      this._noise({ vol: 0.7, dur: 0.4, attack: 0.003, decay: 0.38, filterFreq: 200, filterQ: 0.3, t0 });
+      setTimeout(() => {
+        if (!this._ctx) return;
+        // 2단계: 하강 톤 (30ms 후)
+        this._sweep({ startFreq: 400, endFreq: 50, type: 'sawtooth', vol: 0.4, dur: 0.5 });
+      }, 30);
+      // 3단계: 승리 음정 — 각 음표 30ms 간격으로 분산 (기존 Web Audio t0 오프셋 유지)
       [523, 659, 784, 1047].forEach((f, i) => {
-        this._tone({ freq: f, type: 'sine', vol: 0.25, dur: 0.3, attack: 0.02, decay: 0.25, t0: t + 0.4 + i * 0.12 });
+        setTimeout(() => {
+          if (!this._ctx) return;
+          const t = this._ctx_t();
+          this._tone({ freq: f, type: 'sine', vol: 0.25, dur: 0.3, attack: 0.02, decay: 0.25, t0: t });
+        }, 60 + i * 30);  // 60ms 후 시작, 30ms 간격
       });
     },
 

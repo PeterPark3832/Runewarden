@@ -175,12 +175,13 @@ export class ShopUI {
       if (_idx !== -1) pool.splice(_idx, 1);
       this._offered.push({ ...card, uid: Math.random() });
     }
-    // Wave 16+ Elite 슬롯: rare 카드 1장, 비용 +7g (최소 12g)
+    // Wave 16+ Elite 슬롯: rare 카드 1장, 계단식 가격 12→14→16→18→20g
     if (this._waveNum >= 16 && size >= 4 && !_commonOnly) {
       const rarePool = CARD_DEFS.filter(c => c.rarity === 'rare' && !used.has(c.id));
       if (rarePool.length > 0) {
         const pick = rarePool[Math.floor(Math.random() * rarePool.length)];
-        this._offered.push({ ...pick, cost: Math.max(pick.cost + 7, 12), _eliteSlot: true, uid: Math.random() });
+        const elitePrice = Math.min(12 + Math.floor((this._waveNum - 16) / 5) * 2, 20);
+        this._offered.push({ ...pick, cost: elitePrice, _eliteSlot: true, uid: Math.random() });
       }
     }
     this._renderCards();
@@ -202,7 +203,8 @@ export class ShopUI {
       const effectiveCost = Math.max(1, card.cost - (this._discount || 0));
       const canAfford = effectiveCost <= this._gold;
       const slot = document.createElement('div');
-      slot.className = `shop-card-slot${canAfford ? '' : ' unaffordable'}`;
+      const eliteClass = card._eliteSlot ? ' shop-card-elite' : '';
+      slot.className = `shop-card-slot${eliteClass}${canAfford ? '' : ' unaffordable'}`;
       slot.dataset.rarity = card.rarity;
       card._effectiveCost = effectiveCost;  // 구매 시 사용
 
@@ -212,8 +214,10 @@ export class ShopUI {
       const _cType = i18n.t('card_type_' + card.type) ?? card.type;
       const rarityLabel = { common: 'C', uncommon: 'U', rare: 'R' };
       const rarityBadge = `<span class="rarity-badge rarity-badge--${card.rarity}">${rarityLabel[card.rarity] ?? card.rarity[0].toUpperCase()}</span>`;
+      const eliteLabel = card._eliteSlot ? `<span class="elite-slot-label">${i18n.t('shop_elite_slot')}</span>` : '';
       slot.innerHTML = `
         <div class="shop-card-inner">
+          ${eliteLabel}
           <div class="shop-card-top">
             <div class="shop-card-art">${makeCardArtSVG(card)}</div>
             <div class="shop-card-info">
