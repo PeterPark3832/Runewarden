@@ -248,6 +248,7 @@ export class EnemySystem {
     this._spawnIndex  = 0;
     this._waveActive  = false;
     this._dying = new Set();
+    this._pendingRemove = new Set(); // 틱 종료 후 일괄 제거 큐 — 순회 중 즉시 제거 방지
     this._sortedByProgress = []; // 프레임 타겟팅 캐시: getLeadEnemy O(n²) → O(n log n + k)
     this._boss        = null;
     this._slowBonus   = 1;    // 유물 감속 배율
@@ -465,30 +466,22 @@ export class EnemySystem {
       // Solar DoT 처리 — solarImmune 적은 무효
       if (e.solarDots?.length > 0 && !e.solarImmune) {
         this._updateSolarDots(e, delta);
-        if (e.hp <= 0 && !this._dying.has(e.id)) {
-          if (e.isBoss) { this._boss = null; this.onBossUpdate?.({ hp: 0, maxHp: e.maxHp }); audio.play('boss_die'); this._triggerScreenShake(); }
-          else if (e.isElite || e.type === 'tank') { audio.play(e.isElite ? 'elite_die' : 'tank_die'); }
-          else { audio.play('enemy_die'); }
-          this._handleSplitOnDeath(e);
-          this._removeEnemy(e, true);
-          this.onEnemyKilled(e.reward, e.isSplitChild ?? false);
+        if (e.hp <= 0 && !this._pendingRemove.has(e.id) && !this._dying.has(e.id)) {
+          e._killingElement = 'solar';
+          this._queueDeath(e);
           continue;
         }
       }
       // 번(DoT) 처리 — 빙결 중에도 계속 타오름
       if (e.burns.length > 0) {
         this._updateBurns(e, delta);
-        if (e.hp <= 0 && !this._dying.has(e.id)) {
-          if (e.isBoss) { this._boss = null; this.onBossUpdate?.({ hp: 0, maxHp: e.maxHp }); audio.play('boss_die'); this._triggerScreenShake(); }
-          else if (e.isElite || e.type === 'tank') { audio.play(e.isElite ? 'elite_die' : 'tank_die'); }
-          else { audio.play('enemy_die'); }
-          this._handleSplitOnDeath(e);
-          this._removeEnemy(e, true);
-          this.onEnemyKilled(e.reward, e.isSplitChild ?? false);
+        if (e.hp <= 0 && !this._pendingRemove.has(e.id) && !this._dying.has(e.id)) {
+          e._killingElement = 'fire';
+          this._queueDeath(e);
           continue;
         }
       }
-      if (!this.enemies.includes(e)) continue; // 이미 제거됨
+      if (this._pendingRemove.has(e.id)) continue; // 이미 제거 큐에 있음
 
       if (e.frozen > 0) { e.frozen -= delta; this._updateEnemySVG(e); continue; }
       if (e.stunned > 0) { e.stunned -= delta; this._updateEnemySVG(e); continue; }
@@ -498,9 +491,27 @@ export class EnemySystem {
     }
     for (const e of reachedEnd) {
       const reachInfo = { type: e.type, displayName: ENEMY_DEFS[e.type]?.name ?? e.type, isBoss: e.isBoss };
+      this._pendingRemove.delete(e.id); // 넥서스 도달 시 죽음 큐에서 제거
       this._removeEnemy(e, false);
       this.onEnemyReachEnd(reachInfo);
     }
+
+    // 틱 종료 일괄 제거 — 순회가 완전히 끝난 뒤 안전하게 처리
+    this._flushPendingRemovals();
+  }
+
+  // 제거 큐 flush — update() 틱 끝 또는 테스트에서 직접 호출 가능
+  _flushPendingRemovals() {
+    if (this._pendingRemove.size === 0) return;
+    for (const id of this._pendingRemove) {
+      const e = this.enemies.find(x => x.id === id);
+      if (e) {
+        this._handleSplitOnDeath(e);
+        this._removeEnemy(e, true);
+        this.onEnemyKilled(e.reward, e.isSplitChild ?? false);
+      }
+    }
+    this._pendingRemove.clear();
   }
 
   _moveEnemy(e, delta) {
@@ -1159,6 +1170,22 @@ export class EnemySystem {
     }
   }
 
+  // 적을 틱 종료 제거 큐에 등록하고 사망 사운드를 즉시 재생
+  _queueDeath(e) {
+    if (this._pendingRemove.has(e.id)) return;
+    this._pendingRemove.add(e.id);
+    if (e.isBoss) {
+      this._boss = null;
+      this.onBossUpdate?.({ hp: 0, maxHp: e.maxHp });
+      audio.play('boss_die');
+      this._triggerScreenShake?.();
+    } else if (e.type === 'tank' || e.isElite) {
+      audio.play(e.isElite ? 'elite_die' : 'tank_die');
+    } else {
+      audio.play('enemy_die');
+    }
+  }
+
   _removeEnemy(e, withAnim = true) {
     this.enemies = this.enemies.filter(x => x.id !== e.id);
 
@@ -1304,6 +1331,7 @@ export class EnemySystem {
   }
 
   dealDamage(enemyId, amount, dmgType = null) {
+    if (this._pendingRemove.has(enemyId)) return false; // 이미 처치 큐에 있음
     const e = this.enemies.find(x => x.id === enemyId);
     if (!e) return false;
 
@@ -1417,25 +1445,14 @@ export class EnemySystem {
 
     if (e.hp <= 0) {
       e._killingElement = dmgType;
-      // Cursed Wave 'revive': 엘리트 처치 시 HP 30%로 1회 부활
+      // Cursed Wave 'revive': 엘리트 처치 시 HP 30%로 1회 부활 (즉시 — 큐 등록 전)
       if (this._cursedWaveRevive && e.isElite && !e._revived && !e.isSplitChild) {
         e.hp      = Math.ceil(e.maxHp * 0.30);
         e._revived = true;
         audio.play('elite_die');
         return false;
       }
-      if (e.isBoss) {
-        this._boss = null;
-        this.onBossUpdate?.({ hp: 0, maxHp: e.maxHp });
-        audio.play('boss_die');
-      } else if (e.type === 'tank' || e.isElite) {
-        audio.play(e.isElite ? 'elite_die' : 'tank_die');
-      } else {
-        audio.play('enemy_die');
-      }
-      this._handleSplitOnDeath(e);
-      this._removeEnemy(e, true);
-      this.onEnemyKilled(e.reward, e.isSplitChild ?? false);
+      this._queueDeath(e);
       return true;
     }
     // 적이 살아있고 보스가 아닌 경우 피격음 (보스는 boss_hit으로 처리)
@@ -1723,6 +1740,7 @@ export class EnemySystem {
     this._sortedByProgress = [];
     this._waveActive = false;
     this._dying.clear();
+    this._pendingRemove.clear();
     this._boss = null;
     this.onBossUpdate?.({ hp: 0, maxHp: 1, hidden: true });
   }
