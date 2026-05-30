@@ -331,6 +331,203 @@ export class EnemySystem {
     return svgEl('circle', { cx: 0, cy: 0, r: s, fill, stroke, 'stroke-width': 1.5 });
   }
 
+  // ── 적 캐릭터 디테일 (눈 + 아이들 애니메이션) ────────
+  _addCharacterDetails(g, type, def) {
+    const s = def.size;
+    const E = (lx, ly, rx, ry, wr, pr, wc = '#fff', pc = '#111') => {
+      // 왼쪽 눈
+      g.appendChild(svgEl('circle', { cx: lx.toFixed(1), cy: ly.toFixed(1), r: wr, fill: wc, 'pointer-events': 'none' }));
+      g.appendChild(svgEl('circle', { cx: (lx + wr * 0.18).toFixed(1), cy: (ly + wr * 0.18).toFixed(1), r: pr, fill: pc, 'pointer-events': 'none' }));
+      // 오른쪽 눈
+      g.appendChild(svgEl('circle', { cx: rx.toFixed(1), cy: ry.toFixed(1), r: wr, fill: wc, 'pointer-events': 'none' }));
+      g.appendChild(svgEl('circle', { cx: (rx + wr * 0.18).toFixed(1), cy: (ry + wr * 0.18).toFixed(1), r: pr, fill: pc, 'pointer-events': 'none' }));
+    };
+    const SlitEye = (lx, ly, w, h, col) => {
+      g.appendChild(svgEl('ellipse', { cx: lx.toFixed(1), cy: ly.toFixed(1), rx: w, ry: h, fill: col, 'pointer-events': 'none' }));
+      g.appendChild(svgEl('ellipse', { cx: (-lx).toFixed(1), cy: ly.toFixed(1), rx: w, ry: h, fill: col, 'pointer-events': 'none' }));
+    };
+
+    switch (type) {
+      // ── Act 1 ────────────────────────────────────────────
+      case 'grunt':
+        E(-s*0.28, -s*0.22, s*0.28, -s*0.22, s*0.22, s*0.13);
+        g.classList.add('enemy-bob');
+        break;
+      case 'goblin':
+        // 성난 눈썹 + 눈
+        g.appendChild(svgEl('line', { x1: (-s*0.45).toFixed(1), y1: (-s*0.55).toFixed(1), x2: (-s*0.15).toFixed(1), y2: (-s*0.42).toFixed(1), stroke: '#3a6e00', 'stroke-width': 1.4, 'pointer-events': 'none' }));
+        g.appendChild(svgEl('line', { x1: (s*0.45).toFixed(1), y1: (-s*0.55).toFixed(1), x2: (s*0.15).toFixed(1), y2: (-s*0.42).toFixed(1), stroke: '#3a6e00', 'stroke-width': 1.4, 'pointer-events': 'none' }));
+        E(-s*0.28, -s*0.35, s*0.28, -s*0.35, s*0.2, s*0.12, '#ffff88', '#222');
+        // 이빨
+        g.appendChild(svgEl('polygon', { points: `${(-s*0.12).toFixed(1)},${(s*0.18).toFixed(1)} ${(-s*0.04).toFixed(1)},${(s*0.32).toFixed(1)} ${(s*0.04).toFixed(1)},${(s*0.18).toFixed(1)} ${(s*0.12).toFixed(1)},${(s*0.32).toFixed(1)} ${(s*0.2).toFixed(1)},${(s*0.18).toFixed(1)}`, fill: 'rgba(255,255,200,0.85)', 'pointer-events': 'none' }));
+        g.classList.add('enemy-bob-fast');
+        break;
+      case 'fast':
+        // 사이클롭스 눈 (빠른 느낌)
+        g.appendChild(svgEl('ellipse', { cx: '0', cy: (-s*0.08).toFixed(1), rx: (s*0.38).toFixed(1), ry: (s*0.22).toFixed(1), fill: '#fff', 'pointer-events': 'none' }));
+        g.appendChild(svgEl('ellipse', { cx: (s*0.06).toFixed(1), cy: (-s*0.08).toFixed(1), rx: (s*0.2).toFixed(1), ry: (s*0.18).toFixed(1), fill: '#CC0000', 'pointer-events': 'none' }));
+        g.classList.add('enemy-bob-fast');
+        break;
+      case 'tank':
+        // 장갑 바이저 슬릿
+        SlitEye(-s*0.32, -s*0.15, s*0.16, s*0.08, 'rgba(255,80,0,0.9)');
+        g.classList.add('enemy-heavy');
+        break;
+      case 'elite':
+        // 빛나는 다이아몬드 눈
+        E(-s*0.22, -s*0.12, s*0.22, -s*0.12, s*0.18, s*0.1, 'rgba(220,150,255,0.95)', '#3a006a');
+        g.classList.add('enemy-pulse');
+        break;
+      case 'shielded':
+        E(-s*0.26, -s*0.28, s*0.26, -s*0.28, s*0.18, s*0.1, '#ddeeff', '#003366');
+        g.classList.add('enemy-bob');
+        break;
+      case 'berserker':
+        // 분노한 눈 (빨간 광채)
+        E(-s*0.28, -s*0.25, s*0.28, -s*0.25, s*0.2, s*0.12, '#FF4444', '#440000');
+        // 이빨
+        g.appendChild(svgEl('polygon', { points: `${(-s*0.18).toFixed(1)},${(s*0.16).toFixed(1)} ${(-s*0.08).toFixed(1)},${(s*0.3).toFixed(1)} ${(0).toFixed(1)},${(s*0.16).toFixed(1)} ${(s*0.08).toFixed(1)},${(s*0.3).toFixed(1)} ${(s*0.18).toFixed(1)},${(s*0.16).toFixed(1)}`, fill: '#ffdddd', 'pointer-events': 'none' }));
+        g.classList.add('enemy-bob-fast');
+        break;
+
+      // ── Act 2 ────────────────────────────────────────────
+      case 'necromancer':
+        // 해골 눈 소켓 (빈 구멍)
+        g.appendChild(svgEl('circle', { cx: (-s*0.3).toFixed(1), cy: (-s*0.22).toFixed(1), r: (s*0.22).toFixed(1), fill: 'rgba(0,0,0,0.85)', 'pointer-events': 'none' }));
+        g.appendChild(svgEl('circle', { cx: (s*0.3).toFixed(1), cy: (-s*0.22).toFixed(1), r: (s*0.22).toFixed(1), fill: 'rgba(0,0,0,0.85)', 'pointer-events': 'none' }));
+        // 보라 광채
+        g.appendChild(svgEl('circle', { cx: (-s*0.3).toFixed(1), cy: (-s*0.22).toFixed(1), r: (s*0.1).toFixed(1), fill: 'rgba(160,0,255,0.9)', 'pointer-events': 'none' }));
+        g.appendChild(svgEl('circle', { cx: (s*0.3).toFixed(1), cy: (-s*0.22).toFixed(1), r: (s*0.1).toFixed(1), fill: 'rgba(160,0,255,0.9)', 'pointer-events': 'none' }));
+        g.classList.add('enemy-wisp');
+        break;
+      case 'stone_golem':
+      case 'juggernaut':
+      case 'colossus':
+        SlitEye(-s*0.32, -s*0.18, s*0.2, s*0.07, 'rgba(255,120,0,0.85)');
+        g.classList.add('enemy-heavy');
+        break;
+      case 'plague_carrier':
+        // 충혈된 눈
+        E(-s*0.26, -s*0.22, s*0.26, -s*0.22, s*0.2, s*0.11, '#ffeeee', '#880000');
+        // 실핏줄
+        g.appendChild(svgEl('line', { x1: (-s*0.38).toFixed(1), y1: (-s*0.3).toFixed(1), x2: (-s*0.22).toFixed(1), y2: (-s*0.18).toFixed(1), stroke: 'rgba(200,0,0,0.5)', 'stroke-width': 0.7, 'pointer-events': 'none' }));
+        g.classList.add('enemy-bob');
+        break;
+      case 'siege_beast':
+        SlitEye(-s*0.42, -s*0.22, s*0.22, s*0.09, '#FF6600');
+        g.classList.add('enemy-heavy');
+        break;
+      case 'void_stalker':
+        E(-s*0.24, -s*0.18, s*0.24, -s*0.18, s*0.18, s*0.1, 'rgba(200,100,255,0.9)', '#1a0033');
+        g.classList.add('enemy-pulse');
+        break;
+      case 'berserker': break; // handled above
+
+      // ── Act 3 ────────────────────────────────────────────
+      case 'phantom':
+        // 텅 빈 눈구멍 (유령)
+        g.appendChild(svgEl('ellipse', { cx: (-s*0.25).toFixed(1), cy: (-s*0.1).toFixed(1), rx: (s*0.2).toFixed(1), ry: (s*0.26).toFixed(1), fill: 'rgba(0,0,0,0.7)', 'pointer-events': 'none' }));
+        g.appendChild(svgEl('ellipse', { cx: (s*0.25).toFixed(1), cy: (-s*0.1).toFixed(1), rx: (s*0.2).toFixed(1), ry: (s*0.26).toFixed(1), fill: 'rgba(0,0,0,0.7)', 'pointer-events': 'none' }));
+        g.classList.add('enemy-wisp');
+        break;
+      case 'void_wraith':
+        g.appendChild(svgEl('ellipse', { cx: (-s*0.3).toFixed(1), cy: 0, rx: (s*0.18).toFixed(1), ry: (s*0.1).toFixed(1), fill: 'rgba(120,0,200,0.85)', 'pointer-events': 'none' }));
+        g.appendChild(svgEl('ellipse', { cx: (s*0.3).toFixed(1), cy: 0, rx: (s*0.18).toFixed(1), ry: (s*0.1).toFixed(1), fill: 'rgba(120,0,200,0.85)', 'pointer-events': 'none' }));
+        g.classList.add('enemy-wisp');
+        break;
+      case 'shadow_elite':
+        SlitEye(-s*0.26, -s*0.14, s*0.18, s*0.07, 'rgba(200,0,255,0.9)');
+        g.classList.add('enemy-pulse');
+        break;
+      case 'shadow_hound':
+        E(-s*0.28, -s*0.18, s*0.28, -s*0.18, s*0.2, s*0.12, '#ff4444', '#220000');
+        g.classList.add('enemy-bob-fast');
+        break;
+      case 'void_reaper':
+        SlitEye(-s*0.28, -s*0.18, s*0.16, s*0.07, 'rgba(160,0,220,0.9)');
+        g.classList.add('enemy-pulse');
+        break;
+      case 'void_knight':
+        SlitEye(-s*0.3, -s*0.15, s*0.18, s*0.08, 'rgba(80,0,200,0.85)');
+        g.classList.add('enemy-bob');
+        break;
+      case 'abyssal_wraith':
+        E(-s*0.25, -s*0.18, s*0.25, -s*0.18, s*0.17, s*0.1, 'rgba(180,80,255,0.85)', '#1a0033');
+        g.classList.add('enemy-wisp');
+        break;
+      case 'void_herald':
+        E(-s*0.26, -s*0.18, s*0.26, -s*0.18, s*0.19, s*0.11, 'rgba(200,150,255,0.9)', '#2a0044');
+        g.classList.add('enemy-pulse');
+        break;
+      case 'void_shade':
+        g.appendChild(svgEl('ellipse', { cx: 0, cy: 0, rx: (s*0.25).toFixed(1), ry: (s*0.14).toFixed(1), fill: 'rgba(80,0,160,0.85)', 'pointer-events': 'none' }));
+        g.classList.add('enemy-wisp');
+        break;
+      case 'void_spawn':
+        g.appendChild(svgEl('circle', { cx: 0, cy: 0, r: (s*0.4).toFixed(1), fill: 'rgba(60,0,120,0.8)', 'pointer-events': 'none' }));
+        g.classList.add('enemy-bob-fast');
+        break;
+      case 'phantom_giant':
+        g.appendChild(svgEl('ellipse', { cx: (-s*0.35).toFixed(1), cy: (-s*0.15).toFixed(1), rx: (s*0.24).toFixed(1), ry: (s*0.32).toFixed(1), fill: 'rgba(0,0,0,0.75)', 'pointer-events': 'none' }));
+        g.appendChild(svgEl('ellipse', { cx: (s*0.35).toFixed(1), cy: (-s*0.15).toFixed(1), rx: (s*0.24).toFixed(1), ry: (s*0.32).toFixed(1), fill: 'rgba(0,0,0,0.75)', 'pointer-events': 'none' }));
+        g.appendChild(svgEl('ellipse', { cx: (-s*0.35).toFixed(1), cy: (-s*0.15).toFixed(1), rx: (s*0.1).toFixed(1), ry: (s*0.14).toFixed(1), fill: 'rgba(120,0,200,0.8)', 'pointer-events': 'none' }));
+        g.appendChild(svgEl('ellipse', { cx: (s*0.35).toFixed(1), cy: (-s*0.15).toFixed(1), rx: (s*0.1).toFixed(1), ry: (s*0.14).toFixed(1), fill: 'rgba(120,0,200,0.8)', 'pointer-events': 'none' }));
+        g.classList.add('enemy-wisp');
+        break;
+      case 'shadow_titan':
+        SlitEye(-s*0.35, -s*0.2, s*0.24, s*0.08, 'rgba(200,0,255,0.95)');
+        g.classList.add('enemy-heavy');
+        break;
+
+      // ── Solar DLC ─────────────────────────────────────────
+      case 'solar_ember':
+        g.appendChild(svgEl('circle', { cx: 0, cy: 0, r: (s*0.45).toFixed(1), fill: 'rgba(255,120,0,0.75)', 'pointer-events': 'none' }));
+        g.classList.add('enemy-pulse');
+        break;
+      case 'solar_acolyte':
+        E(-s*0.25, -s*0.2, s*0.25, -s*0.2, s*0.18, s*0.1, '#fff8aa', '#443300');
+        g.classList.add('enemy-bob');
+        break;
+      case 'sunfire_dancer':
+        E(-s*0.28, -s*0.18, s*0.28, -s*0.18, s*0.2, s*0.12, '#ffee44', '#330000');
+        g.classList.add('enemy-bob-fast');
+        break;
+      case 'solar_zealot':
+        SlitEye(-s*0.28, -s*0.16, s*0.18, s*0.07, '#FFD700');
+        g.classList.add('enemy-pulse');
+        break;
+      case 'solar_knight':
+        SlitEye(-s*0.3, -s*0.15, s*0.2, s*0.09, 'rgba(255,160,0,0.9)');
+        g.classList.add('enemy-heavy');
+        break;
+      case 'blinded_crusader':
+        // 눈가리개처럼 가려진 눈
+        g.appendChild(svgEl('rect', { x: (-s*0.45).toFixed(1), y: (-s*0.25).toFixed(1), width: (s*0.9).toFixed(1), height: (s*0.18).toFixed(1), rx: (s*0.06).toFixed(1), fill: 'rgba(200,150,0,0.7)', 'pointer-events': 'none' }));
+        g.classList.add('enemy-bob');
+        break;
+      case 'blazing_golem':
+        SlitEye(-s*0.35, -s*0.2, s*0.22, s*0.09, '#FF4400');
+        g.classList.add('enemy-heavy');
+        break;
+      case 'gilded_titan':
+        SlitEye(-s*0.38, -s*0.2, s*0.24, s*0.09, '#FFD700');
+        g.classList.add('enemy-heavy');
+        break;
+      case 'solar_herald':
+      case 'sun_herald':
+        E(-s*0.3, -s*0.22, s*0.3, -s*0.22, s*0.22, s*0.13, '#ffff88', '#664400');
+        g.classList.add('enemy-pulse');
+        break;
+
+      default:
+        // 나머지 모든 적: 기본 눈
+        if (!def.isBoss) {
+          E(-s*0.25, -s*0.2, s*0.25, -s*0.2, s*0.18, s*0.1);
+          g.classList.add('enemy-bob');
+        }
+    }
+  }
+
   // ── 유물: 감속/번 배율 설정 ─────────────────────────
   // 복수 slow_bonus 유물 스택 시 곱연산, 상한 1.40으로 캡 (95% 슬로우 버그 방지)
   setSlowBonus(mult) { this._slowBonus = Math.min(1.40, this._slowBonus * mult); }
@@ -1071,6 +1268,9 @@ export class EnemySystem {
       this._boss = enemy;
       this._ensureBossGlowStyle();
     }
+
+    // 캐릭터 디테일 (눈 + 아이들 애니메이션) — HP 바 아래 레이어에 추가
+    this._addCharacterDetails(g, type, def);
 
     // HP 바 배경
     const hpBg = svgEl('rect', {

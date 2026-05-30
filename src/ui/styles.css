@@ -3016,6 +3016,39 @@ kbd {
 }
 .enemy-enraged { animation: enragedPulse 0.52s ease-in-out infinite alternate; }
 
+/* ── 적 아이들 애니메이션 ───────────────────────────── */
+@keyframes enemyBob {
+  0%, 100% { transform: translateY(0px); }
+  50%       { transform: translateY(-2.5px); }
+}
+@keyframes enemyBobFast {
+  0%, 100% { transform: translateY(0px) scaleX(1); }
+  50%       { transform: translateY(-3px) scaleX(0.95); }
+}
+@keyframes enemyPulseGlow {
+  0%, 100% { opacity: 0.88; }
+  50%       { opacity: 1; }
+}
+@keyframes enemyRotateSlow {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+@keyframes enemyWisp {
+  0%, 100% { transform: translateY(0) scaleY(1); }
+  33%       { transform: translateY(-3px) scaleY(1.06); }
+  66%       { transform: translateY(1px) scaleY(0.96); }
+}
+@keyframes enemyHeavy {
+  0%, 100% { transform: translateY(0) scaleY(1); }
+  50%       { transform: translateY(1.5px) scaleY(0.97); }
+}
+
+.enemy-bob       { animation: enemyBob      2.4s ease-in-out infinite; }
+.enemy-bob-fast  { animation: enemyBobFast  1.4s ease-in-out infinite; }
+.enemy-pulse     { animation: enemyPulseGlow 2s ease-in-out infinite; }
+.enemy-wisp      { animation: enemyWisp     3.2s ease-in-out infinite; }
+.enemy-heavy     { animation: enemyHeavy    2.8s ease-in-out infinite; }
+
 /* QW#2: Abyssal Dragon Phase 2 */
 @keyframes phase2Pulse {
   from { filter: drop-shadow(0 0 5px #EE00EE) brightness(1.15); }
