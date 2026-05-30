@@ -44,6 +44,11 @@ export default {
   relic_charge_crystal_desc:   '그림자 워든: 그림자 충전이 10 대신 8에서 발동됩니다.',
   relic_undying_will:          '불굴의 의지',
   relic_undying_will_desc:     '그림자 워든 전용: 적 5처치마다 그림자 충전 +1 보너스. 자동 시전까지 더 빠르게 도달합니다.',
+  relic_void_sovereign:        '공허의 군주',
+  relic_void_sovereign_desc:   '모든 타워 피해 +20%. Act 4 클리어 시 해금.',
+  relic_shadow_legacy:         '그림자 유산',
+  relic_shadow_legacy_desc:    '그림자 워든: 그림자 충전이 10 대신 7에서 발동됩니다. Act 4 클리어 시 해금.',
+  meta_act4_unlock:            '암흑 영역 클리어! 전설 유물 해금됨.',
 
   // ── 맵 이름 ──────────────────────────────────────────
   dlc_sr_map_void_corridor:    '공허 회랑',

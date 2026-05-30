@@ -117,4 +117,22 @@ export const SHADOW_RELICS = [
     effect: { type: 'shadow_charge_on_kills', killsPerCharge: 5 },
     dlc: 'shadow_realm',
   },
+
+  // ── Act 4 클리어 해금 전설 유물 (2) ───────────────
+  {
+    id: 'void_sovereign',
+    icon: '👑', rarity: 'legendary', category: 'special',
+    unlockCondition: 'act4_clear',
+    // 모든 타워 피해 +20%
+    effect: { type: 'tower_dmg_bonus', towerType: '__all__', mult: 1.20 },
+    dlc: 'shadow_realm',
+  },
+  {
+    id: 'shadow_legacy',
+    icon: '🌑', rarity: 'legendary', category: 'special',
+    unlockCondition: 'act4_clear',
+    // Shadow Charge 최대치 10→7로 단축 (charge_crystal의 10→8보다 강력)
+    effect: { type: 'shadow_charge_reduce', newMax: 7 },
+    dlc: 'shadow_realm',
+  },
 ];

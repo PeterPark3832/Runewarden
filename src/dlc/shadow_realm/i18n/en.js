@@ -45,6 +45,11 @@ export default {
   relic_charge_crystal_desc:   'Shadow Warden: Shadow Charge triggers at 8 instead of 10.',
   relic_undying_will:          'Undying Will',
   relic_undying_will_desc:     'Shadow Warden only: every 5 kills grant +1 bonus Shadow Charge. Reach the auto-cast threshold faster.',
+  relic_void_sovereign:        'Void Sovereign',
+  relic_void_sovereign_desc:   'All towers deal +20% damage. Unlocked by clearing Act 4.',
+  relic_shadow_legacy:         'Shadow Legacy',
+  relic_shadow_legacy_desc:    'Shadow Warden: Shadow Charge triggers at 7 instead of 10. Unlocked by clearing Act 4.',
+  meta_act4_unlock:            'Shadow Realm cleared! Legendary relics unlocked.',
 
   // ── Map names ──────────────────────────────────────
   dlc_sr_map_void_corridor:    'Void Corridor',

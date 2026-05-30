@@ -33,7 +33,6 @@
 
 import { SHADOW_RELICS } from '../dlc/shadow_realm/relics.js';
 import { SOLAR_RELICS }  from '../dlc/solar_dominion/relics.js';
-import { STORM_RELICS }  from '../dlc/storm_imperium/relics.js';
 
 const _BASE_RELIC_DEFS = [
 
@@ -303,16 +302,25 @@ export const RELIC_SYNERGIES = [
 ];
 
 // DLC 유물 병합
-export const RELIC_DEFS = [..._BASE_RELIC_DEFS, ...SHADOW_RELICS, ...SOLAR_RELICS, ...STORM_RELICS];
+export const RELIC_DEFS = [..._BASE_RELIC_DEFS, ...SHADOW_RELICS, ...SOLAR_RELICS];
 
 /** id로 유물 찾기 */
 export function getRelicById(id) {
   return RELIC_DEFS.find(r => r.id === id);
 }
 
-/** 가중치 랜덤: Rare는 절반 확률 */
-export function pickRandomRelics(count, excludeIds = []) {
-  const pool = RELIC_DEFS.filter(r => !excludeIds.includes(r.id));
+/** 가중치 랜덤: Rare는 절반 확률
+ * @param {number} count - 선택할 유물 수
+ * @param {string[]} excludeIds - 이미 보유한 유물 ID 목록
+ * @param {string[]} unlockedRelicIds - 메타 해금된 특수 유물 ID 목록 (unlockCondition 있는 유물 접근 허용)
+ */
+export function pickRandomRelics(count, excludeIds = [], unlockedRelicIds = []) {
+  const pool = RELIC_DEFS.filter(r => {
+    if (excludeIds.includes(r.id)) return false;
+    // unlockCondition이 있는 유물은 메타에서 해금된 경우에만 풀에 포함
+    if (r.unlockCondition && !unlockedRelicIds.includes(r.id)) return false;
+    return true;
+  });
   const weighted = [];
   for (const r of pool) {
     const w = r.rarity === 'rare' ? 1 : r.rarity === 'uncommon' ? 2 : 3;

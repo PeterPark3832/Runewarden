@@ -27,7 +27,7 @@ import { resolveSpell as _resolveSpellImpl } from './SpellResolver.js';
 import { HEX_W } from '../config/constants.js';
 import { log, spawnFloatText, shakeNexus, setWaveButton } from './GameUtils.js';
 import { shared } from './GameState.js';
-import { updateHUD, renderHand, onBossUpdate, updateShadowChargeHUD, updateSolarChargeHUD, updateStormChargeHUD, showClearBanner, showAmbushBanner, updateMenuRank } from '../ui/HUDUpdater.js';
+import { updateHUD, renderHand, onBossUpdate, updateShadowChargeHUD, showClearBanner, showAmbushBanner, updateMenuRank } from '../ui/HUDUpdater.js';
 import { showScreen, openWardenSelect, openDifficultySelect, openCodex, openDeckView } from '../ui/UIOrchestrator.js';
 import { registerDLC, hasDLC, clearDLCs } from '../systems/DLCRegistry.js';
 import { MAX_PLAYER_LEVEL, getWaveXpGrant, getLevelFromXp, XP_THRESHOLDS } from '../systems/PlayerLevelSystem.js';
@@ -38,7 +38,6 @@ function rangeToPixel(hexRange) { return hexRange * HEX_W * 0.75; }
 const MAX_WAVES_BASE  = 15;  // Act 1(5) + Act 2(5) + Act 3(5)
 const MAX_WAVES_DLC   = 23;  // + Act 4(8) — DLC Shadow Realm
 const MAX_WAVES_DLC2  = 31;  // + Act 5(8) — DLC Solar Dominion
-const MAX_WAVES_DLC3  = 39;  // + Act 6(8) — DLC Storm Imperium
 const ACT_SIZE    = 5;   // 액트당 웨이브 수
 const NEXUS_HP    = 3;
 const START_GOLD  = 25;
@@ -46,7 +45,6 @@ const WAVE_GOLD   = 6;
 const BOSS_WAVES_BASE = new Set([5, 10, 15]);
 const BOSS_WAVES_DLC  = new Set([5, 10, 15, 23]);       // DLC1 보스 웨이브
 const BOSS_WAVES_DLC2 = new Set([5, 10, 15, 23, 31]);   // DLC2 보스 웨이브 (Solar Titan: W28도 특수)
-const BOSS_WAVES_DLC3 = new Set([5, 10, 15, 23, 31, 36, 39]); // DLC3 보스 웨이브 (Typhoon W36, Sovereign W39)
 const CURSED_WAVES    = new Set([4, 9, 14, 20, 27]);     // 저주 웨이브 고정 시점 (Act당 1회)
 
 // ── DOM 참조 ───────────────────────────────────────────
@@ -371,11 +369,7 @@ function startRun() {
   clearDLCs();
   if (steam?.isDlcOwned('shadow_realm'))    registerDLC('shadow_realm');
   if (steam?.isDlcOwned('solar_dominion'))  registerDLC('solar_dominion');
-  if (steam?.isDlcOwned('storm_imperium'))  registerDLC('storm_imperium');
-  if (hasDLC('storm_imperium')) {
-    shared.maxWaves  = MAX_WAVES_DLC3;
-    shared.bossWaves = BOSS_WAVES_DLC3;
-  } else if (hasDLC('solar_dominion')) {
+  if (hasDLC('solar_dominion')) {
     shared.maxWaves  = MAX_WAVES_DLC2;
     shared.bossWaves = BOSS_WAVES_DLC2;
   } else if (hasDLC('shadow_realm')) {
@@ -432,10 +426,6 @@ function startRun() {
     _solarChargeCount:     0,
     _solarChargeMax:       8,
     _solarChargeExtraOnHighCost: 0,
-    // DLC 3 Storm Charge 상태
-    _stormChargeCount:         0,
-    _stormChargeMax:           8,
-    _stormChargeExtraOnGrounding: 0,  // aerial_will 유물: grounding 시 추가 충전
     _divineShieldActive:   false,
     _divineShieldExpiry:   0,
     _investGoldReturn:     0,      // invest_gold 이벤트 저장 (다음 웨이브 클리어 시 지급)
@@ -503,17 +493,12 @@ function startRun() {
     audio.play('nexus_hit');
     showAmbushBanner(delayMs);
   };
-  enemySystem.onEnemyGrounded = (e) => {
-    if (e.flying) _triggerStormChargeGrounding(e);
-  };
-  enemySystem.onFlyingEnemyKilled = () => {
-    _triggerStormCharge(1);
-  };
 
   towerSystem = new TowerSystem(
     renderer.getProjectileLayer(),
     enemySystem,
     (msg, cls) => log(msg, cls),
+    renderer,
   );
 
   // 요약 UI (매 런마다 재생성)
@@ -629,7 +614,7 @@ function startRun() {
 // ── 유물 선택 오픈 ────────────────────────────────────
 function _openRelicPicker() {
   const existingIds = state.relics.map(r => r.id);
-  const choices = pickRandomRelics(3, existingIds);
+  const choices = pickRandomRelics(3, existingIds, meta.unlockedRelics);
   if (choices.length === 0) return;  // 모두 획득한 경우
   relicUI.openPicker(choices, existingIds);
 }
@@ -760,20 +745,6 @@ function _applyRelicToTowers(relic) {
       case 'camo_detect':
         towerSystem.enableGlobalCamoDetect?.();
         break;
-      // DLC 3 Storm Imperium cases
-      case 'flying_dmg_bonus':
-        towerSystem.addAerialBane?.(e.extraMult);
-        break;
-      case 'storm_pact':
-        towerSystem.addStormPact?.(e.extraMult);
-        break;
-      case 'storm_conduit_bonus':
-        towerSystem.addStormConduitBonus?.(e.extraRadius ?? 0, e.extraDmg ?? 0);
-        break;
-      case 'anchor_bonus':
-        towerSystem.addAnchorBonus?.(e.extraRadius ?? 0, e.extraDuration ?? 0);
-        break;
-      // storm_charge_reduce / storm_charge_on_grounding handled in state block below
     }
   }
   if (enemySystem) {
@@ -786,9 +757,6 @@ function _applyRelicToTowers(relic) {
     if (e.type === 'solar_dot_bonus') {
       enemySystem.setSolarDotBonus?.(e.extraDps, e.extraDuration);
     }
-    if (e.type === 'grounding_threshold') {
-      enemySystem.setGroundingThreshold?.(e.threshold);
-    }
   }
   // State-level DLC 2 relic effects
   if (state) {
@@ -797,13 +765,6 @@ function _applyRelicToTowers(relic) {
     }
     if (e.type === 'solar_charge_on_spell') {
       state._solarChargeExtraOnHighCost = (state._solarChargeExtraOnHighCost ?? 0) + e.extraCharge;
-    }
-    // DLC 3 Storm Imperium state-level relic effects
-    if (e.type === 'storm_charge_reduce') {
-      state._stormChargeMax = Math.min(state._stormChargeMax ?? 8, e.newMax);
-    }
-    if (e.type === 'storm_charge_on_grounding') {
-      state._stormChargeExtraOnGrounding = (state._stormChargeExtraOnGrounding ?? 0) + e.extraCharge;
     }
   }
 }
@@ -909,7 +870,6 @@ function beginWave() {
 
   // Iron Fortress: 웨이브별 넥서스 피격 카운터 리셋
   state._waveNexusDamageCount = 0;
-  state._waveGroundNexusDamageCount = 0;
   // PERFECT_WAVE 업적 추적: 웨이브 시작 시 피격 여부 초기화
   state._nexusHitThisWave = false;
 
@@ -936,6 +896,7 @@ function beginWave() {
     showClearBanner(state.wave, true);
     audio.play('boss_warning');
     music.crossfadeTo('boss');
+    _showBossEntry(_getBossNameForWave(state.wave), state.wave);
   } else {
     log(i18n.t('log_wave_start', state.wave, actNum), 'bad');
     audio.play('wave_start');
@@ -995,9 +956,6 @@ function beginWave() {
   state.nextWaveSlowMult  = 0;
   state.extraPrepSeconds  = 0;
 
-  // Storm Charge: grounding 충전 추적 초기화 (웨이브 시작마다)
-  state._groundingChargedThisWave = new Set();
-
   // ── Cursed Wave (Balance Sync #10) ─────────────────────────────────────────
   state._cursedWave = null;
   if (CURSED_WAVES.has(state.wave)) {
@@ -1026,7 +984,6 @@ function beginWave() {
   // DLC Act 진입 시 일회성 소개 팝업
   if (state.wave === 16) tutorial?.triggerDlcIntro('shadow');
   if (state.wave === 24) tutorial?.triggerDlcIntro('solar');
-  if (state.wave === 32) tutorial?.triggerDlcIntro('storm');
 }
 
 // ── 웨이브 클리어 ─────────────────────────────────────
@@ -1189,7 +1146,7 @@ function resolveGamblePath() {
 
   // 랜덤 유물 1개 자동 지급 (선택 없음)
   const excludeIds = (state.relics ?? []).map(r => r.id);
-  const offered = pickRandomRelics(1, excludeIds);
+  const offered = pickRandomRelics(1, excludeIds, meta.unlockedRelics);
   if (offered.length > 0) {
     const relic = offered[0];
     state.relics.push(relic);
@@ -1469,7 +1426,7 @@ function onShopLeave() {
 }
 
 // ── 적 처리 콜백 ──────────────────────────────────────
-function onEnemyReachEnd({ type: enemyType, displayName, isBoss = false, flying = false } = {}) {
+function onEnemyReachEnd({ type: enemyType, displayName, isBoss = false } = {}) {
   state._nexusHitThisWave = true;  // PERFECT_WAVE 업적: 이번 웨이브 넥서스 피격 기록
 
   // DLC 2: Divine Shield — 넥서스 무적 상태
@@ -1515,16 +1472,6 @@ function onEnemyReachEnd({ type: enemyType, displayName, isBoss = false, flying 
       return;
     }
     state._waveNexusDamageCount = (state._waveNexusDamageCount ?? 0) + 1;
-  }
-
-  // Sky Bastion (DLC 3): 지상 적의 넥서스 피격 웨이브당 최대 1회 (비행 적 제외)
-  if (hasRelic('sky_bastion') && !flying) {
-    if ((state._waveGroundNexusDamageCount ?? 0) >= 1) {
-      log(i18n.t('log_iron_fortress'), 'good');
-      shakeNexus();
-      return;
-    }
-    state._waveGroundNexusDamageCount = (state._waveGroundNexusDamageCount ?? 0) + 1;
   }
 
   state.nexusHp--;
@@ -2080,6 +2027,30 @@ function addGold(amount, xy, silent = false) {
       goldEl.classList.add('gold-punch');
     }
   }
+  if (amount >= 1) _spawnCoinParticles(amount);
+}
+
+// ── Gold Coin Particle Effect ─────────────────────────────
+let _lastCoinSpawnTime = 0;
+function _spawnCoinParticles(amount) {
+  if (typeof document === 'undefined') return;
+  const now = Date.now();
+  if (now - _lastCoinSpawnTime < 200) return;
+  _lastCoinSpawnTime = now;
+
+  const canvas = document.getElementById('game-canvas') ?? document.body;
+  const count = amount >= 10 ? 3 : amount >= 5 ? 2 : 1;
+  const rect = canvas.getBoundingClientRect();
+  for (let i = 0; i < count; i++) {
+    const el = document.createElement('div');
+    el.className = 'coin-particle';
+    el.textContent = 'g';
+    el.style.left = `${rect.width * 0.75 + (Math.random() - 0.5) * 60}px`;
+    el.style.top = `${rect.height * 0.08 + (Math.random() - 0.5) * 20}px`;
+    el.style.animationDelay = `${i * 80}ms`;
+    canvas.appendChild(el);
+    el.addEventListener('animationend', () => el.remove(), { once: true });
+  }
 }
 
 function spendGold(amount) {
@@ -2116,7 +2087,11 @@ function _triggerSolarCharge(card) {
 function _updateSolarChargeHUD() {
   const n   = state?._solarChargeCount ?? 0;
   const max = state?._solarChargeMax   ?? 8;
-  updateSolarChargeHUD(n, max);
+  // reuse shadow HUD or call dedicated Solar HUD if available
+  const hudFn = typeof updateSolarChargeHUD === 'function'
+    ? updateSolarChargeHUD
+    : (typeof updateShadowChargeHUD === 'function' ? updateShadowChargeHUD : null);
+  hudFn?.(n, max);
 }
 
 function _triggerSolarAutoSpell() {
@@ -2151,48 +2126,35 @@ function _triggerShadowAutoSpell() {
   resolveSpell({ ...card.effect, _isAutocast: true });   // 무료 자동 발동 — 골드 소모 없음, 연쇄 차단
 }
 
-// ── Storm Charge 충전 & 자동 시전 (DLC 3) ──────────────
-function _triggerStormCharge(amount = 1) {
-  if (!state || state.warden?.passive !== PASSIVES.STORM_CHARGE) return;
-
-  state._stormChargeCount = (state._stormChargeCount ?? 0) + amount;
-  const max = state._stormChargeMax ?? 8;
-  log(i18n.t('dlc_si_log_storm_charge', state._stormChargeCount, max), 'info');
-
-  if (state._stormChargeCount >= max) {
-    state._stormChargeCount = 0;
-    _triggerStormAutoSpell();
-  }
-  _updateStormChargeHUD();
+// ── Boss Entry Cinematic ──────────────────────────────
+function _getBossNameForWave(wave) {
+  const bossNames = {
+    5: 'Ironclad',
+    10: 'Void Titan',
+    15: 'Abyssal Dragon',
+    23: 'Shadow Colossus',
+    28: 'Solar Titan',
+    31: 'Sun God',
+  };
+  return bossNames[wave] ?? 'Boss';
 }
 
-// 비행 적 grounding 시 Storm Charge 충전 (웨이브당 같은 적에게 최대 1회)
-function _triggerStormChargeGrounding(e) {
-  if (!state || state.warden?.passive !== PASSIVES.STORM_CHARGE) return;
-  // 웨이브당 같은 적 최대 1회
-  if (!state._groundingChargedThisWave) state._groundingChargedThisWave = new Set();
-  if (state._groundingChargedThisWave.has(e.id)) return;
-  state._groundingChargedThisWave.add(e.id);
-
-  const extra = state._stormChargeExtraOnGrounding ?? 0;  // aerial_will 유물: +1 추가
-  _triggerStormCharge(1 + extra);
-}
-
-function _updateStormChargeHUD() {
-  const n   = state?._stormChargeCount ?? 0;
-  const max = state?._stormChargeMax   ?? 8;
-  updateStormChargeHUD(n, max);
-}
-
-function _triggerStormAutoSpell() {
-  const spellId = 'spell_thunderstrike';
-  const card    = CARD_DEFS.find(c => c.id === spellId);
-  if (!card) return;
-
-  const spellName = i18n.lang === 'ko' ? (card.nameKo || card.name) : card.name;
-  log(i18n.t('dlc_si_log_auto_cast', spellName), 'gold');
-  audio?.play('spell_cast');
-  resolveSpell({ ...card.effect, _isAutocast: true });
+function _showBossEntry(name, wave) {
+  if (typeof document === 'undefined') return;
+  const existing = document.getElementById('boss-entry-overlay');
+  if (existing) existing.remove();
+  const overlay = document.createElement('div');
+  overlay.id = 'boss-entry-overlay';
+  const nameEl = document.createElement('div');
+  nameEl.className = 'boss-entry-name';
+  nameEl.textContent = name;
+  const waveEl = document.createElement('div');
+  waveEl.className = 'boss-entry-wave';
+  waveEl.textContent = `Wave ${wave}`;
+  overlay.appendChild(nameEl);
+  overlay.appendChild(waveEl);
+  document.body.appendChild(overlay);
+  overlay.addEventListener('animationend', () => overlay.remove(), { once: true });
 }
 
 // ── 이벤트 리스너 ─────────────────────────────────────
