@@ -248,6 +248,7 @@ export class EnemySystem {
     this._spawnIndex  = 0;
     this._waveActive  = false;
     this._dying = new Set();
+    this._pendingRemove = new Set(); // 틱 종료 후 일괄 제거 큐 — 순회 중 즉시 제거 방지
     this._sortedByProgress = []; // 프레임 타겟팅 캐시: getLeadEnemy O(n²) → O(n log n + k)
     this._boss        = null;
     this._slowBonus   = 1;    // 유물 감속 배율
@@ -291,15 +292,43 @@ export class EnemySystem {
     return this._pool[type]?.pop() ?? null;
   }
 
-  _poolReturn(el, type, bodyEl, hpBar) {
+  _poolReturn(el, type, bodyEl, hpBar, badgesEl) {
     if (!this._pool[type]) this._pool[type] = [];
     if (this._pool[type].length < 10) {
       el.setAttribute('transform', 'translate(-9999,-9999)');
       el.removeAttribute('style');
-      this._pool[type].push({ el, bodyEl, hpBar });
+      this._pool[type].push({ el, bodyEl, hpBar, badgesEl: badgesEl ?? null });
     } else {
       el.remove();
     }
+  }
+
+  // ── 역할별 몸통 형태 생성 ─────────────────────────────
+  // 고속(타원) / 중장갑(육각형) / 엘리트(다이아몬드) / 기본(원)
+  _makeBodyEl(type, def) {
+    const fill = def.color, stroke = 'rgba(255,255,255,0.6)', s = def.size;
+    if (['fast','goblin','void_wraith','solar_ember','sunfire_dancer',
+         'shadow_hound','void_shade','void_spawn'].includes(type)) {
+      return svgEl('ellipse', { cx: 0, cy: 0,
+        rx: +(s * 1.35).toFixed(1), ry: +(s * 0.72).toFixed(1),
+        fill, stroke, 'stroke-width': 1.5 });
+    }
+    if (['tank','stone_golem','juggernaut','colossus','siege_beast',
+         'blazing_golem','phantom_giant','shadow_titan'].includes(type)) {
+      const pts = Array.from({length: 6}, (_, i) => {
+        const a = i * Math.PI / 3 - Math.PI / 6;
+        return `${(s * Math.cos(a)).toFixed(1)},${(s * Math.sin(a)).toFixed(1)}`;
+      }).join(' ');
+      return svgEl('polygon', { points: pts, fill, stroke, 'stroke-width': 1.5 });
+    }
+    if (['elite','shadow_elite','necromancer','void_stalker','void_knight',
+         'abyssal_wraith','void_reaper','solar_zealot','void_herald'].includes(type)) {
+      return svgEl('polygon', {
+        points: `0,${-s} ${+(s * 0.72).toFixed(1)},0 0,${s} ${-(s * 0.72).toFixed(1)},0`,
+        fill, stroke, 'stroke-width': 1.5,
+      });
+    }
+    return svgEl('circle', { cx: 0, cy: 0, r: s, fill, stroke, 'stroke-width': 1.5 });
   }
 
   // ── 유물: 감속/번 배율 설정 ─────────────────────────
@@ -437,30 +466,22 @@ export class EnemySystem {
       // Solar DoT 처리 — solarImmune 적은 무효
       if (e.solarDots?.length > 0 && !e.solarImmune) {
         this._updateSolarDots(e, delta);
-        if (e.hp <= 0 && !this._dying.has(e.id)) {
-          if (e.isBoss) { this._boss = null; this.onBossUpdate?.({ hp: 0, maxHp: e.maxHp }); audio.play('boss_die'); this._triggerScreenShake(); }
-          else if (e.isElite || e.type === 'tank') { audio.play(e.isElite ? 'elite_die' : 'tank_die'); }
-          else { audio.play('enemy_die'); }
-          this._handleSplitOnDeath(e);
-          this._removeEnemy(e, true);
-          this.onEnemyKilled(e.reward, e.isSplitChild ?? false);
+        if (e.hp <= 0 && !this._pendingRemove.has(e.id) && !this._dying.has(e.id)) {
+          e._killingElement = 'solar';
+          this._queueDeath(e);
           continue;
         }
       }
       // 번(DoT) 처리 — 빙결 중에도 계속 타오름
       if (e.burns.length > 0) {
         this._updateBurns(e, delta);
-        if (e.hp <= 0 && !this._dying.has(e.id)) {
-          if (e.isBoss) { this._boss = null; this.onBossUpdate?.({ hp: 0, maxHp: e.maxHp }); audio.play('boss_die'); this._triggerScreenShake(); }
-          else if (e.isElite || e.type === 'tank') { audio.play(e.isElite ? 'elite_die' : 'tank_die'); }
-          else { audio.play('enemy_die'); }
-          this._handleSplitOnDeath(e);
-          this._removeEnemy(e, true);
-          this.onEnemyKilled(e.reward, e.isSplitChild ?? false);
+        if (e.hp <= 0 && !this._pendingRemove.has(e.id) && !this._dying.has(e.id)) {
+          e._killingElement = 'fire';
+          this._queueDeath(e);
           continue;
         }
       }
-      if (!this.enemies.includes(e)) continue; // 이미 제거됨
+      if (this._pendingRemove.has(e.id)) continue; // 이미 제거 큐에 있음
 
       if (e.frozen > 0) { e.frozen -= delta; this._updateEnemySVG(e); continue; }
       if (e.stunned > 0) { e.stunned -= delta; this._updateEnemySVG(e); continue; }
@@ -470,9 +491,29 @@ export class EnemySystem {
     }
     for (const e of reachedEnd) {
       const reachInfo = { type: e.type, displayName: ENEMY_DEFS[e.type]?.name ?? e.type, isBoss: e.isBoss };
+      this._pendingRemove.delete(e.id); // 넥서스 도달 시 죽음 큐에서 제거
       this._removeEnemy(e, false);
       this.onEnemyReachEnd(reachInfo);
     }
+
+    // 틱 종료 일괄 제거 — 순회가 완전히 끝난 뒤 안전하게 처리
+    this._flushPendingRemovals();
+  }
+
+  // 제거 큐 flush — update() 틱 끝 또는 테스트에서 직접 호출 가능
+  _flushPendingRemovals() {
+    if (this._pendingRemove.size === 0) return;
+    for (const id of this._pendingRemove) {
+      const e = this.enemies.find(x => x.id === id);
+      if (e) {
+        this._handleSplitOnDeath(e);
+        this._removeEnemy(e, true);
+        this.onEnemyKilled(e.reward, e.isSplitChild ?? false);
+      }
+    }
+    this._pendingRemove.clear();
+    // flush 후 정렬 캐시 재구축 — TowerSystem이 이후 호출하는 getLeadEnemy에 신선한 목록 제공
+    this._sortedByProgress = [...this.enemies].sort((a, b) => b.waypointIndex - a.waypointIndex);
   }
 
   _moveEnemy(e, delta) {
@@ -572,6 +613,16 @@ export class EnemySystem {
         // 위장 적 시각 처리
         g.style.opacity = def.camo ? '0.4' : '';
         pooled.bodyEl.setAttribute('stroke-dasharray', def.camo ? '3,2' : 'none');
+        // 상태이상 뱃지 재사용 — 풀 원소의 badgesEl을 찾아 초기화
+        let badgesEl = pooled.badgesEl ?? g.querySelector('.status-badges');
+        if (!badgesEl) {
+          badgesEl = svgEl('g', { class: 'status-badges' });
+          g.appendChild(badgesEl);
+        } else {
+          while (badgesEl.firstChild) badgesEl.removeChild(badgesEl.firstChild);
+        }
+        enemy.badgesEl = badgesEl;
+        enemy._statusKey = '';
         this.layer.appendChild(g);  // bring to front (z-order)
         this.enemies.push(enemy);
         return;
@@ -587,11 +638,8 @@ export class EnemySystem {
     });
     g.appendChild(shadow);
 
-    // 몸통
-    const body = svgEl('circle', {
-      cx: 0, cy: 0, r: def.size,
-      fill: def.color, stroke: 'rgba(255,255,255,0.6)', 'stroke-width': 1.5,
-    });
+    // 몸통 (고속=타원 / 중장갑=육각형 / 엘리트=다이아몬드 / 기본=원)
+    const body = this._makeBodyEl(type, def);
     g.appendChild(body);
     enemy.bodyEl = body;
 
@@ -635,10 +683,11 @@ export class EnemySystem {
       }));
 
     } else if (type === 'elite') {
-      // 엘리트: 다이아몬드 마킹
+      // 엘리트: 다이아몬드 몸통 위 내부 코어 (깊이감)
+      const s = def.size;
       g.appendChild(svgEl('polygon', {
-        points: `0,${-def.size*0.65} ${def.size*0.45},0 0,${def.size*0.65} ${-def.size*0.45},0`,
-        fill: 'rgba(220,180,255,0.8)',
+        points: `0,${-(s * 0.4).toFixed(1)} ${(s * 0.28).toFixed(1)},0 0,${(s * 0.4).toFixed(1)} ${-(s * 0.28).toFixed(1)},0`,
+        fill: 'rgba(220,180,255,0.55)',
       }));
 
     // ── 신규 8종 형태 ──────────────────────────────────
@@ -654,26 +703,20 @@ export class EnemySystem {
         fill: '#7CB518',
       }));
 
-    } else if (type === 'tank' || type === 'stone_golem' || type === 'juggernaut' || type === 'colossus') {
-      // 탱커 계열: 육각형 테두리 (견고한 장갑 느낌)
+    } else if (type === 'stone_golem' || type === 'juggernaut' || type === 'colossus') {
+      // 헥사곤 몸통 위 장갑 크랙 (깊이감)
       const s = def.size;
-      const hexPts = Array.from({length: 6}, (_, i) => {
-        const a = (i * Math.PI / 3) + Math.PI / 6;
-        return `${(s*0.7*Math.cos(a)).toFixed(1)},${(s*0.7*Math.sin(a)).toFixed(1)}`;
-      }).join(' ');
-      g.appendChild(svgEl('polygon', {
-        points: hexPts,
-        fill: 'none', stroke: 'rgba(200,200,200,0.5)', 'stroke-width': 2,
-      }));
+      g.appendChild(svgEl('line', { x1: 0, y1: -(s * 0.52).toFixed(1), x2: 0, y2: (s * 0.52).toFixed(1),
+        stroke: 'rgba(200,200,200,0.3)', 'stroke-width': 1.5, 'pointer-events': 'none' }));
+      g.appendChild(svgEl('line', {
+        x1: -(s * 0.45).toFixed(1), y1: -(s * 0.26).toFixed(1),
+        x2: (s * 0.45).toFixed(1), y2: (s * 0.26).toFixed(1),
+        stroke: 'rgba(200,200,200,0.3)', 'stroke-width': 1.5, 'pointer-events': 'none' }));
 
     } else if (type === 'necromancer') {
-      // 네크로맨서: 마름모 + 중앙 보라 코어
-      g.appendChild(svgEl('polygon', {
-        points: `0,${-def.size*0.7} ${def.size*0.5},0 0,${def.size*0.7} ${-def.size*0.5},0`,
-        fill: 'none', stroke: '#C39BD3', 'stroke-width': 1.8, opacity: '0.9',
-      }));
-      g.appendChild(svgEl('circle', { cx: 0, cy: 0, r: def.size * 0.3,
-        fill: 'rgba(150,50,200,0.6)' }));
+      // 다이아몬드 몸통 위 마법 코어
+      g.appendChild(svgEl('circle', { cx: 0, cy: 0, r: def.size * 0.32,
+        fill: 'rgba(150,50,200,0.65)' }));
 
     } else if (type === 'phantom') {
       // 팬텀: 반투명 위로 테이퍼드 다이아몬드
@@ -689,19 +732,121 @@ export class EnemySystem {
         'stroke-dasharray': '4 3', opacity: '0.7' }));
 
     } else if (type === 'siege_beast') {
-      // 시즈 비스트: 정사각형 (기계적/구조물 느낌)
-      const s = def.size * 0.75;
-      g.appendChild(svgEl('rect', {
-        x: -s, y: -s, width: s * 2, height: s * 2,
-        fill: 'none', stroke: 'rgba(180,180,180,0.55)', 'stroke-width': 2, rx: 2,
-      }));
+      // 헥사곤 몸통 위 기계 리벳 (구조물 느낌)
+      const rs = def.size * 0.65;
+      [0, Math.PI / 2, Math.PI, Math.PI * 1.5].forEach(a => {
+        g.appendChild(svgEl('circle', {
+          cx: +(rs * Math.cos(a)).toFixed(1), cy: +(rs * Math.sin(a)).toFixed(1),
+          r: 2.5, fill: 'rgba(200,200,200,0.65)', 'pointer-events': 'none',
+        }));
+      });
 
     } else if (type === 'void_stalker') {
-      // 보이드 스토커: 날카로운 방향 화살표 (속도감)
+      // 다이아몬드 몸통 위 추진 화살표 (방향성)
+      const s = def.size;
       g.appendChild(svgEl('polygon', {
-        points: `0,${-def.size*0.85} ${def.size*0.5},${def.size*0.45} 0,${def.size*0.2} ${-def.size*0.5},${def.size*0.45}`,
-        fill: 'rgba(120,0,200,0.6)',
+        points: `0,${-(s * 0.55).toFixed(1)} ${(s * 0.35).toFixed(1)},${(s * 0.28).toFixed(1)} 0,${(s * 0.08).toFixed(1)} ${-(s * 0.35).toFixed(1)},${(s * 0.28).toFixed(1)}`,
+        fill: 'rgba(140,0,220,0.7)',
       }));
+
+    } else if (type === 'shadow_elite') {
+      // 다이아몬드 몸통 위 어둠 코어
+      const s = def.size;
+      g.appendChild(svgEl('polygon', {
+        points: `0,${-(s * 0.42).toFixed(1)} ${(s * 0.30).toFixed(1)},0 0,${(s * 0.42).toFixed(1)} ${-(s * 0.30).toFixed(1)},0`,
+        fill: 'rgba(0,0,0,0.55)',
+      }));
+
+    } else if (type === 'shadow_titan') {
+      // 헥사곤 몸통 위 심연 코어 (대형 non-boss)
+      const s = def.size;
+      g.appendChild(svgEl('circle', { cx: 0, cy: 0, r: s * 0.45,
+        fill: 'rgba(0,0,0,0.6)', stroke: '#4D0080', 'stroke-width': 2 }));
+
+    } else if (type === 'void_knight') {
+      // 다이아몬드 몸통 위 방패 마킹
+      const s = def.size;
+      g.appendChild(svgEl('polygon', {
+        points: `0,${-(s * 0.5).toFixed(1)} ${(s * 0.35).toFixed(1)},${-(s * 0.1).toFixed(1)} ${(s * 0.35).toFixed(1)},${(s * 0.25).toFixed(1)} 0,${(s * 0.48).toFixed(1)} ${-(s * 0.35).toFixed(1)},${(s * 0.25).toFixed(1)} ${-(s * 0.35).toFixed(1)},${-(s * 0.1).toFixed(1)}`,
+        fill: 'rgba(60,0,180,0.55)',
+      }));
+
+    } else if (type === 'abyssal_wraith') {
+      // 다이아몬드 몸통 위 에너지 코어
+      g.appendChild(svgEl('circle', { cx: 0, cy: 0, r: def.size * 0.3,
+        fill: 'rgba(160,0,220,0.6)' }));
+
+    } else if (type === 'void_reaper') {
+      // 다이아몬드 몸통 위 낫 심볼
+      const s = def.size;
+      g.appendChild(svgEl('line', {
+        x1: -(s * 0.3).toFixed(1), y1: -(s * 0.42).toFixed(1),
+        x2: (s * 0.3).toFixed(1), y2: (s * 0.18).toFixed(1),
+        stroke: 'rgba(120,0,180,0.85)', 'stroke-width': 2.5, 'pointer-events': 'none' }));
+
+    } else if (type === 'void_herald') {
+      // 다이아몬드 몸통 위 재생 링 (점선 원)
+      g.appendChild(svgEl('circle', { cx: 0, cy: 0, r: def.size * 0.38,
+        fill: 'none', stroke: 'rgba(180,100,255,0.6)', 'stroke-width': 2,
+        'stroke-dasharray': '3 2', 'pointer-events': 'none' }));
+
+    } else if (type === 'abyssal_dragon') {
+      // DLC1 최종 보스: 심연 드래곤
+      const s = def.size;
+      g.appendChild(svgEl('circle', { cx: 0, cy: 0, r: s * 0.6,
+        fill: 'rgba(60,0,100,0.45)', stroke: '#7700CC', 'stroke-width': 2.5 }));
+      for (let i = 0; i < 6; i++) {
+        const a = (i / 6) * Math.PI * 2;
+        g.appendChild(svgEl('line', {
+          x1: 0, y1: 0,
+          x2: (s * 0.78 * Math.cos(a)).toFixed(1), y2: (s * 0.78 * Math.sin(a)).toFixed(1),
+          stroke: '#9B59B6', 'stroke-width': 2, opacity: '0.6',
+        }));
+      }
+      const adLabel = svgEl('text', {
+        x: 0, y: -s - 12, 'text-anchor': 'middle', 'dominant-baseline': 'middle',
+        fill: '#9B59B6', 'font-size': '9px',
+        'font-family': 'Cinzel, serif', 'font-weight': 'bold',
+        'pointer-events': 'none',
+        stroke: 'rgba(0,0,0,0.8)', 'stroke-width': '2', 'paint-order': 'stroke',
+      });
+      adLabel.textContent = 'ABYSSAL DRAGON';
+      g.appendChild(adLabel);
+      g.appendChild(svgEl('circle', { cx: 0, cy: 0, r: s + 6,
+        fill: 'none', stroke: '#7700CC', 'stroke-width': 2, opacity: '0.4',
+        style: 'transform-origin: 0px 0px; animation: bossGlow 1.15s ease-in-out infinite alternate',
+      }));
+      this._boss = enemy;
+      this._ensureBossGlowStyle();
+
+    } else if (type === 'shadow_colossus') {
+      // DLC1 Act 4 보스: 보이드 거인
+      const s = def.size;
+      g.appendChild(svgEl('circle', { cx: 0, cy: 0, r: s * 0.58,
+        fill: 'rgba(10,0,25,0.65)', stroke: '#5500AA', 'stroke-width': 3 }));
+      for (let i = 0; i < 8; i++) {
+        const a = (i / 8) * Math.PI * 2;
+        g.appendChild(svgEl('line', {
+          x1: (s * 0.34 * Math.cos(a)).toFixed(1), y1: (s * 0.34 * Math.sin(a)).toFixed(1),
+          x2: (s * 0.76 * Math.cos(a)).toFixed(1), y2: (s * 0.76 * Math.sin(a)).toFixed(1),
+          stroke: '#6600CC', 'stroke-width': 2, opacity: '0.7',
+        }));
+      }
+      const scLabel = svgEl('text', {
+        x: 0, y: -s - 12, 'text-anchor': 'middle', 'dominant-baseline': 'middle',
+        fill: '#9B59B6', 'font-size': '9px',
+        'font-family': 'Cinzel, serif', 'font-weight': 'bold',
+        'pointer-events': 'none',
+        stroke: 'rgba(0,0,0,0.8)', 'stroke-width': '2', 'paint-order': 'stroke',
+      });
+      scLabel.textContent = 'SHADOW COLOSSUS';
+      g.appendChild(scLabel);
+      g.appendChild(svgEl('circle', { cx: 0, cy: 0, r: s + 7,
+        fill: 'none', stroke: '#6600CC', 'stroke-width': 2.5, opacity: '0.45',
+        style: 'transform-origin: 0px 0px; animation: bossGlow 1.1s ease-in-out infinite alternate',
+      }));
+      this._boss = enemy;
+      this._ensureBossGlowStyle();
 
     } else if (type === 'void_titan') {
       // Void Titan: 심연 보스
@@ -788,11 +933,13 @@ export class EnemySystem {
         stroke: '#FF4444', 'stroke-width': 2.5 }));
 
     } else if (type === 'solar_zealot') {
-      // 황금 다이아몬드 + 격노 예고 (엘리트)
-      g.appendChild(svgEl('polygon', {
-        points: `0,${-def.size*0.7} ${def.size*0.5},0 0,${def.size*0.7} ${-def.size*0.5},0`,
-        fill: 'rgba(212,137,10,0.65)',
-      }));
+      // 다이아몬드 몸통 위 태양 십자 심볼 (엘리트)
+      const s = def.size;
+      g.appendChild(svgEl('line', { x1: 0, y1: -(s * 0.52).toFixed(1), x2: 0, y2: (s * 0.52).toFixed(1),
+        stroke: 'rgba(245,197,24,0.8)', 'stroke-width': 2, 'pointer-events': 'none' }));
+      g.appendChild(svgEl('line', {
+        x1: -(s * 0.38).toFixed(1), y1: 0, x2: (s * 0.38).toFixed(1), y2: 0,
+        stroke: 'rgba(245,197,24,0.8)', 'stroke-width': 2, 'pointer-events': 'none' }));
 
     } else if (type === 'sun_herald') {
       // 6점 황금 별 + 분열 예고 글로우
@@ -809,16 +956,10 @@ export class EnemySystem {
         fill: 'rgba(245,197,24,0.5)' }));
 
     } else if (type === 'blazing_golem') {
-      // 육각 갑옷 + 불꽃 (슬로우 면역)
-      const s2 = def.size;
-      const hexPts2 = Array.from({length: 6}, (_, i) => {
-        const a = (i * Math.PI / 3) + Math.PI / 6;
-        return `${(s2*0.68*Math.cos(a)).toFixed(1)},${(s2*0.68*Math.sin(a)).toFixed(1)}`;
-      }).join(' ');
-      g.appendChild(svgEl('polygon', {
-        points: hexPts2,
-        fill: 'none', stroke: '#E8791A', 'stroke-width': 2.5,
-      }));
+      // 헥사곤 몸통 위 불꽃 코어 (슬로우 면역 골렘)
+      g.appendChild(svgEl('circle', { cx: 0, cy: 0, r: +(def.size * 0.42).toFixed(1),
+        fill: 'rgba(232,121,26,0.5)', stroke: '#FF6600', 'stroke-width': 1.5,
+        'pointer-events': 'none' }));
 
     } else if (type === 'solar_knight') {
       // 방패 + Solar 테두리 (쉴드 + solarImmune)
@@ -947,10 +1088,16 @@ export class EnemySystem {
     });
     g.appendChild(hpBar);
 
+    // 상태이상 뱃지 컨테이너 (HP 바 위)
+    const badgesEl = svgEl('g', { class: 'status-badges' });
+    g.appendChild(badgesEl);
+
     g.setAttribute('transform', `translate(${start.x},${start.y})`);
     this.layer.appendChild(g);
     enemy.el = g;
     enemy.hpBar = hpBar;
+    enemy.badgesEl = badgesEl;
+    enemy._statusKey = '';
     this.enemies.push(enemy);
   }
 
@@ -962,10 +1109,40 @@ export class EnemySystem {
     e.hpBar.setAttribute('fill', ratio > 0.5 ? '#2ecc71' : ratio > 0.25 ? '#f39c12' : '#e74c3c');
   }
 
+  _refreshStatusBadges(e) {
+    if (!e.badgesEl) return;
+    const badges = [];
+    if ((e.burns?.length ?? 0) > 0)      badges.push({ fill: '#FF8C00', icon: '🔥' }); // 🔥
+    if (e.slowTimer > 0)                 badges.push({ fill: '#7EC8E3', icon: '❅' });        // ❅
+    if ((e.solarDots?.length ?? 0) > 0)  badges.push({ fill: '#F5C518', icon: '★' });        // ★
+    if (e.stunned > 0)                   badges.push({ fill: '#FFD700', icon: '✶' });        // ✶
+    if (e.frozen > 0)                    badges.push({ fill: '#B0E0FF', icon: '✳' });        // ✳
+
+    const key = badges.map(b => b.icon).join('');
+    if (key === e._statusKey) return;
+    e._statusKey = key;
+
+    while (e.badgesEl.firstChild) e.badgesEl.removeChild(e.badgesEl.firstChild);
+    const y = -e.size - 13;
+    badges.forEach((b, i) => {
+      const x = (i - (badges.length - 1) / 2) * 11;
+      const circ = svgEl('circle', { cx: x.toFixed(1), cy: y.toFixed(1), r: '5', fill: b.fill, opacity: '0.92' });
+      const txt  = svgEl('text', {
+        x: x.toFixed(1), y: y.toFixed(1),
+        'text-anchor': 'middle', 'dominant-baseline': 'central',
+        'font-size': '6', 'pointer-events': 'none',
+      });
+      txt.textContent = b.icon;
+      e.badgesEl.appendChild(circ);
+      e.badgesEl.appendChild(txt);
+    });
+  }
+
   _updateEnemySVG(e) {
     if (!e.el) return;
     e.el.setAttribute('transform', `translate(${e.x.toFixed(1)},${e.y.toFixed(1)})`);
     this._updateHpBar(e);
+    this._refreshStatusBadges(e);
 
     if (e.bodyEl) {
       const wantFill = e.slowTimer > 0 ? '#7EC8E3' : e.color;
@@ -1005,6 +1182,22 @@ export class EnemySystem {
     }
   }
 
+  // 적을 틱 종료 제거 큐에 등록하고 사망 사운드를 즉시 재생
+  _queueDeath(e) {
+    if (this._pendingRemove.has(e.id)) return;
+    this._pendingRemove.add(e.id);
+    if (e.isBoss) {
+      this._boss = null;
+      this.onBossUpdate?.({ hp: 0, maxHp: e.maxHp });
+      audio.play('boss_die');
+      this._triggerScreenShake?.();
+    } else if (e.type === 'tank' || e.isElite) {
+      audio.play(e.isElite ? 'elite_die' : 'tank_die');
+    } else {
+      audio.play('enemy_die');
+    }
+  }
+
   _removeEnemy(e, withAnim = true) {
     this.enemies = this.enemies.filter(x => x.id !== e.id);
 
@@ -1014,7 +1207,7 @@ export class EnemySystem {
       this._dying.add(e.id);
       this._playDeathAnim(e);
     } else if (this._canPool(ENEMY_DEFS[e.type] ?? {})) {
-      this._poolReturn(e.el, e.type, e.bodyEl, e.hpBar);
+      this._poolReturn(e.el, e.type, e.bodyEl, e.hpBar, e.badgesEl);
     } else {
       e.el.remove();
     }
@@ -1026,6 +1219,16 @@ export class EnemySystem {
     if (!el) return;
 
     const cx = e.x, cy = e.y;
+
+    // 원소별 파티클 색상 팔레트
+    const ELEMENT_COLORS = {
+      fire:      ['#FF8C00', '#FF4500', '#FFD700'],
+      frost:     ['#7EC8E3', '#B0E0FF', '#DDEEFF'],
+      lightning: ['#FFD700', '#00FFFF', '#FFFFFF'],
+      shadow:    ['#9B59B6', '#7D3C98', '#D7BDE2'],
+      solar:     ['#F5C518', '#E8791A', '#FFF3CD'],
+    };
+    const palette = ELEMENT_COLORS[e._killingElement] ?? null;
 
     // 1) 몸통 팽창 후 소멸
     el.style.transformOrigin = `${cx}px ${cy}px`;
@@ -1042,11 +1245,12 @@ export class EnemySystem {
       const dx    = (Math.cos(angle) * dist).toFixed(1);
       const dy    = (Math.sin(angle) * dist).toFixed(1);
       const r     = (isBig ? 3.5 : 2.0) + Math.random() * (isBig ? 3.0 : 2.2);
+      const fill  = palette ? palette[i % palette.length] : e.color;
 
       const pid = `particle-${this._idCounter}-${i}`;
       const particle = svgEl('circle', {
         id: pid, cx: cx.toFixed(1), cy: cy.toFixed(1), r: r.toFixed(1),
-        fill: e.color, opacity: 0.9,
+        fill, opacity: 0.9,
         'pointer-events': 'none',
         style: `--dx:${dx}px;--dy:${dy}px;animation:${anim} ${particleDur}s ease-out forwards`,
       });
@@ -1059,11 +1263,11 @@ export class EnemySystem {
     if (e.isBoss) this._bossSlainfanfare(cx, cy, e);
 
     // 3) 정리 — 풀 가능한 타입은 반환, 아니면 제거
-    const { type, bodyEl, hpBar } = e;
+    const { type, bodyEl, hpBar, badgesEl } = e;
     const canPool = this._canPool(ENEMY_DEFS[type] ?? {});
     setTimeout(() => {
       if (canPool) {
-        this._poolReturn(el, type, bodyEl, hpBar);
+        this._poolReturn(el, type, bodyEl, hpBar, badgesEl);
       } else {
         el.remove();
       }
@@ -1139,6 +1343,7 @@ export class EnemySystem {
   }
 
   dealDamage(enemyId, amount, dmgType = null) {
+    if (this._pendingRemove.has(enemyId)) return false; // 이미 처치 큐에 있음
     const e = this.enemies.find(x => x.id === enemyId);
     if (!e) return false;
 
@@ -1251,25 +1456,15 @@ export class EnemySystem {
     }
 
     if (e.hp <= 0) {
-      // Cursed Wave 'revive': 엘리트 처치 시 HP 30%로 1회 부활
+      e._killingElement = dmgType;
+      // Cursed Wave 'revive': 엘리트 처치 시 HP 30%로 1회 부활 (즉시 — 큐 등록 전)
       if (this._cursedWaveRevive && e.isElite && !e._revived && !e.isSplitChild) {
         e.hp      = Math.ceil(e.maxHp * 0.30);
         e._revived = true;
         audio.play('elite_die');
         return false;
       }
-      if (e.isBoss) {
-        this._boss = null;
-        this.onBossUpdate?.({ hp: 0, maxHp: e.maxHp });
-        audio.play('boss_die');
-      } else if (e.type === 'tank' || e.isElite) {
-        audio.play(e.isElite ? 'elite_die' : 'tank_die');
-      } else {
-        audio.play('enemy_die');
-      }
-      this._handleSplitOnDeath(e);
-      this._removeEnemy(e, true);
-      this.onEnemyKilled(e.reward, e.isSplitChild ?? false);
+      this._queueDeath(e);
       return true;
     }
     // 적이 살아있고 보스가 아닌 경우 피격음 (보스는 boss_hit으로 처리)
@@ -1516,9 +1711,11 @@ export class EnemySystem {
   }
 
   getEnemiesInRange(px, py, radiusPx) {
+    const r2 = radiusPx * radiusPx;
     return this.enemies.filter(e => {
+      if (this._pendingRemove.has(e.id) || this._dying.has(e.id)) return false;
       const dx = e.x - px, dy = e.y - py;
-      return Math.sqrt(dx*dx + dy*dy) <= radiusPx;
+      return dx * dx + dy * dy <= r2;
     });
   }
 
@@ -1527,6 +1724,7 @@ export class EnemySystem {
     // _sortedByProgress는 update() 시작 시 진행도 내림차순으로 캐싱됨 — 첫 일치 즉시 반환 O(1)~O(n)
     const list = this._sortedByProgress.length ? this._sortedByProgress : this.enemies;
     for (const e of list) {
+      if (this._pendingRemove.has(e.id) || this._dying.has(e.id)) continue;
       if (!canDetectCamo && e.camo) continue;
       const dx = e.x - px, dy = e.y - py;
       if (dx * dx + dy * dy <= r2) return e;
@@ -1557,6 +1755,7 @@ export class EnemySystem {
     this._sortedByProgress = [];
     this._waveActive = false;
     this._dying.clear();
+    this._pendingRemove.clear();
     this._boss = null;
     this.onBossUpdate?.({ hp: 0, maxHp: 1, hidden: true });
   }

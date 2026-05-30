@@ -129,6 +129,8 @@ describe('dealDamage()', () => {
     es.enemies.push(e);
     const result = es.dealDamage('e1', 25);
     expect(result).toBe(true);
+    // _pendingRemove 큐에 등록 후 flush — update() 틱 종료 시 호출되는 패턴 재현
+    es._flushPendingRemovals();
     expect(es.onEnemyKilled).toHaveBeenCalledWith(e.reward, false);
   });
 

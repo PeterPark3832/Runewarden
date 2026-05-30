@@ -3,6 +3,7 @@ import { CARD_DEFS } from '../data/cards.js';
 import { i18n } from '../i18n/i18n.js';
 import { weightedPickRarity, MAX_PLAYER_LEVEL } from '../systems/PlayerLevelSystem.js';
 import { shared } from '../core/GameState.js';
+import { makeCardArtSVG } from './HUDUpdater.js';
 
 const SHOP_SIZE    = 3;   // 카드 슬롯 수
 const REROLL_COST  = 2;
@@ -214,7 +215,7 @@ export class ShopUI {
       slot.innerHTML = `
         <div class="shop-card-inner">
           <div class="shop-card-top">
-            <span class="shop-card-icon">${card.icon}</span>
+            <div class="shop-card-art">${makeCardArtSVG(card)}</div>
             <div class="shop-card-info">
               <div class="shop-card-name">${_cName}</div>
               <div class="shop-card-type">${_cType.toUpperCase()}${rarityBadge}</div>

@@ -78,6 +78,15 @@ export function svgEl(tag, attrs = {}) {
   return el;
 }
 
+// ── 색상 유틸 ──────────────────────────────────────────
+function _lightenHex(hex, amount) {
+  const r = parseInt(hex.slice(1, 3), 16);
+  const g = parseInt(hex.slice(3, 5), 16);
+  const b = parseInt(hex.slice(5, 7), 16);
+  const toHex = v => Math.min(255, v + Math.round(amount * 255)).toString(16).padStart(2, '0');
+  return `#${toHex(r)}${toHex(g)}${toHex(b)}`;
+}
+
 // ── MapRenderer 클래스 ─────────────────────────────────
 export class MapRenderer {
   constructor(svgEl, onCellClick, onCellHover) {
@@ -104,7 +113,7 @@ export class MapRenderer {
     // SVG defs — 헥스 깊이감용 radialGradient 정의
     const defs = svgEl('defs');
     // 기본 헥스 그라디언트 (중앙 약간 밝음) — 맵 테마 반영
-    const hexBase   = _mapHexColor ?? '#222240';
+    const hexBase   = _mapHexColor ? _lightenHex(_mapHexColor, 0.07) : '#222240';
     const hexOuter  = _mapHexColor ?? '#141428';
     const rg = svgEl('radialGradient', { id: 'hexGrad', cx: '50%', cy: '40%', r: '60%' });
     rg.appendChild(this._mkStop('0%',   hexBase));
