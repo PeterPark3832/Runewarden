@@ -723,6 +723,17 @@ export class EnemySystem {
             noviceRegen = false, spawnIntervalStartWave = 3, cursedRevive = false) {
     // 활성 맵 경로로 웨이포인트 갱신
     WAYPOINTS = ENEMY_PATH.current.map(([c, r]) => hexToPixel(c, r));
+    // 화면 밖 진입 지점 삽입 — 적이 화면 안으로 걸어 들어오는 효과
+    // WAYPOINTS[0]에서 WAYPOINTS[1] 방향의 역방향으로 HEX_W만큼 오프셋
+    if (WAYPOINTS.length >= 2) {
+      const w0 = WAYPOINTS[0], w1 = WAYPOINTS[1];
+      const dx = w0.x - w1.x, dy = w0.y - w1.y;
+      const len = Math.sqrt(dx * dx + dy * dy) || 1;
+      WAYPOINTS = [
+        { x: w0.x + (dx / len) * HEX_W, y: w0.y + (dy / len) * HEX_W },
+        ...WAYPOINTS,
+      ];
+    }
     this._hpScale           = hpScale;
     this._eliteBonus        = eliteBonus;
     this._spawnSpeedMult    = spawnSpeedMult;  // slow_next_wave 이벤트 효과
