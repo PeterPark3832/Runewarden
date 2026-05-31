@@ -110,6 +110,59 @@ export const WAVE_CONFIGS = [
   // Wave 31: DLC 2 파이널 보스 — Sun God + 호위대
   [{ type: 'solar_zealot', count: 4, interval: 1000 }, { type: 'blinded_crusader', count: 2, interval: 2000 },
    { type: 'sun_herald', count: 2, interval: 3500 }, { type: 'sun_god', count: 1, interval: 12000 }],
+
+  // ── DLC 3 Act 6 (Wave 32~39) ────────────────────────
+  // Wave 32: 폭풍 침공 개시 — Gust Sprite 물량 + Storm Hawk + Thunder Berserker
+  [
+    { type: 'gust_sprite', count: 8, interval: 600 },
+    { type: 'storm_hawk', count: 3, interval: 2500 },
+    { type: 'thunder_berserker', count: 4, interval: 1800 },
+  ],
+  // Wave 33: 스쿼올 + 폭풍 골렘 + Tempest Wraith
+  [
+    { type: 'gust_sprite', count: 10, interval: 500 },
+    { type: 'tempest_wraith', count: 4, interval: 2200 },
+    { type: 'storm_golem', count: 1, interval: 5000 },
+  ],
+  // Wave 34: Storm Hawk + Squall Knight + Gale Slasher
+  [
+    { type: 'storm_hawk', count: 4, interval: 2000 },
+    { type: 'squall_knight', count: 2, interval: 4000 },
+    { type: 'gale_slasher', count: 3, interval: 1800 },
+  ],
+  // Wave 35: Tempest Wraith + Lightning Drake + Squall Knight
+  [
+    { type: 'tempest_wraith', count: 5, interval: 2000 },
+    { type: 'lightning_drake', count: 1, interval: 8000 },
+    { type: 'squall_knight', count: 2, interval: 4000 },
+  ],
+  // Wave 36: 중간보스 — Typhoon Warlord + 호위대
+  [
+    { type: 'gust_sprite', count: 8, interval: 600 },
+    { type: 'storm_hawk', count: 3, interval: 2500 },
+    { type: 'typhoon_warlord', count: 1, interval: 10000 },
+  ],
+  // Wave 37: Cyclone Rider + Lightning Drake + Squall Knight
+  [
+    { type: 'cyclone_rider', count: 2, interval: 5000 },
+    { type: 'lightning_drake', count: 2, interval: 6000 },
+    { type: 'squall_knight', count: 3, interval: 3000 },
+  ],
+  // Wave 38: 총공세 — 다종 폭풍 유닛 + Typhoon Warlord
+  [
+    { type: 'gust_sprite', count: 6, interval: 500 },
+    { type: 'tempest_wraith', count: 4, interval: 2000 },
+    { type: 'storm_hawk', count: 3, interval: 2500 },
+    { type: 'cyclone_rider', count: 2, interval: 5000 },
+    { type: 'lightning_drake', count: 2, interval: 6000 },
+    { type: 'typhoon_warlord', count: 1, interval: 8000 },
+  ],
+  // Wave 39: 최종보스 — Tempest Sovereign + 호위대
+  [
+    { type: 'storm_sentinel', count: 2, interval: 3000 },
+    { type: 'typhoon_warlord', count: 1, interval: 6000 },
+    { type: 'tempest_sovereign', count: 1, interval: 12000 },
+  ],
 ];
 
 // ── 기습 설정 ────────────────────────────────────────────
@@ -233,6 +286,76 @@ export const ENEMY_DEFS = {
   sun_god:          { name: 'Sun God',          hp:3200, speed:  11, color: '#F5C518', size: 38, reward: 45,
                       isBoss: true, slowImmune: true, enrageThreshold: 0.40, solarImmune: true,
                       phase2Hp: 1600 },
+
+  // ── DLC 3: Storm Imperium ──────────────────────────
+  // Flying (6종)
+  gust_sprite: {
+    id: 'gust_sprite', name: 'Gust Sprite', nameKo: '돌풍 정령',
+    hp: 50, speed: 105, reward: 2, size: 14,
+    color: '#4ECDC4', flying: true, dlc: 'storm_imperium',
+  },
+  storm_hawk: {
+    id: 'storm_hawk', name: 'Storm Hawk', nameKo: '폭풍 매',
+    hp: 180, speed: 130, reward: 4, size: 18,
+    color: '#00B4D8', flying: true, isElite: true, enrageThreshold: 0.55, dlc: 'storm_imperium',
+  },
+  squall_knight: {
+    id: 'squall_knight', name: 'Squall Knight', nameKo: '돌풍 기사',
+    hp: 420, speed: 45, reward: 8, size: 22,
+    color: '#0077B6', flying: true, isElite: true, shieldHits: 3, windImmune: true, dlc: 'storm_imperium',
+  },
+  tempest_wraith: {
+    id: 'tempest_wraith', name: 'Tempest Wraith', nameKo: '폭풍 유령',
+    hp: 90, speed: 150, reward: 3, size: 15,
+    color: '#48CAE4', flying: true, camo: true, damageReduction: 0.20, dlc: 'storm_imperium',
+  },
+  lightning_drake: {
+    id: 'lightning_drake', name: 'Lightning Drake', nameKo: '번개 드레이크',
+    hp: 900, speed: 22, reward: 10, size: 32,
+    color: '#0096C7', flying: true, windImmune: true, damageReduction: 0.20, dlc: 'storm_imperium',
+  },
+  cyclone_rider: {
+    id: 'cyclone_rider', name: 'Cyclone Rider', nameKo: '사이클론 라이더',
+    hp: 600, speed: 35, reward: 12, size: 28,
+    color: '#023E8A', flying: true, isElite: true,
+    splitOnDeath: { type: 'gust_sprite', count: 4 }, dlc: 'storm_imperium',
+  },
+  // Ground (4종)
+  storm_golem: {
+    id: 'storm_golem', name: 'Storm Golem', nameKo: '폭풍 골렘',
+    hp: 1100, speed: 16, reward: 9, size: 36,
+    color: '#335D6E', slowImmune: true, damageReduction: 0.15, dlc: 'storm_imperium',
+  },
+  thunder_berserker: {
+    id: 'thunder_berserker', name: 'Thunder Berserker', nameKo: '번개 광전사',
+    hp: 280, speed: 70, reward: 6, size: 20,
+    color: '#264653', isElite: true, enrageThreshold: 0.45, dlc: 'storm_imperium',
+  },
+  storm_sentinel: {
+    id: 'storm_sentinel', name: 'Storm Sentinel', nameKo: '폭풍 파수꾼',
+    hp: 500, speed: 42, reward: 8, size: 24,
+    color: '#1B4332', isElite: true, regenDps: 10, dlc: 'storm_imperium',
+  },
+  gale_slasher: {
+    id: 'gale_slasher', name: 'Gale Slasher', nameKo: '강풍 베기',
+    hp: 200, speed: 100, reward: 5, size: 17,
+    color: '#2D6A4F', isElite: true, damageReduction: 0.25, dlc: 'storm_imperium',
+  },
+  // Boss (2종)
+  typhoon_warlord: {
+    id: 'typhoon_warlord', name: 'Typhoon Warlord', nameKo: '태풍 군주',
+    hp: 2800, speed: 13, reward: 28, size: 38,
+    color: '#0096C7',
+    flying: true, windImmune: true, slowImmune: true, damageReduction: 0.10,
+    enrageThreshold: 0.50, isBoss: true, dlc: 'storm_imperium',
+  },
+  tempest_sovereign: {
+    id: 'tempest_sovereign', name: 'Tempest Sovereign', nameKo: '폭풍 군주',
+    hp: 4000, speed: 10, reward: 60, size: 44,
+    color: '#4ECDC4',
+    flying: true, windImmune: true, damageReduction: 0.20,
+    isBoss: true, phase2Hp: 2000, dlc: 'storm_imperium',
+  },
 };
 
 export class EnemySystem {
@@ -260,10 +383,13 @@ export class EnemySystem {
     this._veteranRegen     = false; // 재생 적 DPS 강화 여부
     this._noviceRegen      = false; // 재생 적 DPS 절반 여부
     this._pool             = {};   // type → [{el, bodyEl, hpBar}] SVG 요소 풀
-    this._dmgPool          = [];   // 재사용 가능한 데미지 숫자 DOM 노드 풀
-    this._dmgPoolSize      = 30;   // 최대 풀 크기
     this._ambushTriggered  = false;
     this._adaptedTypes     = new Set(); // 넥서스 통과 적 타입 집합 (런 내 누적)
+    // ── DLC 3 Storm Imperium ──────────────────────────
+    this._groundedSet         = new Set();  // 현재 grounded 상태인 비행 적 id Set
+    this._lastAnchorScan      = 0;          // Wind Anchor 200ms 스캔용 타임스탬프
+    this._windDotEnabled      = true;       // windDot 처리 플래그
+    this._groundingSlowThreshold = 0.5;    // 슬로우 50% 이상이면 비행 착지
     this._injectStyles();
   }
 
@@ -680,6 +806,18 @@ export class EnemySystem {
           continue;
         }
       }
+      // windDot 틱 처리 (DLC 3 Storm Imperium)
+      if (this._windDotEnabled && e.windDots && e.windDots.length > 0) {
+        let totalDps = 0;
+        e.windDots = e.windDots.filter(d => {
+          d.remaining -= delta;
+          if (d.remaining > 0) { totalDps += d.dps; return true; }
+          return false;
+        });
+        if (totalDps > 0 && !this._pendingRemove.has(e.id) && !this._dying.has(e.id)) {
+          this.dealDamage(e.id, totalDps * delta / 1000, 'wind');
+        }
+      }
       if (this._pendingRemove.has(e.id)) continue; // 이미 제거 큐에 있음
 
       if (e.frozen > 0) { e.frozen -= delta; this._updateEnemySVG(e); continue; }
@@ -764,6 +902,7 @@ export class EnemySystem {
 
     const enemy = {
       id, type,
+      def,           // def 참조 저장 — grounding/windDot 체크에서 def.flying, def.windImmune 사용
       x: start.x, y: start.y,
       hp: scaledHp, maxHp: scaledHp,
       // slow_next_wave 이벤트: 기본 속도에 배율 적용 (1.0 = 변화 없음)
@@ -1294,6 +1433,8 @@ export class EnemySystem {
     const badgesEl = svgEl('g', { class: 'status-badges' });
     g.appendChild(badgesEl);
 
+    // 비행 적: 공중 부유 오프셋 (translateY -4px)
+    if (def.flying) enemy._flyOffset = -4;
     g.setAttribute('transform', `translate(${start.x},${start.y})`);
     this.layer.appendChild(g);
     enemy.el = g;
@@ -1342,7 +1483,12 @@ export class EnemySystem {
 
   _updateEnemySVG(e) {
     if (!e.el) return;
-    e.el.setAttribute('transform', `translate(${e.x.toFixed(1)},${e.y.toFixed(1)})`);
+    const flyOff = e._flyOffset ?? 0;
+    if (flyOff !== 0) {
+      e.el.setAttribute('transform', `translate(${e.x.toFixed(1)},${(e.y + flyOff).toFixed(1)})`);
+    } else {
+      e.el.setAttribute('transform', `translate(${e.x.toFixed(1)},${e.y.toFixed(1)})`);
+    }
     this._updateHpBar(e);
     this._refreshStatusBadges(e);
 
@@ -1518,43 +1664,25 @@ export class EnemySystem {
   }
 
   // ── 떠오르는 데미지 숫자 (SVG) ────────────────────────
-  _getDmgNode() {
-    return this._dmgPool.pop() ?? (() => {
-      const el = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-      el.setAttribute('text-anchor', 'middle');
-      el.setAttribute('pointer-events', 'none');
-      return el;
-    })();
-  }
-
-  _returnDmgNode(el) {
-    el.removeAttribute('style');
-    el.setAttribute('opacity', '0');
-    if (this._dmgPool.length < this._dmgPoolSize) {
-      this._dmgPool.push(el);
-    } else {
-      el.remove();
-    }
-  }
-
   _spawnDamageNumber(x, y, amount, type = 'normal') {
     if (!this.layer?.ownerSVGElement) return;
     const svg = this.layer.ownerSVGElement;
-    const text = this._getDmgNode();
+    const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
     text.setAttribute('x', String(x));
     text.setAttribute('y', String(y - 8));
+    text.setAttribute('text-anchor', 'middle');
     text.setAttribute('font-size', '11');
     text.setAttribute('font-weight', 'bold');
+    text.setAttribute('pointer-events', 'none');
     const color = type === 'boss' ? '#FF6600' : type === 'crit' ? '#FFD700' : '#FFFFFF';
     text.setAttribute('fill', color);
     text.setAttribute('stroke', 'rgba(0,0,0,0.6)');
     text.setAttribute('stroke-width', '2');
     text.setAttribute('paint-order', 'stroke');
-    text.removeAttribute('opacity');
     text.textContent = String(Math.round(amount));
     text.classList.add('dmg-float');
     svg.appendChild(text);
-    setTimeout(() => { text.parentNode?.removeChild(text); this._returnDmgNode(text); }, 900);
+    setTimeout(() => text.remove(), 900);
   }
 
   // ── 피해 처리 ─────────────────────────────────────────
@@ -1666,6 +1794,28 @@ export class EnemySystem {
       this.onBossUpdate?.({ hp: Math.max(0, e.hp), maxHp: e.maxHp, name: e.name, phase3: true });
     }
 
+    // Tempest Sovereign 2페이즈 전환 (HP phase2Hp 이하): 착지 + 슬로우 면역 + 속도 28
+    if (e.def?.id === 'tempest_sovereign' && !e._phase2 && e.hp <= (e.def.phase2Hp ?? 2000)) {
+      e._phase2 = true;
+      e.def = { ...e.def,
+        flying: false, slowImmune: true,
+        enrageThreshold: 0.35, damageReduction: 0.10, speed: 28,
+      };
+      // 착지 자연 전환 — grounded Set에서 제거 (비행 상태 해제이므로)
+      this._groundedSet.delete(e.id);
+      e._flyOffset = 0;
+      e.slowImmune = true;
+      e.damageReduction = 0.10;
+      e.enrageThreshold = 0.35;
+      e.baseSpeed = 28;
+      e.speed = 28;
+      if (e.bodyEl) { e.bodyEl.setAttribute('fill', '#023E8A'); e.bodyEl.setAttribute('stroke', '#00B4D8'); }
+      e.el?.classList.add('enemy-phase2');
+      this.onBossUpdate?.({ hp: Math.max(0, e.hp), maxHp: e.maxHp, name: e.name, phase2: true });
+      if (this.onBossPhaseTransition) this.onBossPhaseTransition(e.id, 2);
+      audio.play('boss_warning');
+    }
+
     const dmgDisplayType = e.isBoss ? 'boss' : finalDmg >= 20 ? 'crit' : 'normal';
     this._spawnDamageNumber(e.x, e.y, finalDmg, dmgDisplayType);
 
@@ -1758,6 +1908,12 @@ export class EnemySystem {
       if (eff < 0.01) continue;
       e.slowAmt   = Math.max(e.slowAmt, eff);
       e.slowTimer = Math.max(e.slowTimer, duration);
+      // 비행 적: 슬로우 50%(또는 완화 임계값) 이상이면 grounding 적용
+      const slowMult = 1 - eff;
+      const groundingThreshold = this._groundingSlowThreshold ?? 0.5;
+      if (e.def?.flying && slowMult <= groundingThreshold) {
+        this.applyGrounding(e.id, duration);
+      }
     }
   }
 
@@ -1775,6 +1931,12 @@ export class EnemySystem {
     if (effective < 0.01) return;
     const boosted = Math.min(0.95, effective * this._slowBonus);
     e.slowAmt = boosted; e.slowTimer = duration;
+    // 비행 적: 슬로우 50%(또는 완화 임계값) 이상이면 grounding 적용
+    const slowMult = 1 - boosted;
+    const groundingThreshold = this._groundingSlowThreshold ?? 0.5;
+    if (e.def?.flying && slowMult <= groundingThreshold) {
+      this.applyGrounding(e.id, duration);
+    }
   }
 
   // 번(DoT) 적용
@@ -1818,6 +1980,45 @@ export class EnemySystem {
     this._solarDotExtraDuration = (this._solarDotExtraDuration ?? 0) + extraDuration;
   }
 
+  // ── DLC 3 Storm Imperium ──────────────────────────────
+  // grounding_amulet 유물 등으로 임계값 완화 (기본 0.5 → 0.65 등)
+  setGroundingThreshold(val) { this._groundingSlowThreshold = val; }
+
+  // 비행 적을 duration ms 동안 착지 상태로 만든다 (타워가 일반 적처럼 타격 가능)
+  applyGrounding(id, duration) {
+    const e = this.enemies.find(en => en.id === id);
+    if (!e || !e.def?.flying) return;
+    if (!this._groundedSet.has(id)) {
+      this._groundedSet.add(id);
+      // grounding 진입 시 SVG 부드럽게 착지
+      if (e.el) {
+        e.el.style.transition = 'transform 0.3s';
+        // translateY를 포함한 전체 transform은 _updateEnemySVG가 관리하므로
+        // flying 오프셋용 커스텀 속성만 기록
+        e._flyOffset = 0;
+      }
+      if (this.onEnemyGrounded) this.onEnemyGrounded(id);
+    }
+    clearTimeout(e._groundingTimer);
+    e._groundingTimer = setTimeout(() => {
+      this._groundedSet.delete(id);
+      e._groundingTimer = null;
+      // 착지 해제: 다시 공중으로
+      if (e.el) {
+        e.el.style.transition = 'transform 0.3s';
+        e._flyOffset = -4;
+      }
+    }, duration);
+  }
+
+  // Wind DoT 적용 (windImmune 적에게는 적용 안 됨)
+  applyWindDot(id, dps, dur) {
+    const e = this.enemies.find(en => en.id === id);
+    if (!e || e.def?.windImmune || this._pendingRemove.has(id)) return;
+    if (!e.windDots) e.windDots = [];
+    e.windDots.push({ dps, remaining: dur });
+  }
+
   _updateSolarDots(e, delta) {
     let totalDmg = 0;
     for (const dot of e.solarDots) {
@@ -1850,6 +2051,10 @@ export class EnemySystem {
     e.stunned = Math.max(e.stunned, duration);
     if (towerId) e.stunCooldowns[towerId] = 3000;
     // 쿨다운 틱 감소는 update 루프에서 처리
+    // 비행 적 스턴 시 grounding 적용
+    if (e.stunned > 0 && e.def?.flying) {
+      this.applyGrounding(e.id, e.stunned);
+    }
   }
 
   // 스턴 쿨다운 틱 (update 루프에서 주기적으로 호출)

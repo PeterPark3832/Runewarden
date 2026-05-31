@@ -235,13 +235,9 @@ const BASE_HANDLERS = {
   },
 
   shadow_nova(effect, { enemySystem, log, i18n }) {
-    const MAX_NOVA_TARGETS = 20;
-    const targets = [...enemySystem.enemies]
-      .filter(e => !enemySystem._pendingRemove?.has(e.id))
-      .sort((a, b) => b.waypointIndex - a.waypointIndex || b.progress - a.progress)
-      .slice(0, MAX_NOVA_TARGETS);
+    const enemies = [...enemySystem.enemies];
     let totalDmg = 0;
-    for (const e of targets) {
+    for (const e of enemies) {
       const missing = Math.max(0, e.maxHp - e.hp);
       const dmg = Math.max(1, Math.ceil(missing * effect.pct));
       enemySystem.dealDamage(e.id, dmg, 'shadow');
@@ -262,13 +258,9 @@ const BASE_HANDLERS = {
   },
 
   soul_feast(effect, { enemySystem, addGold, log, i18n }) {
-    const MAX_FEAST_TARGETS = 8;
     const threshold = effect.hpThreshold ?? 0.25;
     const goldEach  = effect.goldPerKill ?? 3;
-    const targets = [...enemySystem.enemies]
-      .filter(e => !enemySystem._pendingRemove?.has(e.id) && e.hp / e.maxHp <= threshold)
-      .sort((a, b) => b.waypointIndex - a.waypointIndex)
-      .slice(0, MAX_FEAST_TARGETS);
+    const targets   = enemySystem.enemies.filter(e => e.hp / e.maxHp <= threshold);
     let gained = 0;
     for (const e of targets) {
       enemySystem.dealDamage(e.id, e.hp + 9999);
@@ -390,6 +382,76 @@ const BASE_HANDLERS = {
       }
     }
     log(i18n.t('spell_solar_corona', effect.dps ?? 12, (effect.duration ?? 3000) / 1000), 'good');
+  },
+
+  // ── DLC 3 Storm Imperium 스펠 핸들러 ─────────────────
+
+  thunderstrike(effect, { enemySystem }) {
+    const dmg = effect.amount ?? 80;
+    const groundDur = effect.groundDuration ?? 3000;
+    enemySystem.enemies
+      .filter(e => e.def.flying && !enemySystem._pendingRemove.has(e.id))
+      .forEach(e => {
+        enemySystem.dealDamage(e.id, dmg, 'lightning');
+        if (enemySystem.applyGrounding) enemySystem.applyGrounding(e.id, groundDur);
+      });
+  },
+
+  wind_shear(effect, { enemySystem }) {
+    const slowMult = effect.slowMult ?? 0.50;
+    const dur = effect.duration ?? 3000;
+    enemySystem.enemies
+      .filter(e => !e.windImmune && !enemySystem._pendingRemove.has(e.id))
+      .forEach(e => {
+        enemySystem.applySlowEffect?.(e.id, slowMult, dur, true);
+      });
+  },
+
+  gold_per_flying(effect, { enemySystem, addGold }) {
+    const mult = effect.mult ?? 3;
+    const count = enemySystem.enemies.filter(e => e.def.flying && !enemySystem._pendingRemove.has(e.id)).length;
+    const gold = Math.min(count * mult, effect.cap ?? 99);
+    if (gold > 0) addGold(gold, 'spell');
+  },
+
+  grounding_bolt(effect, { enemySystem }) {
+    const lead = enemySystem.getLeadEnemy?.();
+    if (!lead) return;
+    enemySystem.dealDamage(lead.id, effect.amount ?? 60, 'lightning');
+    if (enemySystem.applyGrounding) enemySystem.applyGrounding(lead.id, effect.groundDuration ?? 5000);
+  },
+
+  cyclone_burst(effect, { enemySystem }) {
+    const base = effect.amount ?? 35;
+    enemySystem.enemies
+      .filter(e => !enemySystem._pendingRemove.has(e.id))
+      .forEach(e => {
+        const dmg = e.def.flying ? base * 2 : base;
+        enemySystem.dealDamage(e.id, dmg, 'wind');
+      });
+  },
+
+  lightning_storm(effect, { enemySystem }) {
+    const dps = effect.dps ?? 20;
+    const dur = effect.duration ?? 5000;
+    enemySystem.enemies
+      .filter(e => e.def.flying && !enemySystem._pendingRemove.has(e.id))
+      .forEach(e => {
+        if (enemySystem.applyGrounding) enemySystem.applyGrounding(e.id, dur);
+        if (enemySystem.applyWindDot) enemySystem.applyWindDot(e.id, dps, dur);
+      });
+  },
+
+  push_back_flying(effect, { enemySystem }) {
+    const count = effect.count ?? 3;
+    const stepBack = effect.steps ?? 2;
+    enemySystem.enemies
+      .filter(e => e.def.flying && !enemySystem._pendingRemove.has(e.id))
+      .sort((a, b) => b.waypointIndex - a.waypointIndex)
+      .slice(0, count)
+      .forEach(e => {
+        e.waypointIndex = Math.max(0, e.waypointIndex - stepBack);
+      });
   },
 
   // ── v0.5 크로스 아키타입 콤보 스펠 ───────────────────

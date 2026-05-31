@@ -27,7 +27,7 @@ import { resolveSpell as _resolveSpellImpl } from './SpellResolver.js';
 import { HEX_W } from '../config/constants.js';
 import { log, spawnFloatText, shakeNexus, setWaveButton } from './GameUtils.js';
 import { shared } from './GameState.js';
-import { updateHUD, renderHand, onBossUpdate, updateShadowChargeHUD, showClearBanner, showAmbushBanner, updateMenuRank } from '../ui/HUDUpdater.js';
+import { updateHUD, renderHand, onBossUpdate, updateShadowChargeHUD, updateStormChargeHUD, showClearBanner, showAmbushBanner, updateMenuRank } from '../ui/HUDUpdater.js';
 import { showScreen, openWardenSelect, openDifficultySelect, openCodex, openDeckView } from '../ui/UIOrchestrator.js';
 import { registerDLC, hasDLC, clearDLCs } from '../systems/DLCRegistry.js';
 import { MAX_PLAYER_LEVEL, getWaveXpGrant, getLevelFromXp, XP_THRESHOLDS } from '../systems/PlayerLevelSystem.js';
@@ -38,6 +38,7 @@ function rangeToPixel(hexRange) { return hexRange * HEX_W * 0.75; }
 const MAX_WAVES_BASE  = 15;  // Act 1(5) + Act 2(5) + Act 3(5)
 const MAX_WAVES_DLC   = 23;  // + Act 4(8) — DLC Shadow Realm
 const MAX_WAVES_DLC2  = 31;  // + Act 5(8) — DLC Solar Dominion
+const MAX_WAVES_DLC3  = 39;  // + Act 6(8) — DLC Storm Imperium
 const ACT_SIZE    = 5;   // 액트당 웨이브 수
 const NEXUS_HP    = 3;
 const START_GOLD  = 25;
@@ -45,6 +46,7 @@ const WAVE_GOLD   = 6;
 const BOSS_WAVES_BASE = new Set([5, 10, 15]);
 const BOSS_WAVES_DLC  = new Set([5, 10, 15, 23]);       // DLC1 보스 웨이브
 const BOSS_WAVES_DLC2 = new Set([5, 10, 15, 23, 31]);   // DLC2 보스 웨이브 (Solar Titan: W28도 특수)
+const BOSS_WAVES_DLC3 = new Set([5, 10, 15, 23, 31, 36, 39]); // DLC3 보스 웨이브
 const CURSED_WAVES    = new Set([4, 9, 14, 20, 27]);     // 저주 웨이브 고정 시점 (Act당 1회)
 
 // ── DOM 참조 ───────────────────────────────────────────
@@ -369,7 +371,10 @@ function startRun() {
   clearDLCs();
   if (steam?.isDlcOwned('shadow_realm'))    registerDLC('shadow_realm');
   if (steam?.isDlcOwned('solar_dominion'))  registerDLC('solar_dominion');
-  if (hasDLC('solar_dominion')) {
+  if (hasDLC('storm_imperium')) {
+    shared.maxWaves  = MAX_WAVES_DLC3;
+    shared.bossWaves = BOSS_WAVES_DLC3;
+  } else if (hasDLC('solar_dominion')) {
     shared.maxWaves  = MAX_WAVES_DLC2;
     shared.bossWaves = BOSS_WAVES_DLC2;
   } else if (hasDLC('shadow_realm')) {
@@ -427,6 +432,9 @@ function startRun() {
     _solarChargeCount:     0,
     _solarChargeMax:       8,
     _solarChargeExtraOnHighCost: 0,
+    _stormChargeCount:     0,
+    _stormChargeMax:       8,
+    _stormChargeGroundingBonus: 0,
     _divineShieldActive:   false,
     _divineShieldExpiry:   0,
     _investGoldReturn:     0,      // invest_gold 이벤트 저장 (다음 웨이브 클리어 시 지급)
@@ -504,6 +512,19 @@ function startRun() {
     log(i18n.t('log_ambush_warn', count), 'bad');
     audio.play('nexus_hit');
     showAmbushBanner(delayMs);
+  };
+  // Storm Charge: 비행 적 착지 시 충전 (DLC 3)
+  enemySystem.onEnemyGrounded = (id) => {
+    if (state?.warden?.passive === 'storm_charge') {
+      _triggerStormCharge('grounding');
+    }
+  };
+  // Tempest Sovereign 페이즈 전환 연출 (DLC 3)
+  enemySystem.onBossPhaseTransition = (id, phase) => {
+    if (phase === 2) {
+      log(i18n.t('boss_sovereign_descend'), 'bad');
+      audio?.play('boss_enrage');
+    }
   };
 
   towerSystem = new TowerSystem(
@@ -757,6 +778,19 @@ function _applyRelicToTowers(relic) {
       case 'camo_detect':
         towerSystem.enableGlobalCamoDetect?.();
         break;
+      // DLC 3 Storm Imperium cases
+      case 'flying_dmg_bonus':
+        towerSystem.addFlyingDmgBonus?.(e.extraMult);
+        break;
+      case 'storm_pact':
+        towerSystem.addStormPact?.(e.extraMult ?? 0.30);
+        break;
+      case 'storm_conduit_bonus':
+        towerSystem.addStormConduitBonus?.(e.radiusDelta ?? 1, e.multDelta ?? 0.10);
+        break;
+      case 'wind_prism_bonus':
+        towerSystem.addStormConduitBonus?.(0, e.extraMult ?? 0.10);
+        break;
     }
   }
   if (enemySystem) {
@@ -777,6 +811,20 @@ function _applyRelicToTowers(relic) {
     }
     if (e.type === 'solar_charge_on_spell') {
       state._solarChargeExtraOnHighCost = (state._solarChargeExtraOnHighCost ?? 0) + e.extraCharge;
+    }
+    // DLC 3 — Storm Imperium relic effects
+    if (e.type === 'storm_charge_reduce') {
+      state._stormChargeMax = Math.min(state._stormChargeMax ?? 8, e.newMax ?? 6);
+    }
+    if (e.type === 'grounding_amulet') {
+      enemySystem?.setGroundingThreshold?.(e.threshold ?? 0.65);
+    }
+    if (e.type === 'aerial_will') {
+      state._stormChargeGroundingBonus = (state._stormChargeGroundingBonus ?? 0) + (e.extraCharge ?? 1);
+    }
+    if (e.type === 'anchor_weight' && towerSystem) {
+      // Wind Anchor 반경/지속시간 보너스 — TowerSystem에서 처리
+      towerSystem.addAnchorBonus?.(e.radiusDelta ?? 1, e.durationDelta ?? 1000);
     }
   }
 }
@@ -897,7 +945,7 @@ function beginWave() {
   const actNum     = Math.ceil(state.wave / ACT_SIZE);
 
   if (isBossWave) {
-    const BOSS_NAMES = { 5: 'Ironclad', 10: 'Void Titan', 15: 'Abyssal Dragon', 23: 'Shadow Colossus', 31: 'Sun God' };
+    const BOSS_NAMES = { 5: 'Ironclad', 10: 'Void Titan', 15: 'Abyssal Dragon', 23: 'Shadow Colossus', 31: 'Sun God', 36: 'Typhoon Warlord', 39: 'Tempest Sovereign' };
     const bossName = BOSS_NAMES[state.wave] ?? 'Boss';
     const weakness = state.bossWeaknesses[state.wave] ?? null;
     if (weakness) {
@@ -1572,6 +1620,11 @@ function onEnemyKilled(reward, isSplitChild = false) {
     }
   }
 
+  // ── Storm Charge 패시브 (Storm Imperium Warden DLC) ───
+  if (state?.warden?.passive === 'storm_charge') {
+    _triggerStormCharge('kill');
+  }
+
   if (!state?.stats) return;
   state.stats.enemiesKilled++;
   state.stats.enemiesKilledThisWave = (state.stats.enemiesKilledThisWave ?? 0) + 1;
@@ -2138,6 +2191,33 @@ function _triggerShadowAutoSpell() {
   resolveSpell({ ...card.effect, _isAutocast: true });   // 무료 자동 발동 — 골드 소모 없음, 연쇄 차단
 }
 
+// ── Storm Charge 패시브 (DLC 3) ───────────────────────
+function _triggerStormCharge(reason = 'kill') {
+  if (!state) return;
+  let amount = 1;
+  if (reason === 'grounding') {
+    amount = 1 + (state._stormChargeGroundingBonus ?? 0); // aerial_will 유물
+  }
+  state._stormChargeCount = (state._stormChargeCount ?? 0) + amount;
+  const max = state._stormChargeMax ?? 8;
+  updateStormChargeHUD(state._stormChargeCount, max);
+  log(i18n.t('dlc_si_log_storm_charge', state._stormChargeCount, max), 'info');
+  if (state._stormChargeCount >= max) {
+    state._stormChargeCount = 0;
+    updateStormChargeHUD(0, max);
+    _triggerStormAutoSpell();
+  }
+}
+
+function _triggerStormAutoSpell() {
+  const spellId = 'spell_thunderstrike';
+  const card    = CARD_DEFS.find(c => c.id === spellId);
+  if (!card) return;
+  log(i18n.t('dlc_si_log_auto_cast'), 'gold');
+  audio?.play('spell_cast');
+  resolveSpell({ ...card.effect, _isAutocast: true });
+}
+
 // ── Boss Entry Cinematic ──────────────────────────────
 function _getBossNameForWave(wave) {
   const bossNames = {
@@ -2147,6 +2227,8 @@ function _getBossNameForWave(wave) {
     23: 'Shadow Colossus',
     28: 'Solar Titan',
     31: 'Sun God',
+    36: 'Typhoon Warlord',
+    39: 'Tempest Sovereign',
   };
   return bossNames[wave] ?? 'Boss';
 }
