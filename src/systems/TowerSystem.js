@@ -58,6 +58,7 @@ export class TowerSystem {
     // DLC 2 Solar Dominion
     this._solarPact           = 0;    // Solar Pact 추가 배율
     this._solarPactTag        = 'Solar';
+    this._solarTagCount       = 0;    // Solar 태그 타워 수 캐시 (Solar Pact 최적화)
     // 위장 감지
     this._camoDetect          = false; // Keen Eye 유물 — 모든 타워 위장 감지
     this._lightPrismBuff      = 1;    // Light Prism aura 누적 배율 (cap ×1.51)
@@ -65,6 +66,7 @@ export class TowerSystem {
     this._crusaderStunBonus   = 0;    // Crusader 스턴 추가 ms
     // DLC 3 Storm Imperium
     this._stormPact           = 0;    // Storm Pact 추가 배율
+    this._stormTagCount       = 0;    // Storm 태그 타워 수 캐시 (Storm Pact 최적화)
     this._flyingDmgBonus      = 0;    // 비행 적 피해 보너스 (유물)
     this._stormConduitRadiusBonus = 0; // Storm Conduit 반경 보너스
     this._stormConduitMultBonus   = 0; // Storm Conduit 피해 배율 보너스
@@ -223,6 +225,8 @@ export class TowerSystem {
     }
 
     if (tid === 'fire_drake') this._fireDrakeCount++;
+    if (defCopy.tags?.includes(this._solarPactTag)) this._solarTagCount++;
+    if (defCopy.tags?.includes('Storm')) this._stormTagCount++;
 
     this.towers.set(key, {
       col, row, x, y,
@@ -338,13 +342,13 @@ export class TowerSystem {
     if (!anchors.length) return;
 
     for (const anchor of anchors) {
+      const groundingPx = (anchor.def.groundingRadius ?? 2.5) * HEX_W * 0.75;
+      const gpx2 = groundingPx * groundingPx;
       for (const e of this.enemySystem.enemies) {
         if (!e.def.flying || this.enemySystem._pendingRemove?.has(e.id)) continue;
-        const dist = this._hexDistance(
-          { q: anchor.col, r: anchor.row },
-          { q: e.gridX ?? e.hex?.q ?? 0, r: e.gridY ?? e.hex?.r ?? 0 }
-        );
-        if (dist <= (anchor.def.groundingRadius ?? 2.5)) {
+        const dx = e.x - anchor.x;
+        const dy = e.y - anchor.y;
+        if (dx * dx + dy * dy <= gpx2) {
           this.enemySystem.applyGrounding?.(e.id, anchor.def.groundingDuration ?? 3500);
         }
       }
@@ -371,9 +375,8 @@ export class TowerSystem {
     }
     // Solar Pact: Solar/Holy 태그 타워 2개+ 배치 시 데미지 보너스
     let solarPactMult = 1;
-    if (this._solarPact > 0 && tower.def.tags?.includes(this._solarPactTag)) {
-      const tagCount = [...this.towers.values()].filter(t => t.def.tags?.includes(this._solarPactTag)).length;
-      if (tagCount >= 2) solarPactMult = 1 + this._solarPact;
+    if (this._solarPact > 0 && tower.def.tags?.includes(this._solarPactTag) && this._solarTagCount >= 2) {
+      solarPactMult = 1 + this._solarPact;
     }
     // Solar Scythe 탱커 슬레이어 보너스: HP 500+ 적에게 +50% 추가 피해
     let tankSlayMult = 1;
@@ -382,9 +385,8 @@ export class TowerSystem {
     }
     // Storm Pact: Storm 태그 타워 2개+ 배치 시 피해 보너스
     let stormPactMult = 1;
-    if (this._stormPact > 0 && tower.def.tags?.includes('Storm')) {
-      const stormCount = [...this.towers.values()].filter(t => t.def.tags?.includes('Storm')).length;
-      if (stormCount >= 2) stormPactMult = 1 + this._stormPact;
+    if (this._stormPact > 0 && tower.def.tags?.includes('Storm') && this._stormTagCount >= 2) {
+      stormPactMult = 1 + this._stormPact;
     }
     let dmg = Math.round(tower.damage * (tower._starMult ?? 1) * this._globalDmgMult * druidMult * lightPrismMult * firePactMult * solarPactMult * tankSlayMult * stormPactMult);
 
@@ -790,6 +792,8 @@ export class TowerSystem {
     const t = this.towers.get(key);
     if (!t) return false;
     if (t.def.id === 'fire_drake') this._fireDrakeCount = Math.max(0, this._fireDrakeCount - 1);
+    if (t.def.tags?.includes(this._solarPactTag)) this._solarTagCount = Math.max(0, this._solarTagCount - 1);
+    if (t.def.tags?.includes('Storm')) this._stormTagCount = Math.max(0, this._stormTagCount - 1);
     this.towers.delete(key);
     return true;
   }
