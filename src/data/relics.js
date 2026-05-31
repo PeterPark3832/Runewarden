@@ -33,7 +33,7 @@
 
 import { SHADOW_RELICS } from '../dlc/shadow_realm/relics.js';
 import { SOLAR_RELICS }  from '../dlc/solar_dominion/relics.js';
-import { STORM_RELICS }  from '../dlc/storm_imperium/relics.js';
+import { hasDLC }        from '../systems/DLCRegistry.js';
 
 const _BASE_RELIC_DEFS = [
 
@@ -303,7 +303,7 @@ export const RELIC_SYNERGIES = [
 ];
 
 // DLC 유물 병합
-export const RELIC_DEFS = [..._BASE_RELIC_DEFS, ...SHADOW_RELICS, ...SOLAR_RELICS, ...STORM_RELICS];
+export const RELIC_DEFS = [..._BASE_RELIC_DEFS, ...SHADOW_RELICS, ...SOLAR_RELICS];
 
 /** id로 유물 찾기 */
 export function getRelicById(id) {
@@ -312,7 +312,12 @@ export function getRelicById(id) {
 
 /** 가중치 랜덤: Rare는 절반 확률 */
 export function pickRandomRelics(count, excludeIds = []) {
-  const pool = RELIC_DEFS.filter(r => !excludeIds.includes(r.id));
+  const pool = RELIC_DEFS.filter(r => {
+    if (excludeIds.includes(r.id)) return false;
+    // DLC 유물은 해당 DLC 소유 시에만 풀에 포함
+    if (r.dlc && !hasDLC(r.dlc)) return false;
+    return true;
+  });
   const weighted = [];
   for (const r of pool) {
     const w = r.rarity === 'rare' ? 1 : r.rarity === 'uncommon' ? 2 : 3;

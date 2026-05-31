@@ -5,7 +5,7 @@
 
 import { SHADOW_MAPS } from '../dlc/shadow_realm/maps.js';
 import { SOLAR_MAPS }  from '../dlc/solar_dominion/maps.js';
-import { STORM_MAPS }  from '../dlc/storm_imperium/maps.js';
+import { hasDLC }      from '../systems/DLCRegistry.js';
 
 const _BASE_MAP_DEFS = [
   // ── 맵 A: Crossroads ─────────────────────────────────
@@ -85,12 +85,25 @@ const _BASE_MAP_DEFS = [
   },
 ];
 
-// DLC 맵 병합
-export const MAP_DEFS = [..._BASE_MAP_DEFS, ...SHADOW_MAPS, ...SOLAR_MAPS, ...STORM_MAPS];
+// DLC 맵 병합 (하위 호환 — 기존 코드에서 계속 사용 가능)
+export const MAP_DEFS = [..._BASE_MAP_DEFS, ...SHADOW_MAPS, ...SOLAR_MAPS];
 
-/** 런 시작 시 랜덤 맵 선택 */
+/**
+ * DLC 소유 여부로 필터링된 맵풀 반환.
+ * 랜덤 맵 선택 등 런타임 맵 선택에 사용.
+ */
+export function getMapPool() {
+  return [
+    ..._BASE_MAP_DEFS,
+    ...(hasDLC('shadow_realm')   ? SHADOW_MAPS : []),
+    ...(hasDLC('solar_dominion') ? SOLAR_MAPS  : []),
+  ];
+}
+
+/** 런 시작 시 랜덤 맵 선택 (DLC 게이팅 적용) */
 export function pickRandomMap() {
-  return MAP_DEFS[Math.floor(Math.random() * MAP_DEFS.length)];
+  const pool = getMapPool();
+  return pool[Math.floor(Math.random() * pool.length)];
 }
 
 /** id로 맵 찾기 */

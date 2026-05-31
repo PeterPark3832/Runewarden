@@ -1,5 +1,13 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 
+// ── DLCRegistry mock (MetaSystem imports hasDLC) ──────────────────────────────
+vi.mock('../src/systems/DLCRegistry.js', () => ({
+  hasDLC:      vi.fn(() => false),
+  registerDLC: vi.fn(),
+  clearDLCs:   vi.fn(),
+}));
+import { hasDLC } from '../src/systems/DLCRegistry.js';
+
 // ── localStorage mock ─────────────────────────────────────────────────────────
 const store = {};
 vi.stubGlobal('localStorage', {
@@ -177,5 +185,90 @@ describe('reset()', () => {
     meta.reset();
     expect(meta.totalXP).toBe(0);
     expect(meta.rank).toBe(0);
+  });
+});
+
+// ── Act 4 DLC relic unlock ────────────────────────────────────────────────────
+describe('recordRun() — Act 4 Shadow Realm relic unlock', () => {
+  beforeEach(() => {
+    localStorage.clear();
+    hasDLC.mockReset();
+  });
+
+  it('starts with empty unlockedRelics', () => {
+    const meta = new MetaSystem();
+    expect(meta.unlockedRelics).toEqual([]);
+  });
+
+  it('unlocks void_sovereign and shadow_legacy on Act 4 victory with DLC', () => {
+    hasDLC.mockImplementation(id => id === 'shadow_realm');
+    const meta = new MetaSystem();
+    meta.recordRun({ victory: true, wavesCleared: 23 });
+    expect(meta.unlockedRelics).toContain('void_sovereign');
+    expect(meta.unlockedRelics).toContain('shadow_legacy');
+  });
+
+  it('does not unlock relics when DLC is not owned', () => {
+    hasDLC.mockReturnValue(false);
+    const meta = new MetaSystem();
+    meta.recordRun({ victory: true, wavesCleared: 23 });
+    expect(meta.unlockedRelics).not.toContain('void_sovereign');
+    expect(meta.unlockedRelics).not.toContain('shadow_legacy');
+  });
+
+  it('does not unlock relics when run is not a victory', () => {
+    hasDLC.mockImplementation(id => id === 'shadow_realm');
+    const meta = new MetaSystem();
+    meta.recordRun({ victory: false, wavesCleared: 23 });
+    expect(meta.unlockedRelics).not.toContain('void_sovereign');
+  });
+
+  it('does not unlock relics when wavesCleared is below 23', () => {
+    hasDLC.mockImplementation(id => id === 'shadow_realm');
+    const meta = new MetaSystem();
+    meta.recordRun({ victory: true, wavesCleared: 22 });
+    expect(meta.unlockedRelics).not.toContain('void_sovereign');
+  });
+
+  it('does not add duplicates on repeated Act 4 clears', () => {
+    hasDLC.mockImplementation(id => id === 'shadow_realm');
+    const meta = new MetaSystem();
+    meta.recordRun({ victory: true, wavesCleared: 23 });
+    meta.recordRun({ victory: true, wavesCleared: 23 });
+    const count = meta.unlockedRelics.filter(id => id === 'void_sovereign').length;
+    expect(count).toBe(1);
+  });
+
+  it('isRelicUnlocked returns true after Act 4 clear', () => {
+    hasDLC.mockImplementation(id => id === 'shadow_realm');
+    const meta = new MetaSystem();
+    meta.recordRun({ victory: true, wavesCleared: 23 });
+    expect(meta.isRelicUnlocked('void_sovereign')).toBe(true);
+    expect(meta.isRelicUnlocked('shadow_legacy')).toBe(true);
+  });
+
+  it('isRelicUnlocked returns false for non-unlocked relic', () => {
+    hasDLC.mockReturnValue(false);
+    const meta = new MetaSystem();
+    expect(meta.isRelicUnlocked('void_sovereign')).toBe(false);
+  });
+
+  it('persists unlockedRelics across MetaSystem instances', () => {
+    hasDLC.mockImplementation(id => id === 'shadow_realm');
+    const meta1 = new MetaSystem();
+    meta1.recordRun({ victory: true, wavesCleared: 23 });
+
+    // Reload from localStorage
+    const meta2 = new MetaSystem();
+    expect(meta2.unlockedRelics).toContain('void_sovereign');
+    expect(meta2.unlockedRelics).toContain('shadow_legacy');
+  });
+
+  it('migrates old save without unlockedRelics field', () => {
+    const oldSave = { totalXP: 500, rank: 5, unlockedCards: ['summon_archer'], bonuses: { startGold: 0 } };
+    localStorage.setItem('runewarden_meta_v1', JSON.stringify(oldSave));
+    const meta = new MetaSystem();
+    expect(Array.isArray(meta.unlockedRelics)).toBe(true);
+    expect(meta.unlockedRelics).toEqual([]);
   });
 });

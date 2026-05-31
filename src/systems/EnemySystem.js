@@ -260,6 +260,8 @@ export class EnemySystem {
     this._veteranRegen     = false; // 재생 적 DPS 강화 여부
     this._noviceRegen      = false; // 재생 적 DPS 절반 여부
     this._pool             = {};   // type → [{el, bodyEl, hpBar}] SVG 요소 풀
+    this._dmgPool          = [];   // 재사용 가능한 데미지 숫자 DOM 노드 풀
+    this._dmgPoolSize      = 30;   // 최대 풀 크기
     this._ambushTriggered  = false;
     this._adaptedTypes     = new Set(); // 넥서스 통과 적 타입 집합 (런 내 누적)
     this._injectStyles();
@@ -790,7 +792,6 @@ export class EnemySystem {
       weakness: (def.isBoss && this._upcomingBossWeakness) ? this._upcomingBossWeakness : null,
       camo: def.camo ?? false,
       el: null, hpBar: null, bodyEl: null, shieldEl: null,
-      _lastX: null, _lastY: null, _lastHpRatio: null,
     };
 
     // 풀에서 같은 타입 SVG 요소 재사용 (보스·쉴드 적 제외)
@@ -1306,11 +1307,8 @@ export class EnemySystem {
   _updateHpBar(e) {
     if (!e.hpBar) return;
     const ratio = Math.max(0, e.hp / e.maxHp);
-    if (e._lastHpRatio !== ratio) {
-      e.hpBar.setAttribute('width', (e.size * 2 * ratio).toFixed(1));
-      e.hpBar.setAttribute('fill', ratio > 0.5 ? '#2ecc71' : ratio > 0.25 ? '#f39c12' : '#e74c3c');
-      e._lastHpRatio = ratio;
-    }
+    e.hpBar.setAttribute('width', (e.size * 2 * ratio).toFixed(1));
+    e.hpBar.setAttribute('fill', ratio > 0.5 ? '#2ecc71' : ratio > 0.25 ? '#f39c12' : '#e74c3c');
   }
 
   _refreshStatusBadges(e) {
@@ -1344,13 +1342,7 @@ export class EnemySystem {
 
   _updateEnemySVG(e) {
     if (!e.el) return;
-    const x = e.x.toFixed(1);
-    const y = e.y.toFixed(1);
-    if (e._lastX !== x || e._lastY !== y) {
-      e.el.setAttribute('transform', `translate(${x},${y})`);
-      e._lastX = x;
-      e._lastY = y;
-    }
+    e.el.setAttribute('transform', `translate(${e.x.toFixed(1)},${e.y.toFixed(1)})`);
     this._updateHpBar(e);
     this._refreshStatusBadges(e);
 
@@ -1526,25 +1518,43 @@ export class EnemySystem {
   }
 
   // ── 떠오르는 데미지 숫자 (SVG) ────────────────────────
+  _getDmgNode() {
+    return this._dmgPool.pop() ?? (() => {
+      const el = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+      el.setAttribute('text-anchor', 'middle');
+      el.setAttribute('pointer-events', 'none');
+      return el;
+    })();
+  }
+
+  _returnDmgNode(el) {
+    el.removeAttribute('style');
+    el.setAttribute('opacity', '0');
+    if (this._dmgPool.length < this._dmgPoolSize) {
+      this._dmgPool.push(el);
+    } else {
+      el.remove();
+    }
+  }
+
   _spawnDamageNumber(x, y, amount, type = 'normal') {
     if (!this.layer?.ownerSVGElement) return;
     const svg = this.layer.ownerSVGElement;
-    const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+    const text = this._getDmgNode();
     text.setAttribute('x', String(x));
     text.setAttribute('y', String(y - 8));
-    text.setAttribute('text-anchor', 'middle');
     text.setAttribute('font-size', '11');
     text.setAttribute('font-weight', 'bold');
-    text.setAttribute('pointer-events', 'none');
     const color = type === 'boss' ? '#FF6600' : type === 'crit' ? '#FFD700' : '#FFFFFF';
     text.setAttribute('fill', color);
     text.setAttribute('stroke', 'rgba(0,0,0,0.6)');
     text.setAttribute('stroke-width', '2');
     text.setAttribute('paint-order', 'stroke');
+    text.removeAttribute('opacity');
     text.textContent = String(Math.round(amount));
     text.classList.add('dmg-float');
     svg.appendChild(text);
-    setTimeout(() => text.remove(), 900);
+    setTimeout(() => { text.parentNode?.removeChild(text); this._returnDmgNode(text); }, 900);
   }
 
   // ── 피해 처리 ─────────────────────────────────────────

@@ -1,4 +1,6 @@
 // Warden 메타 진행 시스템 — localStorage 영구 저장
+import { hasDLC } from './DLCRegistry.js';
+
 const SAVE_KEY     = 'runewarden_meta_v1';
 const SAVE_VERSION = 2; // 저장 포맷 버전 — 변경 시 증가
 
@@ -162,6 +164,7 @@ export class MetaSystem {
       maxAscensionCleared: data.maxAscensionCleared ?? 0,
       runsWon:     data.runsWon    ?? 0,
       totalKills:  data.totalKills ?? 0,
+      unlockedRelics: Array.isArray(data.unlockedRelics) ? data.unlockedRelics : [],
       _version:    SAVE_VERSION,
     };
   }
@@ -207,6 +210,7 @@ export class MetaSystem {
       ],
       bonuses: { startGold: 0, handSize: 0, nexusHp: 0 },
       badges: [],
+      unlockedRelics: [],
     };
   }
 
@@ -216,9 +220,10 @@ export class MetaSystem {
   get runsPlayed()    { return this._data.runsPlayed; }
   get runsWon()       { return this._data.runsWon; }
   get totalKills()    { return this._data.totalKills; }
-  get unlockedCards() { return this._data.unlockedCards; }
-  get bonuses()       { return this._data.bonuses; }
-  get runHistory()    { return this._data.runHistory ?? []; }
+  get unlockedCards()  { return this._data.unlockedCards; }
+  get bonuses()        { return this._data.bonuses; }
+  get runHistory()     { return this._data.runHistory ?? []; }
+  get unlockedRelics() { return this._data.unlockedRelics ?? []; }
 
   // 현재 레벨의 진행도 (0~1)
   get rankProgress() {
@@ -303,11 +308,28 @@ export class MetaSystem {
     }
   }
 
-  // ── 런 히스토리 기록 (최근 5건) ──────────────────
-  recordRun(entry) {
+  // ── DLC 전용 유물 해금 여부 조회 ─────────────────
+  isRelicUnlocked(relicId) {
+    if (!this._data.unlockedRelics) return false;
+    return this._data.unlockedRelics.includes(relicId);
+  }
+
+  // ── 런 히스토리 기록 (최근 5건) + DLC 클리어 해금 ──
+  recordRun(run) {
     if (!this._data.runHistory) this._data.runHistory = [];
-    this._data.runHistory.unshift(entry);
+    this._data.runHistory.unshift(run);
     if (this._data.runHistory.length > 5) this._data.runHistory.pop();
+
+    // Act 4 (Shadow Realm) 클리어 시 전용 유물 해금
+    if (run.victory && run.wavesCleared >= 23 && hasDLC('shadow_realm')) {
+      if (!this._data.unlockedRelics) this._data.unlockedRelics = [];
+      for (const id of ['void_sovereign', 'shadow_legacy']) {
+        if (!this._data.unlockedRelics.includes(id)) {
+          this._data.unlockedRelics.push(id);
+        }
+      }
+    }
+
     this._save();
   }
 
