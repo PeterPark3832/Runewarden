@@ -2,7 +2,6 @@
 import { hexToPixel, svgEl } from '../rendering/MapRenderer.js';
 import { audio } from './AudioSystem.js';
 import { HEX_W } from '../config/constants.js';
-import { hasDLC } from './DLCRegistry.js';
 
 // 타워 태그 → 약점 피해 타입 매핑
 function _tagsToDmgType(tags) {
@@ -12,6 +11,7 @@ function _tagsToDmgType(tags) {
   if (tags.includes('Arcane')) return 'lightning';
   if (tags.includes('Shadow') || tags.includes('Void')) return 'shadow';
   if (tags.includes('Solar')  || tags.includes('Holy')) return 'solar';
+  if (tags.includes('Storm'))  return 'lightning';
   return null;
 }
 
@@ -63,9 +63,12 @@ export class TowerSystem {
     this._lightPrismBuff      = 1;    // Light Prism aura 누적 배율 (cap ×1.51)
     this._lightPrismExtraRadius = 0;  // Prism Lens 유물 추가 반경
     this._crusaderStunBonus   = 0;    // Crusader 스턴 추가 ms
-    // 발사체 DOM 풀
-    this._projectilePool    = [];
-    this._projectilePoolMax = 40;
+    // DLC 3 Storm Imperium
+    this._stormPact           = 0;    // Storm Pact 추가 배율
+    this._flyingDmgBonus      = 0;    // 비행 적 피해 보너스 (유물)
+    this._stormConduitRadiusBonus = 0; // Storm Conduit 반경 보너스
+    this._stormConduitMultBonus   = 0; // Storm Conduit 피해 배율 보너스
+    this._lastAnchorScan      = 0;    // Wind Anchor 스캔 타이머
     ensureFilters(projectileLayer.ownerSVGElement);
     this._injectStyles();
   }
@@ -134,6 +137,22 @@ export class TowerSystem {
   // DLC 2 Crusader 스턴 보너스
   addCrusaderStunBonus(extraMs) {
     this._crusaderStunBonus += extraMs;
+  }
+
+  // DLC 3 Storm Pact: Storm 태그 타워 2개+ 배치 시 피해 보너스
+  addStormPact(extraMult) {
+    this._stormPact = extraMult;
+  }
+
+  // DLC 3 비행 적 피해 보너스 (유물)
+  addFlyingDmgBonus(extraMult) {
+    this._flyingDmgBonus = (this._flyingDmgBonus || 0) + extraMult;
+  }
+
+  // DLC 3 Storm Conduit 유물 보너스
+  addStormConduitBonus(radiusDelta, multDelta) {
+    this._stormConduitRadiusBonus = (this._stormConduitRadiusBonus || 0) + radiusDelta;
+    this._stormConduitMultBonus   = (this._stormConduitMultBonus   || 0) + multDelta;
   }
 
   enableGlobalCamoDetect() { this._camoDetect = true; }
@@ -273,13 +292,71 @@ export class TowerSystem {
       if (this._globalDmgTimer <= 0) this._globalDmgMult = 1;
     }
 
+    this._windAnchorScan(delta);
+
     for (const t of this.towers.values()) {
       if (t.cooldown > 0) { t.cooldown -= delta; continue; }
-      const target = this.enemySystem.getLeadEnemy(t.x, t.y, t.range, t.def.camoDetect || this._camoDetect);
+      // 비행 필터 적용: canTargetFlying 없는 타워는 지상(또는 grounded) 적만 타겟
+      const canHit = (e) => {
+        if (!e.def.flying) return true;
+        if (t.def.canTargetFlying) return true;
+        if (this.enemySystem._groundedSet?.has(e.id)) return true;
+        return false;
+      };
+      const target = this._getLeadEnemyFiltered(t, canHit);
       if (!target) continue;
       this._fireAt(t, target);
       t.cooldown = t.attackSpeed * this._globalSpeedMult;
     }
+  }
+
+  // canHit 필터를 적용한 lead enemy 탐색
+  _getLeadEnemyFiltered(tower, canHit) {
+    const r2 = tower.range * tower.range;
+    const canDetectCamo = tower.def.camoDetect || this._camoDetect;
+    const list = this.enemySystem._sortedByProgress?.length
+      ? this.enemySystem._sortedByProgress
+      : this.enemySystem.enemies;
+    for (const e of list) {
+      if (this.enemySystem._pendingRemove?.has(e.id)) continue;
+      if (this.enemySystem._dying?.has(e.id)) continue;
+      if (!canDetectCamo && e.camo) continue;
+      if (!canHit(e)) continue;
+      const dx = e.x - tower.x, dy = e.y - tower.y;
+      if (dx * dx + dy * dy <= r2) return e;
+    }
+    return null;
+  }
+
+  // Wind Anchor: 200ms마다 주변 비행 적에 grounding 적용
+  _windAnchorScan(delta) {
+    this._lastAnchorScan = (this._lastAnchorScan || 0) + delta;
+    if (this._lastAnchorScan < 200) return;
+    this._lastAnchorScan = 0;
+
+    const anchors = [...this.towers.values()].filter(t => t.def.id === 'wind_anchor');
+    if (!anchors.length) return;
+
+    for (const anchor of anchors) {
+      for (const e of this.enemySystem.enemies) {
+        if (!e.def.flying || this.enemySystem._pendingRemove?.has(e.id)) continue;
+        const dist = this._hexDistance(
+          { q: anchor.col, r: anchor.row },
+          { q: e.gridX ?? e.hex?.q ?? 0, r: e.gridY ?? e.hex?.r ?? 0 }
+        );
+        if (dist <= (anchor.def.groundingRadius ?? 2.5)) {
+          this.enemySystem.applyGrounding?.(e.id, anchor.def.groundingDuration ?? 3500);
+        }
+      }
+    }
+  }
+
+  // 헥스 거리 계산 헬퍼
+  _hexDistance(a, b) {
+    if (!a || !b) return Infinity;
+    const dq = (a.q ?? a.col ?? 0) - (b.q ?? b.col ?? 0);
+    const dr = (a.r ?? a.row ?? 0) - (b.r ?? b.row ?? 0);
+    return Math.max(Math.abs(dq), Math.abs(dr), Math.abs(dq + dr));
   }
 
   _fireAt(tower, enemy) {
@@ -303,11 +380,26 @@ export class TowerSystem {
     if (tower.def.tankSlayBonus && enemy.hp >= (tower.def.tankSlayHpThreshold ?? 500)) {
       tankSlayMult = 1 + tower.def.tankSlayBonus;
     }
-    let dmg = Math.round(tower.damage * (tower._starMult ?? 1) * this._globalDmgMult * druidMult * lightPrismMult * firePactMult * solarPactMult * tankSlayMult);
+    // Storm Pact: Storm 태그 타워 2개+ 배치 시 피해 보너스
+    let stormPactMult = 1;
+    if (this._stormPact > 0 && tower.def.tags?.includes('Storm')) {
+      const stormCount = [...this.towers.values()].filter(t => t.def.tags?.includes('Storm')).length;
+      if (stormCount >= 2) stormPactMult = 1 + this._stormPact;
+    }
+    let dmg = Math.round(tower.damage * (tower._starMult ?? 1) * this._globalDmgMult * druidMult * lightPrismMult * firePactMult * solarPactMult * tankSlayMult * stormPactMult);
 
     // ── DLC: critOnSlow — 감속 적에게 크리티컬 ─────────────
-    if (tower.def.critOnSlow && hasDLC(tower.def.dlc ?? 'shadow_realm') && enemy.slowTimer > 0) {
+    if (tower.def.critOnSlow && enemy.slowTimer > 0) {
       dmg = Math.round(dmg * tower.def.critOnSlow);
+    }
+
+    // ── DLC 3: flyingBonus — 비행 적 추가 피해 ──────────────
+    if (tower.def.flyingBonus && enemy.def.flying) {
+      dmg = Math.round(dmg * (1 + tower.def.flyingBonus));
+    }
+    // 전역 flying_dmg_bonus 유물 적용
+    if (this._flyingDmgBonus && enemy.def.flying) {
+      dmg = Math.round(dmg * (1 + this._flyingDmgBonus));
     }
 
     const dmgType = _tagsToDmgType(tower.def.tags);
@@ -440,8 +532,13 @@ export class TowerSystem {
     }
 
     // ── DLC 1: shadowDotDps — Shadow DoT 적용 ────────────
-    if (tower.def.shadowDotDps && tower.def.shadowDotDur && hasDLC(tower.def.dlc ?? 'shadow_realm')) {
+    if (tower.def.shadowDotDps && tower.def.shadowDotDur) {
       this.enemySystem.applyBurn(enemy.id, tower.def.shadowDotDps, tower.def.shadowDotDur);
+    }
+
+    // ── DLC 3: windDotDps — Wind DoT 적용 ───────────────
+    if (tower.def.windDotDps && this.enemySystem.applyWindDot) {
+      this.enemySystem.applyWindDot(enemy.id, tower.def.windDotDps, tower.def.windDotDur ?? 3000);
     }
 
     // ── DLC 2: Solar tower special behaviors ─────────────
@@ -496,32 +593,10 @@ export class TowerSystem {
     return totalMult;
   }
 
-  // ── 발사체 풀 헬퍼 ───────────────────────────────────
-  _getProjectileNode(tag = 'g') {
-    const cached = this._projectilePool.findIndex(n => n.tagName === tag);
-    if (cached !== -1) {
-      const node = this._projectilePool.splice(cached, 1)[0];
-      // g 요소는 자식 초기화, 모든 요소는 style 초기화
-      while (node.firstChild) node.removeChild(node.firstChild);
-      node.removeAttribute('style');
-      return node;
-    }
-    return svgEl(tag, {});
-  }
-
-  _returnProjectileNode(node) {
-    if (node.parentNode) node.parentNode.removeChild(node);
-    if (this._projectilePool.length < this._projectilePoolMax) {
-      this._projectilePool.push(node);
-    }
-  }
-
   // ── 화살 (Archer) ────────────────────────────────────
   _spawnArrow(x1, y1, x2, y2, color) {
     const id = `proj-${++this._projId}`;
-    const g = this._getProjectileNode('g');
-    g.setAttribute('id', id);
-    g.setAttribute('pointer-events', 'none');
+    const g = svgEl('g', { id, 'pointer-events': 'none' });
 
     // 화살 몸통
     g.appendChild(svgEl('line', {
@@ -550,7 +625,7 @@ export class TowerSystem {
 
     g.style.animation = 'projFade 0.15s ease-out forwards';
     this.projectileLayer.appendChild(g);
-    setTimeout(() => this._returnProjectileNode(g), 150);
+    setTimeout(() => document.getElementById(id)?.remove(), 150);
   }
 
   // ── 포탄 (Cannon) — transform 기반 이동 ──────────────
@@ -559,16 +634,12 @@ export class TowerSystem {
     const duration = 200;
 
     // cx=0, cy=0으로 그리고 transform으로 위치 지정 → CSS transition 가능
-    const ball = this._getProjectileNode('circle');
-    ball.setAttribute('id', id);
-    ball.setAttribute('cx', 0);
-    ball.setAttribute('cy', 0);
-    ball.setAttribute('r', 6);
-    ball.setAttribute('fill', '#e74c3c');
-    ball.setAttribute('stroke', '#ff8c00');
-    ball.setAttribute('stroke-width', 1.5);
-    ball.setAttribute('filter', 'url(#glow-filter)');
-    ball.setAttribute('pointer-events', 'none');
+    const ball = svgEl('circle', {
+      id, cx: 0, cy: 0, r: 6,
+      fill: '#e74c3c', stroke: '#ff8c00', 'stroke-width': 1.5,
+      filter: 'url(#glow-filter)',
+      'pointer-events': 'none',
+    });
 
     ball.style.transform = `translate(${x1.toFixed(1)}px, ${y1.toFixed(1)}px)`;
     ball.style.transition = `transform ${duration}ms linear`;
@@ -581,13 +652,13 @@ export class TowerSystem {
       });
     });
 
-    setTimeout(() => this._returnProjectileNode(ball), duration + 50);
+    setTimeout(() => document.getElementById(id)?.remove(), duration + 50);
   }
 
   // ── 얼음 화살 (Frost) ────────────────────────────────
   _spawnIceBolt(x1, y1, x2, y2) {
-    const g = this._getProjectileNode('g');
-    g.setAttribute('pointer-events', 'none');
+    const id = `proj-${++this._projId}`;
+    const g = svgEl('g', { id, 'pointer-events': 'none' });
 
     // 얼음 선 (파란 대시)
     g.appendChild(svgEl('line', {
@@ -606,63 +677,58 @@ export class TowerSystem {
 
     g.style.animation = 'projFade 0.2s ease-out forwards';
     this.projectileLayer.appendChild(g);
-    setTimeout(() => this._returnProjectileNode(g), 200);
+    setTimeout(() => document.getElementById(id)?.remove(), 200);
   }
 
   // ── 머즐 플래시 ──────────────────────────────────────
   _spawnMuzzleFlash(x, y, color) {
-    const c = this._getProjectileNode('circle');
-    c.setAttribute('cx', x.toFixed(1));
-    c.setAttribute('cy', y.toFixed(1));
-    c.setAttribute('r', 8);
-    c.setAttribute('fill', color);
-    c.setAttribute('opacity', 0.6);
-    c.setAttribute('pointer-events', 'none');
-    c.style.cssText = 'transform-origin: ' + x + 'px ' + y + 'px; animation: muzzleFlash 0.15s ease-out forwards';
+    const id = `fx-${++this._effectId}`;
+    const c = svgEl('circle', {
+      id, cx: x.toFixed(1), cy: y.toFixed(1), r: 8,
+      fill: color, opacity: 0.6,
+      'pointer-events': 'none',
+      style: 'transform-origin: ' + x + 'px ' + y + 'px; animation: muzzleFlash 0.15s ease-out forwards',
+    });
     this.projectileLayer.appendChild(c);
-    setTimeout(() => this._returnProjectileNode(c), 150);
+    setTimeout(() => document.getElementById(id)?.remove(), 150);
   }
 
   // ── 스플래시 링 (Cannon 폭발) ────────────────────────
   _spawnSplashRing(x, y, radius, color) {
-    const c = this._getProjectileNode('circle');
-    c.setAttribute('cx', x.toFixed(1));
-    c.setAttribute('cy', y.toFixed(1));
-    c.setAttribute('r', radius.toFixed(1));
-    c.setAttribute('fill', color + '22');
-    c.setAttribute('stroke', color);
-    c.setAttribute('stroke-width', 2);
-    c.setAttribute('pointer-events', 'none');
-    c.style.cssText = 'transform-origin: ' + x + 'px ' + y + 'px; animation: splashRing 0.35s ease-out forwards';
+    const id = `fx-${++this._effectId}`;
+    const c = svgEl('circle', {
+      id, cx: x.toFixed(1), cy: y.toFixed(1), r: radius.toFixed(1),
+      fill: color + '22', stroke: color, 'stroke-width': 2,
+      'pointer-events': 'none',
+      style: 'transform-origin: ' + x + 'px ' + y + 'px; animation: splashRing 0.35s ease-out forwards',
+    });
     this.projectileLayer.appendChild(c);
-    setTimeout(() => this._returnProjectileNode(c), 350);
+    setTimeout(() => document.getElementById(id)?.remove(), 350);
   }
 
   // ── 파이어볼 (Fire Drake) ────────────────────────────
   _spawnFireBolt(x1, y1, x2, y2) {
+    const id = `proj-${++this._projId}`;
     const duration = 220;
-    const ball = this._getProjectileNode('circle');
-    ball.setAttribute('cx', 0);
-    ball.setAttribute('cy', 0);
-    ball.setAttribute('r', 7);
-    ball.setAttribute('fill', '#FF6B1A');
-    ball.setAttribute('stroke', '#FFD700');
-    ball.setAttribute('stroke-width', 2);
-    ball.setAttribute('filter', 'url(#glow-filter)');
-    ball.setAttribute('pointer-events', 'none');
+    const ball = svgEl('circle', {
+      id, cx: 0, cy: 0, r: 7,
+      fill: '#FF6B1A', stroke: '#FFD700', 'stroke-width': 2,
+      filter: 'url(#glow-filter)',
+      'pointer-events': 'none',
+    });
     ball.style.transform = `translate(${x1.toFixed(1)}px, ${y1.toFixed(1)}px)`;
     ball.style.transition = `transform ${duration}ms linear`;
     this.projectileLayer.appendChild(ball);
     requestAnimationFrame(() => requestAnimationFrame(() => {
       ball.style.transform = `translate(${x2.toFixed(1)}px, ${y2.toFixed(1)}px)`;
     }));
-    setTimeout(() => this._returnProjectileNode(ball), duration + 50);
+    setTimeout(() => document.getElementById(id)?.remove(), duration + 50);
   }
 
   // ── 번개 (Tesla) ─────────────────────────────────────
   _spawnLightningBolt(x1, y1, x2, y2) {
-    const g = this._getProjectileNode('g');
-    g.setAttribute('pointer-events', 'none');
+    const id = `proj-${++this._projId}`;
+    const g = svgEl('g', { id, 'pointer-events': 'none' });
 
     // 지그재그 번개: 중간 지점 오프셋
     const mx = (x1 + x2) / 2 + (Math.random() - 0.5) * 24;
@@ -691,7 +757,7 @@ export class TowerSystem {
 
     g.style.animation = 'projFade 0.12s ease-out forwards';
     this.projectileLayer.appendChild(g);
-    setTimeout(() => this._returnProjectileNode(g), 120);
+    setTimeout(() => document.getElementById(id)?.remove(), 120);
   }
 
   // ── 자연 볼트 (Druid) ────────────────────────────────

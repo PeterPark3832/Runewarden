@@ -1,6 +1,10 @@
 // 웨이브 클리어 후 노드 선택 + 이벤트/휴식 UI
 import { getCardPool } from '../data/cards.js';
 import { i18n } from '../i18n/i18n.js';
+import { hasDLC } from '../systems/DLCRegistry.js';
+import { SHADOW_EVENTS } from '../dlc/shadow_realm/events.js';
+import { SOLAR_EVENTS }  from '../dlc/solar_dominion/events.js';
+import { STORM_EVENTS }  from '../dlc/storm_imperium/events.js';
 
 // ── NodeSelectionUI ───────────────────────────────────
 export class NodeSelectionUI {
@@ -150,8 +154,14 @@ export class EventUI {
   }
 
   open() {
-    // 현재 언어의 이벤트 풀 사용
-    const events = i18n.t('events');
+    // 현재 언어의 이벤트 풀 — DLC 소유 여부로 필터링
+    const lang   = i18n.lang === 'ko' ? 'ko' : 'en';
+    const events = [
+      ...i18n.t('events'),
+      ...(hasDLC('shadow_realm')   ? SHADOW_EVENTS[lang] : []),
+      ...(hasDLC('solar_dominion') ? SOLAR_EVENTS[lang]  : []),
+      ...(hasDLC('storm_imperium') ? STORM_EVENTS[lang]  : []),
+    ];
     const event  = events[Math.floor(Math.random() * events.length)];
     this.container.classList.remove('hidden');
 
