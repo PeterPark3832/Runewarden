@@ -400,11 +400,11 @@ const BASE_HANDLERS = {
   wind_shear(effect, { enemySystem }) {
     const slowMult = effect.slowMult ?? 0.50;
     const dur = effect.duration ?? 3000;
-    enemySystem.enemies
-      .filter(e => !e.windImmune && !enemySystem._pendingRemove.has(e.id))
-      .forEach(e => {
-        enemySystem.applySlowEffect?.(e.id, slowMult, dur, true);
-      });
+    for (const e of enemySystem.enemies) {
+      if (!e.def.windImmune && !enemySystem._pendingRemove.has(e.id)) {
+        enemySystem.applySlow(e.id, slowMult, dur);
+      }
+    }
   },
 
   gold_per_flying(effect, { enemySystem, addGold }) {

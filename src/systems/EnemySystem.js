@@ -387,7 +387,6 @@ export class EnemySystem {
     this._adaptedTypes     = new Set(); // 넥서스 통과 적 타입 집합 (런 내 누적)
     // ── DLC 3 Storm Imperium ──────────────────────────
     this._groundedSet         = new Set();  // 현재 grounded 상태인 비행 적 id Set
-    this._lastAnchorScan      = 0;          // Wind Anchor 200ms 스캔용 타임스탬프
     this._windDotEnabled      = true;       // windDot 처리 플래그
     this._groundingSlowThreshold = 0.5;    // 슬로우 50% 이상이면 비행 착지
     this._injectStyles();
@@ -1797,10 +1796,7 @@ export class EnemySystem {
     // Tempest Sovereign 2페이즈 전환 (HP phase2Hp 이하): 착지 + 슬로우 면역 + 속도 28
     if (e.def?.id === 'tempest_sovereign' && !e._phase2 && e.hp <= (e.def.phase2Hp ?? 2000)) {
       e._phase2 = true;
-      e.def = { ...e.def,
-        flying: false, slowImmune: true,
-        enrageThreshold: 0.35, damageReduction: 0.10, speed: 28,
-      };
+      e.def = { ...e.def, flying: false };
       // 착지 자연 전환 — grounded Set에서 제거 (비행 상태 해제이므로)
       this._groundedSet.delete(e.id);
       e._flyOffset = 0;

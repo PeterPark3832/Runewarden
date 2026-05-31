@@ -27,7 +27,7 @@ import { resolveSpell as _resolveSpellImpl } from './SpellResolver.js';
 import { HEX_W } from '../config/constants.js';
 import { log, spawnFloatText, shakeNexus, setWaveButton } from './GameUtils.js';
 import { shared } from './GameState.js';
-import { updateHUD, renderHand, onBossUpdate, updateShadowChargeHUD, updateStormChargeHUD, showClearBanner, showAmbushBanner, updateMenuRank } from '../ui/HUDUpdater.js';
+import { updateHUD, renderHand, onBossUpdate, updateShadowChargeHUD, updateSolarChargeHUD, updateStormChargeHUD, showClearBanner, showAmbushBanner, updateMenuRank } from '../ui/HUDUpdater.js';
 import { showScreen, openWardenSelect, openDifficultySelect, openCodex, openDeckView } from '../ui/UIOrchestrator.js';
 import { registerDLC, hasDLC, clearDLCs } from '../systems/DLCRegistry.js';
 import { MAX_PLAYER_LEVEL, getWaveXpGrant, getLevelFromXp, XP_THRESHOLDS } from '../systems/PlayerLevelSystem.js';
@@ -44,9 +44,9 @@ const NEXUS_HP    = 3;
 const START_GOLD  = 25;
 const WAVE_GOLD   = 6;
 const BOSS_WAVES_BASE = new Set([5, 10, 15]);
-const BOSS_WAVES_DLC  = new Set([5, 10, 15, 23]);       // DLC1 보스 웨이브
-const BOSS_WAVES_DLC2 = new Set([5, 10, 15, 23, 31]);   // DLC2 보스 웨이브 (Solar Titan: W28도 특수)
-const BOSS_WAVES_DLC3 = new Set([5, 10, 15, 23, 31, 36, 39]); // DLC3 보스 웨이브
+const BOSS_WAVES_DLC  = new Set([...BOSS_WAVES_BASE, 23]);        // + DLC1 보스 (Shadow Colossus)
+const BOSS_WAVES_DLC2 = new Set([...BOSS_WAVES_DLC, 31]);         // + DLC2 보스 (Sun God)
+const BOSS_WAVES_DLC3 = new Set([...BOSS_WAVES_DLC2, 36, 39]);    // + DLC3 중간보스(36) + 최종(39)
 const CURSED_WAVES    = new Set([4, 9, 14, 20, 27]);     // 저주 웨이브 고정 시점 (Act당 1회)
 
 // ── DOM 참조 ───────────────────────────────────────────
@@ -946,8 +946,7 @@ function beginWave() {
   const actNum     = Math.ceil(state.wave / ACT_SIZE);
 
   if (isBossWave) {
-    const BOSS_NAMES = { 5: 'Ironclad', 10: 'Void Titan', 15: 'Abyssal Dragon', 23: 'Shadow Colossus', 31: 'Sun God', 36: 'Typhoon Warlord', 39: 'Tempest Sovereign' };
-    const bossName = BOSS_NAMES[state.wave] ?? 'Boss';
+    const bossName = _getBossNameForWave(state.wave);
     const weakness = state.bossWeaknesses[state.wave] ?? null;
     if (weakness) {
       enemySystem.setBossWeakness(weakness);
@@ -2151,13 +2150,7 @@ function _triggerSolarCharge(card) {
 }
 
 function _updateSolarChargeHUD() {
-  const n   = state?._solarChargeCount ?? 0;
-  const max = state?._solarChargeMax   ?? 8;
-  // reuse shadow HUD or call dedicated Solar HUD if available
-  const hudFn = typeof updateSolarChargeHUD === 'function'
-    ? updateSolarChargeHUD
-    : (typeof updateShadowChargeHUD === 'function' ? updateShadowChargeHUD : null);
-  hudFn?.(n, max);
+  updateSolarChargeHUD(state?._solarChargeCount ?? 0, state?._solarChargeMax ?? 8);
 }
 
 function _triggerSolarAutoSpell() {
@@ -2202,7 +2195,6 @@ function _triggerStormCharge(reason = 'kill') {
   state._stormChargeCount = (state._stormChargeCount ?? 0) + amount;
   const max = state._stormChargeMax ?? 8;
   updateStormChargeHUD(state._stormChargeCount, max);
-  log(i18n.t('dlc_si_log_storm_charge', state._stormChargeCount, max), 'info');
   if (state._stormChargeCount >= max) {
     state._stormChargeCount = 0;
     updateStormChargeHUD(0, max);
