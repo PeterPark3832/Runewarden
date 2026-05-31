@@ -1,5 +1,5 @@
 // 웨이브 클리어 후 노드 선택 + 이벤트/휴식 UI
-import { CARD_DEFS } from '../data/cards.js';
+import { getCardPool } from '../data/cards.js';
 import { i18n } from '../i18n/i18n.js';
 
 // ── NodeSelectionUI ───────────────────────────────────
@@ -377,9 +377,10 @@ export class RestUI {
 
 // ── 카드 풀에서 희귀도별 랜덤 추출 ────────────────────
 export function pickRandomCards(count, rarity) {
+  const _cardPool = getCardPool();
   const pool = rarity === 'any'
-    ? [...CARD_DEFS]
-    : CARD_DEFS.filter(c => c.rarity === rarity);
+    ? [..._cardPool]
+    : _cardPool.filter(c => c.rarity === rarity);
 
   const result = [];
   for (let i = 0; i < count && pool.length > 0; i++) {

@@ -85,7 +85,18 @@ export const DLC_DEFS = {
     id:       'shadow_realm',
     name:     'Shadow Realm',
     nameKo:   '그림자 왕국',
+    // TODO(steam-release): Replace with actual Steamworks App ID
+    // shadow_realm: steamAppId: 0 → Steamworks 파트너 포털에서 DLC App ID 발급 필요
     steamAppId: 0,   // TODO: Steam DLC App ID 입력
+    price:    '$4.99',
+  },
+  solar_dominion: {
+    id:       'solar_dominion',
+    name:     'Solar Dominion',
+    nameKo:   '태양 지배',
+    // TODO(steam-release): Replace with actual Steamworks App ID
+    // solar_dominion: steamAppId: 0 → Steamworks 파트너 포털에서 DLC App ID 발급 필요
+    steamAppId: 0,
     price:    '$4.99',
   },
 };

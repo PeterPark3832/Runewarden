@@ -9,8 +9,8 @@ import { ShopUI }      from '../ui/ShopUI.js';
 import { NodeSelectionUI, EventUI, RestUI, PathForkUI, pickRandomCards } from '../ui/NodeUI.js';
 import { MetaSystem, CODEX_UNLOCKS, xpForLevel, MAX_RANK } from '../systems/MetaSystem.js';
 import { RunSummaryUI } from '../ui/RunSummaryUI.js';
-import { buildStarterDeck, CARD_DEFS } from '../data/cards.js';
-import { WARDEN_DEFS, getWardenById, PASSIVES } from '../data/wardens.js';
+import { buildStarterDeck, CARD_DEFS, getCardPool } from '../data/cards.js';
+import { WARDEN_DEFS, getWardenById, getWardenPool, PASSIVES } from '../data/wardens.js';
 import { TOWER_DEFS } from '../data/towers.js';
 import { SteamSystem, STEAM_STATS } from '../systems/SteamSystem.js';
 import { TutorialUI }   from '../ui/TutorialUI.js';
@@ -614,7 +614,7 @@ function startRun() {
 // ── 유물 선택 오픈 ────────────────────────────────────
 function _openRelicPicker() {
   const existingIds = state.relics.map(r => r.id);
-  const choices = pickRandomRelics(3, existingIds, meta.unlockedRelics);
+  const choices = pickRandomRelics(3, existingIds);
   if (choices.length === 0) return;  // 모두 획득한 경우
   relicUI.openPicker(choices, existingIds);
 }
@@ -1146,7 +1146,7 @@ function resolveGamblePath() {
 
   // 랜덤 유물 1개 자동 지급 (선택 없음)
   const excludeIds = (state.relics ?? []).map(r => r.id);
-  const offered = pickRandomRelics(1, excludeIds, meta.unlockedRelics);
+  const offered = pickRandomRelics(1, excludeIds);
   if (offered.length > 0) {
     const relic = offered[0];
     state.relics.push(relic);

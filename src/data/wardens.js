@@ -11,7 +11,7 @@ import { CARD_DEFS } from './cards.js';
 import { CardSystem } from '../systems/CardSystem.js';
 import { SHADOW_WARDENS } from '../dlc/shadow_realm/wardens.js';
 import { SOLAR_WARDENS }  from '../dlc/solar_dominion/wardens.js';
-import { STORM_WARDENS, PASSIVES_STORM } from '../dlc/storm_imperium/wardens.js';
+import { hasDLC }         from '../systems/DLCRegistry.js';
 
 // ── Warden 패시브 ID ────────────────────────────────
 export const PASSIVES = {
@@ -21,7 +21,6 @@ export const PASSIVES = {
   GRAVE_GOLD:         'grave_gold',         // Shadow — 웨이브 종료 시 버린 카드마다 골드 +1
   SHADOW_CHARGE:      'shadow_charge',      // DLC 1  — 적 처치 10회 → Shadow Beam 자동 시전
   SOLAR_CHARGE_SOLAR: 'solar_charge_solar', // DLC 2  — 주문 시전(cost≥2) 8회 → Solar Beam 자동 시전
-  STORM_CHARGE:       PASSIVES_STORM.STORM_CHARGE, // DLC 3  — 비행 적 처치/착지 8회 → Thunderstrike 자동 시전
 };
 
 // ── 스타터 덱 빌더 ───────────────────────────────────
@@ -178,10 +177,22 @@ const _BASE_WARDEN_DEFS = [
   },
 ];
 
-// DLC 워든 병합 (DLC 2 > DLC 1 > base 우선순위)
-export const WARDEN_DEFS = [..._BASE_WARDEN_DEFS, ...SHADOW_WARDENS, ...SOLAR_WARDENS, ...STORM_WARDENS];
+// DLC 워든 병합 (하위 호환 — 기존 코드에서 계속 사용 가능)
+export const WARDEN_DEFS = [..._BASE_WARDEN_DEFS, ...SHADOW_WARDENS, ...SOLAR_WARDENS];
 
 /** ID로 Warden 찾기 */
 export function getWardenById(id) {
   return WARDEN_DEFS.find(w => w.id === id) ?? WARDEN_DEFS[0];
+}
+
+/**
+ * DLC 소유 여부로 필터링된 워든풀 반환.
+ * 워든 선택 화면에서 선택 가능한 워든 목록에 사용.
+ */
+export function getWardenPool() {
+  return [
+    ..._BASE_WARDEN_DEFS,
+    ...(hasDLC('shadow_realm')   ? SHADOW_WARDENS : []),
+    ...(hasDLC('solar_dominion') ? SOLAR_WARDENS  : []),
+  ];
 }

@@ -33,6 +33,7 @@
 
 import { SHADOW_RELICS } from '../dlc/shadow_realm/relics.js';
 import { SOLAR_RELICS }  from '../dlc/solar_dominion/relics.js';
+import { hasDLC }        from '../systems/DLCRegistry.js';
 
 const _BASE_RELIC_DEFS = [
 
@@ -309,16 +310,12 @@ export function getRelicById(id) {
   return RELIC_DEFS.find(r => r.id === id);
 }
 
-/** 가중치 랜덤: Rare는 절반 확률
- * @param {number} count - 선택할 유물 수
- * @param {string[]} excludeIds - 이미 보유한 유물 ID 목록
- * @param {string[]} unlockedRelicIds - 메타 해금된 특수 유물 ID 목록 (unlockCondition 있는 유물 접근 허용)
- */
-export function pickRandomRelics(count, excludeIds = [], unlockedRelicIds = []) {
+/** 가중치 랜덤: Rare는 절반 확률 */
+export function pickRandomRelics(count, excludeIds = []) {
   const pool = RELIC_DEFS.filter(r => {
     if (excludeIds.includes(r.id)) return false;
-    // unlockCondition이 있는 유물은 메타에서 해금된 경우에만 풀에 포함
-    if (r.unlockCondition && !unlockedRelicIds.includes(r.id)) return false;
+    // DLC 유물은 해당 DLC 소유 시에만 풀에 포함
+    if (r.dlc && !hasDLC(r.dlc)) return false;
     return true;
   });
   const weighted = [];

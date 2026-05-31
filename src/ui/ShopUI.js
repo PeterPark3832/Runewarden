@@ -1,5 +1,5 @@
 // 웨이브 간 상점 UI
-import { CARD_DEFS } from '../data/cards.js';
+import { getCardPool } from '../data/cards.js';
 import { i18n } from '../i18n/i18n.js';
 import { weightedPickRarity, MAX_PLAYER_LEVEL } from '../systems/PlayerLevelSystem.js';
 import { shared } from '../core/GameState.js';
@@ -115,13 +115,14 @@ export class ShopUI {
   _offer() {
     // Codex 언락 기준으로 카드 풀 필터링
     // __all_uncommon__, __all_rare__ 특수 토큰 처리
+    const _cardPool = getCardPool();
     let pool;
     if (!this._unlockedIds) {
-      pool = [...CARD_DEFS];
+      pool = [..._cardPool];
     } else {
       const allUncommon = this._unlockedIds.includes('__all_uncommon__');
       const allRare     = this._unlockedIds.includes('__all_rare__');
-      pool = CARD_DEFS.filter(c => {
+      pool = _cardPool.filter(c => {
         if (this._unlockedIds.includes(c.id)) return true;
         if (allUncommon && c.rarity === 'uncommon') return true;
         if (allRare     && c.rarity === 'rare')     return true;
@@ -138,9 +139,9 @@ export class ShopUI {
     const size = this._shopSize ?? SHOP_SIZE;
     if (pool.length < size) {
       let fallback = this._challengeMods?.maxCardRarity === 'common'
-        ? CARD_DEFS.filter(c => c.rarity === 'common')
-        : [...CARD_DEFS];
-      pool = fallback.length >= size ? fallback : [...CARD_DEFS];
+        ? _cardPool.filter(c => c.rarity === 'common')
+        : [..._cardPool];
+      pool = fallback.length >= size ? fallback : [..._cardPool];
     }
 
     this._offered = [];
@@ -175,13 +176,12 @@ export class ShopUI {
       if (_idx !== -1) pool.splice(_idx, 1);
       this._offered.push({ ...card, uid: Math.random() });
     }
-    // Wave 16+ Elite 슬롯: rare 카드 1장, 계단식 가격 12→14→16→18→20g
+    // Wave 16+ Elite 슬롯: rare 카드 1장, 비용 +7g (최소 12g)
     if (this._waveNum >= 16 && size >= 4 && !_commonOnly) {
-      const rarePool = CARD_DEFS.filter(c => c.rarity === 'rare' && !used.has(c.id));
+      const rarePool = _cardPool.filter(c => c.rarity === 'rare' && !used.has(c.id));
       if (rarePool.length > 0) {
         const pick = rarePool[Math.floor(Math.random() * rarePool.length)];
-        const elitePrice = Math.min(12 + Math.floor((this._waveNum - 16) / 5) * 2, 20);
-        this._offered.push({ ...pick, cost: elitePrice, _eliteSlot: true, uid: Math.random() });
+        this._offered.push({ ...pick, cost: Math.max(pick.cost + 7, 12), _eliteSlot: true, uid: Math.random() });
       }
     }
     this._renderCards();
@@ -203,8 +203,7 @@ export class ShopUI {
       const effectiveCost = Math.max(1, card.cost - (this._discount || 0));
       const canAfford = effectiveCost <= this._gold;
       const slot = document.createElement('div');
-      const eliteClass = card._eliteSlot ? ' shop-card-elite' : '';
-      slot.className = `shop-card-slot${eliteClass}${canAfford ? '' : ' unaffordable'}`;
+      slot.className = `shop-card-slot${canAfford ? '' : ' unaffordable'}`;
       slot.dataset.rarity = card.rarity;
       card._effectiveCost = effectiveCost;  // 구매 시 사용
 
@@ -214,10 +213,8 @@ export class ShopUI {
       const _cType = i18n.t('card_type_' + card.type) ?? card.type;
       const rarityLabel = { common: 'C', uncommon: 'U', rare: 'R' };
       const rarityBadge = `<span class="rarity-badge rarity-badge--${card.rarity}">${rarityLabel[card.rarity] ?? card.rarity[0].toUpperCase()}</span>`;
-      const eliteLabel = card._eliteSlot ? `<span class="elite-slot-label">${i18n.t('shop_elite_slot')}</span>` : '';
       slot.innerHTML = `
         <div class="shop-card-inner">
-          ${eliteLabel}
           <div class="shop-card-top">
             <div class="shop-card-art">${makeCardArtSVG(card)}</div>
             <div class="shop-card-info">
@@ -315,13 +312,14 @@ export class ShopUI {
     const _plevel = shared.state?.playerLevel ?? 1;
     const _commonOnly = this._challengeMods?.maxCardRarity === 'common';
 
+    const _addCardPool = getCardPool();
     let pool = this._unlockedIds
-      ? CARD_DEFS.filter(c => {
+      ? _addCardPool.filter(c => {
           const aU = this._unlockedIds.includes('__all_uncommon__');
           const aR = this._unlockedIds.includes('__all_rare__');
           return this._unlockedIds.includes(c.id) || (aU && c.rarity === 'uncommon') || (aR && c.rarity === 'rare');
         })
-      : [...CARD_DEFS];
+      : [..._addCardPool];
     if (_commonOnly) pool = pool.filter(c => c.rarity === 'common');
     const available = pool.filter(c => !usedIds.has(c.id));
     if (available.length === 0) return;
