@@ -1,5 +1,5 @@
 // 웨이브 간 상점 UI
-import { getCardPool } from '../data/cards.js';
+import { CARD_DEFS } from '../data/cards.js';
 import { i18n } from '../i18n/i18n.js';
 import { weightedPickRarity, MAX_PLAYER_LEVEL } from '../systems/PlayerLevelSystem.js';
 import { shared } from '../core/GameState.js';
@@ -115,14 +115,13 @@ export class ShopUI {
   _offer() {
     // Codex 언락 기준으로 카드 풀 필터링
     // __all_uncommon__, __all_rare__ 특수 토큰 처리
-    const _cardPool = getCardPool();
     let pool;
     if (!this._unlockedIds) {
-      pool = [..._cardPool];
+      pool = [...CARD_DEFS];
     } else {
       const allUncommon = this._unlockedIds.includes('__all_uncommon__');
       const allRare     = this._unlockedIds.includes('__all_rare__');
-      pool = _cardPool.filter(c => {
+      pool = CARD_DEFS.filter(c => {
         if (this._unlockedIds.includes(c.id)) return true;
         if (allUncommon && c.rarity === 'uncommon') return true;
         if (allRare     && c.rarity === 'rare')     return true;
@@ -139,9 +138,9 @@ export class ShopUI {
     const size = this._shopSize ?? SHOP_SIZE;
     if (pool.length < size) {
       let fallback = this._challengeMods?.maxCardRarity === 'common'
-        ? _cardPool.filter(c => c.rarity === 'common')
-        : [..._cardPool];
-      pool = fallback.length >= size ? fallback : [..._cardPool];
+        ? CARD_DEFS.filter(c => c.rarity === 'common')
+        : [...CARD_DEFS];
+      pool = fallback.length >= size ? fallback : [...CARD_DEFS];
     }
 
     this._offered = [];
@@ -178,7 +177,7 @@ export class ShopUI {
     }
     // Wave 16+ Elite 슬롯: rare 카드 1장, 비용 +7g (최소 12g)
     if (this._waveNum >= 16 && size >= 4 && !_commonOnly) {
-      const rarePool = _cardPool.filter(c => c.rarity === 'rare' && !used.has(c.id));
+      const rarePool = CARD_DEFS.filter(c => c.rarity === 'rare' && !used.has(c.id));
       if (rarePool.length > 0) {
         const pick = rarePool[Math.floor(Math.random() * rarePool.length)];
         this._offered.push({ ...pick, cost: Math.max(pick.cost + 7, 12), _eliteSlot: true, uid: Math.random() });
@@ -235,8 +234,8 @@ export class ShopUI {
         </button>
       `;
 
-      // 챌린지: fixed_deck — 구매 불가
-      if (this._challengeMods?.noShopBuy) {
+      // 챌린지: fixed_deck — 구매 불가 (noShopBuy: 완전 차단 / shopCardDisabled: DLC 맵 완화)
+      if (this._challengeMods?.noShopBuy || this._challengeMods?.shopCardDisabled) {
         const buyBtn = slot.querySelector('.btn-buy');
         if (buyBtn) { buyBtn.disabled = true; buyBtn.textContent = i18n.t('challenge_no_buy'); }
       } else if (canAfford) {
@@ -312,14 +311,13 @@ export class ShopUI {
     const _plevel = shared.state?.playerLevel ?? 1;
     const _commonOnly = this._challengeMods?.maxCardRarity === 'common';
 
-    const _addCardPool = getCardPool();
     let pool = this._unlockedIds
-      ? _addCardPool.filter(c => {
+      ? CARD_DEFS.filter(c => {
           const aU = this._unlockedIds.includes('__all_uncommon__');
           const aR = this._unlockedIds.includes('__all_rare__');
           return this._unlockedIds.includes(c.id) || (aU && c.rarity === 'uncommon') || (aR && c.rarity === 'rare');
         })
-      : [..._addCardPool];
+      : [...CARD_DEFS];
     if (_commonOnly) pool = pool.filter(c => c.rarity === 'common');
     const available = pool.filter(c => !usedIds.has(c.id));
     if (available.length === 0) return;

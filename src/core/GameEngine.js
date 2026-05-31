@@ -9,8 +9,8 @@ import { ShopUI }      from '../ui/ShopUI.js';
 import { NodeSelectionUI, EventUI, RestUI, PathForkUI, pickRandomCards } from '../ui/NodeUI.js';
 import { MetaSystem, CODEX_UNLOCKS, xpForLevel, MAX_RANK } from '../systems/MetaSystem.js';
 import { RunSummaryUI } from '../ui/RunSummaryUI.js';
-import { buildStarterDeck, CARD_DEFS, getCardPool } from '../data/cards.js';
-import { WARDEN_DEFS, getWardenById, getWardenPool, PASSIVES } from '../data/wardens.js';
+import { buildStarterDeck, CARD_DEFS } from '../data/cards.js';
+import { WARDEN_DEFS, getWardenById, PASSIVES } from '../data/wardens.js';
 import { TOWER_DEFS } from '../data/towers.js';
 import { SteamSystem, STEAM_STATS } from '../systems/SteamSystem.js';
 import { TutorialUI }   from '../ui/TutorialUI.js';
@@ -387,8 +387,9 @@ function startRun() {
   const initGold   = Math.max(0, warden.startGold + (bonuses.startGold || 0) + diff.goldBonus);
   const initNexus  = Math.max(1, warden.nexusHp + (bonuses.nexusHp || 0) + diff.nexusHp);
 
-  const ascMods       = getAscensionMods(shared.selectedAscension);
-  const challengeMods = getChallengeMods(shared.selectedChallenges);
+  const ascMods = getAscensionMods(shared.selectedAscension);
+  // challengeMods는 맵 선택 후 DLC 맵 여부를 반영해 재계산됨 (아래 참조)
+  let challengeMods = getChallengeMods(shared.selectedChallenges);
 
   // 보스 약점: 런 시작 시 각 보스에 고유 속성 약점 랜덤 배정
   const _WEAKNESS_TYPES = ['fire', 'frost', 'lightning', 'shadow', 'solar'];
@@ -475,6 +476,17 @@ function startRun() {
   state.mapId   = selectedMap.id;
   state.mapName = selectedMap.name;
   state.mapIcon = selectedMap.icon;
+
+  // DLC 맵 여부를 반영해 challengeMods 재계산 (poverty/fixed_deck 소프트락 방지)
+  // selectedMap.dlc 가 truthy 이면 DLC 맵 → dlcMods 오버라이드 적용
+  if (selectedMap.dlc) {
+    challengeMods = getChallengeMods(shared.selectedChallenges, selectedMap.dlc);
+    state.challengeMods = challengeMods;
+    // poverty dlcMods.startGold 가 적용됐을 경우 시작 골드도 함께 재적용
+    if (challengeMods.startGold !== null) {
+      state.gold = challengeMods.startGold;
+    }
+  }
 
   renderer  = new MapRenderer(svg, onCellClick, onCellHover);
   cardSystem = new CardSystem(wardenDeck, warden.handSize + handSizeBonus);
