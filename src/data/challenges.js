@@ -56,6 +56,8 @@ export const CHALLENGE_DEFS = [
     category: 'card',
     xpBonus: 0.35,
     mods: { noShopBuy: true },
+    // DLC 맵에서는 카드 구매만 불가 — 유물 교체(RelicUI)는 허용
+    dlcMods: { noShopBuy: false, shopCardDisabled: true },
   },
   // ── 경제 제한 ──────────────────────────────────────────
   {
@@ -64,6 +66,8 @@ export const CHALLENGE_DEFS = [
     category: 'economy',
     xpBonus: 0.25,
     mods: { startGold: 10 },
+    // DLC 맵에서는 시작 골드 패널티 완화 (10g → 16g)
+    dlcMods: { startGold: 16 },
   },
   {
     id: 'no_reroll',
@@ -112,34 +116,45 @@ export function getChallengeXPBonus(ids) {
   return ids.reduce((sum, id) => sum + (getChallengeById(id)?.xpBonus ?? 0), 0);
 }
 
-/** 활성 챌린지들의 mods 합산 반환 */
-export function getChallengeMods(ids) {
+/**
+ * 활성 챌린지들의 mods 합산 반환
+ * @param {string[]} ids - 활성 챌린지 ID 배열
+ * @param {string|null} [mapDlc=null] - 현재 맵의 dlc 필드 (DLC 맵이면 dlcMods 오버라이드 적용)
+ */
+export function getChallengeMods(ids, mapDlc = null) {
   const mods = {
-    allowedTowers:   null,   // null = 모든 타워 허용
-    bannedTowers:    [],
-    bannedCardTypes: [],
-    maxCardRarity:   null,   // null = 모든 등급 허용
-    noShopBuy:       false,
-    startGold:       null,   // null = 기본값 사용
-    noReroll:        false,
-    noRest:          false,
-    nexusPerfect:    false,
-    forceNode:       null,
-    noEvent:         false,
+    allowedTowers:    null,   // null = 모든 타워 허용
+    bannedTowers:     [],
+    bannedCardTypes:  [],
+    maxCardRarity:    null,   // null = 모든 등급 허용
+    noShopBuy:        false,
+    shopCardDisabled: false,  // DLC 맵 fixed_deck: 카드 구매만 불가 (유물 교체는 허용)
+    startGold:        null,   // null = 기본값 사용
+    noReroll:         false,
+    noRest:           false,
+    nexusPerfect:     false,
+    forceNode:        null,
+    noEvent:          false,
   };
   for (const id of ids) {
-    const m = getChallengeById(id)?.mods ?? {};
-    if (m.allowedTowers)     mods.allowedTowers   = m.allowedTowers;
-    if (m.bannedTowers)      mods.bannedTowers.push(...m.bannedTowers);
-    if (m.bannedCardTypes)   mods.bannedCardTypes.push(...m.bannedCardTypes);
-    if (m.maxCardRarity)     mods.maxCardRarity    = m.maxCardRarity;
-    if (m.noShopBuy)         mods.noShopBuy        = true;
-    if (m.startGold != null) mods.startGold        = m.startGold;
-    if (m.noReroll)          mods.noReroll         = true;
-    if (m.noRest)            mods.noRest           = true;
-    if (m.nexusPerfect)      mods.nexusPerfect     = true;
-    if (m.forceNode)         mods.forceNode        = m.forceNode;
-    if (m.noEvent)           mods.noEvent          = true;
+    const challenge = getChallengeById(id);
+    if (!challenge) continue;
+    // DLC 맵에서 dlcMods가 정의된 경우 해당 필드를 오버라이드
+    const m = (mapDlc && challenge.dlcMods)
+      ? { ...challenge.mods, ...challenge.dlcMods }
+      : challenge.mods;
+    if (m.allowedTowers)       mods.allowedTowers    = m.allowedTowers;
+    if (m.bannedTowers)        mods.bannedTowers.push(...m.bannedTowers);
+    if (m.bannedCardTypes)     mods.bannedCardTypes.push(...m.bannedCardTypes);
+    if (m.maxCardRarity)       mods.maxCardRarity     = m.maxCardRarity;
+    if (m.noShopBuy)           mods.noShopBuy         = true;
+    if (m.shopCardDisabled)    mods.shopCardDisabled   = true;
+    if (m.startGold != null)   mods.startGold         = m.startGold;
+    if (m.noReroll)            mods.noReroll          = true;
+    if (m.noRest)              mods.noRest            = true;
+    if (m.nexusPerfect)        mods.nexusPerfect      = true;
+    if (m.forceNode)           mods.forceNode         = m.forceNode;
+    if (m.noEvent)             mods.noEvent           = true;
   }
   return mods;
 }
