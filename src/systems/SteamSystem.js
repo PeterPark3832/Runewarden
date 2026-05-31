@@ -99,6 +99,14 @@ export const DLC_DEFS = {
     steamAppId: 0,
     price:    '$4.99',
   },
+  storm_imperium: {
+    id:       'storm_imperium',
+    name:     'Storm Imperium',
+    nameKo:   '폭풍 제국',
+    // TODO(steam-release): Replace with actual Steamworks App ID
+    steamAppId: 0,
+    price:    '$4.99',
+  },
 };
 
 // ── SteamSystem 클래스 ───────────────────────────────

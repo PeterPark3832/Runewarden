@@ -371,6 +371,7 @@ function startRun() {
   clearDLCs();
   if (steam?.isDlcOwned('shadow_realm'))    registerDLC('shadow_realm');
   if (steam?.isDlcOwned('solar_dominion'))  registerDLC('solar_dominion');
+  if (steam?.isDlcOwned('storm_imperium'))  registerDLC('storm_imperium');
   if (hasDLC('storm_imperium')) {
     shared.maxWaves  = MAX_WAVES_DLC3;
     shared.bossWaves = BOSS_WAVES_DLC3;

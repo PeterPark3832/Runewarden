@@ -4,6 +4,7 @@
 
 import { SHADOW_CARDS } from '../dlc/shadow_realm/cards.js';
 import { SOLAR_CARDS }  from '../dlc/solar_dominion/cards.js';
+import { STORM_CARDS }  from '../dlc/storm_imperium/cards.js';
 import { hasDLC }       from '../systems/DLCRegistry.js';
 
 const BASE_CARD_DEFS = [
@@ -1035,7 +1036,7 @@ const BASE_CARD_DEFS = [
 ];
 
 // DLC 카드 병합 (하위 호환 — 기존 코드에서 계속 사용 가능)
-export const CARD_DEFS = [...BASE_CARD_DEFS, ...SHADOW_CARDS, ...SOLAR_CARDS];
+export const CARD_DEFS = [...BASE_CARD_DEFS, ...SHADOW_CARDS, ...SOLAR_CARDS, ...STORM_CARDS];
 
 /**
  * DLC 소유 여부로 필터링된 카드풀 반환.
@@ -1046,6 +1047,7 @@ export function getCardPool() {
     ...BASE_CARD_DEFS,
     ...(hasDLC('shadow_realm')   ? SHADOW_CARDS : []),
     ...(hasDLC('solar_dominion') ? SOLAR_CARDS  : []),
+    ...(hasDLC('storm_imperium') ? STORM_CARDS  : []),
   ];
 }
 

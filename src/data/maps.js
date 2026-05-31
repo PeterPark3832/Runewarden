@@ -5,6 +5,7 @@
 
 import { SHADOW_MAPS } from '../dlc/shadow_realm/maps.js';
 import { SOLAR_MAPS }  from '../dlc/solar_dominion/maps.js';
+import { STORM_MAPS }  from '../dlc/storm_imperium/maps.js';
 import { hasDLC }      from '../systems/DLCRegistry.js';
 
 const _BASE_MAP_DEFS = [
@@ -86,7 +87,7 @@ const _BASE_MAP_DEFS = [
 ];
 
 // DLC 맵 병합 (하위 호환 — 기존 코드에서 계속 사용 가능)
-export const MAP_DEFS = [..._BASE_MAP_DEFS, ...SHADOW_MAPS, ...SOLAR_MAPS];
+export const MAP_DEFS = [..._BASE_MAP_DEFS, ...SHADOW_MAPS, ...SOLAR_MAPS, ...STORM_MAPS];
 
 /**
  * DLC 소유 여부로 필터링된 맵풀 반환.
@@ -97,6 +98,7 @@ export function getMapPool() {
     ..._BASE_MAP_DEFS,
     ...(hasDLC('shadow_realm')   ? SHADOW_MAPS : []),
     ...(hasDLC('solar_dominion') ? SOLAR_MAPS  : []),
+    ...(hasDLC('storm_imperium') ? STORM_MAPS  : []),
   ];
 }
 
