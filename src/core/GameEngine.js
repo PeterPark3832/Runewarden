@@ -1040,7 +1040,6 @@ function beginWave() {
                         state._cursedWave === 'revive');
   updateHUD();
   tutorial?.triggerEvent('wave_started');
-  if (state.wave === 11) tutorial?.triggerHint('camo_wave', i18n.t('hint_camo_title'), i18n.t('hint_camo_text'));
   // DLC Act 진입 시 일회성 소개 팝업
   if (state.wave === 16) tutorial?.triggerDlcIntro('shadow');
   if (state.wave === 24) tutorial?.triggerDlcIntro('solar');
@@ -2254,6 +2253,23 @@ function _startMenuBGM() {
 }
 document.addEventListener('click', _startMenuBGM, { once: true });
 document.addEventListener('keydown', _startMenuBGM, { once: true });
+
+// 크래시 로깅 — 최근 10개 에러를 localStorage에 보존
+(function _installCrashLogger() {
+  function _appendCrashLog(entry) {
+    try {
+      const log = JSON.parse(localStorage.getItem('rw_crash_log') || '[]');
+      log.unshift(entry);
+      localStorage.setItem('rw_crash_log', JSON.stringify(log.slice(0, 10)));
+    } catch {}
+  }
+  window.addEventListener('error', (e) => {
+    _appendCrashLog({ ts: Date.now(), msg: e.message, src: e.filename, line: e.lineno });
+  });
+  window.addEventListener('unhandledrejection', (e) => {
+    _appendCrashLog({ ts: Date.now(), msg: String(e.reason) });
+  });
+}());
 
 $('btn-start').addEventListener('click', openWardenSelect);
 $('btn-continue')?.addEventListener('click', () => {

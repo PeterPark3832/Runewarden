@@ -1558,6 +1558,7 @@ export class EnemySystem {
 
   _removeEnemy(e, withAnim = true) {
     this.enemies = this.enemies.filter(x => x.id !== e.id);
+    e.windDots = null;
 
     if (!e.el) return;
 
