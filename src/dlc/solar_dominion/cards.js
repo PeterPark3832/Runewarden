@@ -221,8 +221,8 @@ export const SOLAR_CARDS = [
     id: 'spell_solar_beam',
     name: 'Solar Beam',        nameKo: '태양 광선',
     type: 'spell', rarity: 'rare', cost: 4, icon: '☀️',
-    desc:   'Deal 50 damage to all enemies and slow them 30% for 3 seconds.',
-    descKo: '모든 적에게 50 피해를 입히고 3초 동안 30% 감속합니다.',
+    desc:   'Deal 50 damage to all enemies and slow them 30% for 3 seconds. (30% slow does not ground flying enemies.)',
+    descKo: '모든 적에게 50 피해를 입히고 3초 동안 30% 감속합니다. (30% 감속은 비행 적을 착지시키지 않습니다.)',
     effect: { type: 'solar_beam', damage: 50, slow: 0.30, slowDur: 3000 }, dlc: 'solar_dominion',
   },
   {

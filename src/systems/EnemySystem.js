@@ -855,7 +855,7 @@ export class EnemySystem {
       if (e) {
         this._handleSplitOnDeath(e);
         this._removeEnemy(e, true);
-        this.onEnemyKilled(e.reward, e.isSplitChild ?? false);
+        this.onEnemyKilled(e.reward, e.isSplitChild ?? false, e.def?.flying ?? false);
       }
     }
     this._pendingRemove.clear();

@@ -242,7 +242,7 @@ describe('EnemySystem._pendingRemove prevents double kill reward', () => {
     es._flushPendingRemovals();
 
     expect(es.onEnemyKilled).toHaveBeenCalledTimes(1);
-    expect(es.onEnemyKilled).toHaveBeenCalledWith(5, false);
+    expect(es.onEnemyKilled).toHaveBeenCalledWith(5, false, false);
   });
 
   it('_pendingRemove is cleared after flush', () => {

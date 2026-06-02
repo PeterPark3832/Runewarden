@@ -458,6 +458,53 @@ You don't just need damage. You need a plan.
 
 ---
 
+## DLC 3 — Storm Imperium (폭풍 제국) 스토어 페이지
+
+```
+[h1]Runewarden — Storm Imperium[/h1]
+
+The sky turns hostile. Defend against the fallen aerial empire.
+
+[b]Runewarden: Storm Imperium[/b] adds Act 6 — 8 new waves dominated by [b]flying enemies[/b], a new flying-specialist Warden, and the first airborne mechanics in the series.
+
+[h2]What's New[/h2]
+[list]
+[*] [b]Act 6[/b] — 8 new waves (Wave 32–39). 12 new enemy types. A 2-phase Tempest Sovereign final boss.
+[*] [b]Tempest Warden "The Sovereign" ⚡[/b] — Charges Storm Charge by killing or grounding flying enemies. At 8 charges, auto-casts Thunderstrike (80 damage to all airborne enemies + 3s grounding).
+[*] [b]38 new cards[/b] — Storm, Wind, and Lightning themes. Anti-air towers, grounding spells, and storm-gold economy.
+[*] [b]15 new relics[/b] — Including storm_crown (faster passive charge), aerial_bane (+25% damage vs flying), and wind_prism_bonus.
+[*] [b]3 new maps[/b] — Cloud Citadel, Storm Strait, Lightning Corridor.
+[*] [b]10 new events[/b] — Storm-themed risk/reward encounters.
+[/list]
+
+[h2]Flying Enemy Mechanics[/h2]
+
+Act 6 introduces [b]6 flying enemy types[/b] that most towers cannot target. Deploy anti-air towers (Storm Ballista, Tempest Tower, Storm Conduit) or use Wind Anchor to force them down.
+
+[b]Grounding:[/b] Flying enemies hit by 50%+ slow effects or stun are temporarily grounded — all towers can attack them. Wind Anchor automatically grounds nearby airborne units in a 2.5-hex radius.
+
+[b]Existing towers that can target flying enemies:[/b] Archer, Ballista, Marksman, Storm Ballista, Tempest Tower, Storm Conduit, Bone Archer, Shadow Strike, Phantom Sniper.
+
+[h2]Tempest Sovereign — Final Boss[/h2]
+
+[b]Phase 1 (HP 3600→1800)[/b] — Airborne, windImmune. Only anti-air towers can attack.
+[b]Phase 2 (HP 1800→0)[/b] — Descends. SlowImmune, enrages at 35% HP. All towers can engage.
+
+"SOVEREIGN DESCENDS" — when the phase transition fires, you have seconds to reposition.
+
+[h2]신규 메커닉 (Korean)[/h2]
+[list]
+[*] [b]비행 적[/b] — 대부분의 타워로 공격 불가. 전용 대공 타워 또는 착지 메커닉 필요.
+[*] [b]착지 (Grounding)[/b] — 50% 이상 감속 또는 기절 시 비행 적이 임시로 지상에 내려옵니다.
+[*] [b]바람 면역 (windImmune)[/b] — 일부 비행 적은 wind 계열 감속 효과에 면역.
+[*] [b]폭풍 충전 (Storm Charge)[/b] — 비행 적 처치/착지 시 충전. 8회 → Thunderstrike 자동 시전.
+[/list]
+
+[b]기본 게임 Runewarden이 필요합니다. DLC 1 / DLC 2 없이도 플레이 가능합니다 (단, DLC 3 전용 워든은 Act 6에서 최적화됩니다).[/b]
+```
+
+---
+
 ## Steam 등록 시 DLC 특이사항
 
 | 항목 | 내용 |

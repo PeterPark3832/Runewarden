@@ -1563,7 +1563,7 @@ function onEnemyReachEnd({ type: enemyType, displayName, isBoss = false } = {}) 
   if (state.nexusHp <= 0) { audio.play('defeat'); endGame(false); }
 }
 
-function onEnemyKilled(reward, isSplitChild = false) {
+function onEnemyKilled(reward, isSplitChild = false, isFlying = false) {
   // QW#3: 적 등급별 히트스톱 (보스 75ms, 엘리트/탱크 40ms — 일반 적은 생략)
   if (reward >= 20) hitStop(75);
   else if (reward >= 3) hitStop(40);
@@ -1625,7 +1625,8 @@ function onEnemyKilled(reward, isSplitChild = false) {
   }
 
   // ── Storm Charge 패시브 (Storm Imperium Warden DLC) ───
-  if (state?.warden?.passive === 'storm_charge') {
+  // 비행 적 처치 시에만 충전 — 설계 명세: "비행 적 처치 시 +1 충전"
+  if (state?.warden?.passive === 'storm_charge' && isFlying) {
     _triggerStormCharge('kill');
   }
 

@@ -60,6 +60,7 @@ export const SHADOW_TOWER_DEFS = {
     splash:      0,
     critOnSlow:  2.0,   // 감속 적에게 2배 피해
     camoDetect:  true,  // 위장 적 감지 가능
+    canTargetFlying: true,
     tags:        ['Shadow', 'Void'],
     shape:       'archer',
     dlc:         'shadow_realm',
