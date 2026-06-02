@@ -900,6 +900,10 @@ const _BASE_KO = {
   daily_done:          '✅ 오늘 완료!',
   daily_modifiers:     (warden, diff, map) => `${warden} · ${diff} · ${map}`,
   daily_label:         (date) => `오늘의 챌린지 — ${date}`,
+
+  // ── DLC 3: Tempest Sovereign 페이즈 전환 배너 / Wave 32 힌트 ──
+  boss_sovereign_descend: '군주가 강하한다',
+  hint_wave32_flying: '⚡ 비행 적이 등장합니다! 폭풍 발리스타·폭풍 포탑을 배치하거나, 바람 닻으로 착지시키세요.',
 };
 
 // DLC 번역 병합

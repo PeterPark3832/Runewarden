@@ -236,7 +236,7 @@ export class RestUI {
             <div class="rest-opt-name">${i18n.t('rest_remove_card')}</div>
             <div class="rest-opt-desc">${i18n.t('rest_remove_desc')}</div>
           </div>
-          <div class="rest-option" id="rest-forge">
+          <div class="rest-option hidden" id="rest-forge">
             <div class="rest-opt-icon">⚒️</div>
             <div class="rest-opt-name">${i18n.t('rest_forge')}</div>
             <div class="rest-opt-desc">${i18n.t('rest_forge_desc')}</div>

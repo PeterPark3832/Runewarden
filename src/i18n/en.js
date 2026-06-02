@@ -900,6 +900,10 @@ const _BASE_EN = {
   daily_done:          '✅ Completed Today!',
   daily_modifiers:     (warden, diff, map) => `${warden} · ${diff} · ${map}`,
   daily_label:         (date) => `Daily — ${date}`,
+
+  // ── DLC 3: Tempest Sovereign 페이즈 전환 배너 / Wave 32 힌트 ──
+  boss_sovereign_descend: 'SOVEREIGN DESCENDS',
+  hint_wave32_flying: '⚡ Flying enemies incoming! Deploy Storm Ballista or Tempest Tower, or use Wind Anchor to ground them.',
 };
 
 // DLC 번역 병합

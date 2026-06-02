@@ -523,7 +523,8 @@ function startRun() {
   // Tempest Sovereign 페이즈 전환 연출 (DLC 3)
   enemySystem.onBossPhaseTransition = (id, phase) => {
     if (phase === 2) {
-      log(i18n.t('boss_sovereign_descend'), 'bad');
+      showClearBanner(i18n.t('boss_sovereign_descend'));
+      log(i18n.t('boss_sovereign_descend'), 'danger');
       audio?.play('boss_enrage');
     }
   };
@@ -1043,6 +1044,10 @@ function beginWave() {
   // DLC Act 진입 시 일회성 소개 팝업
   if (state.wave === 16) tutorial?.triggerDlcIntro('shadow');
   if (state.wave === 24) tutorial?.triggerDlcIntro('solar');
+  // DLC 3: Wave 32 비행 적 첫 등장 힌트
+  if (state.wave === 32 && hasDLC('storm_imperium')) {
+    log(i18n.t('hint_wave32_flying'), 'info');
+  }
 }
 
 // ── 웨이브 클리어 ─────────────────────────────────────
@@ -2529,8 +2534,8 @@ document.addEventListener('keydown', (e) => {
     return;
   }
 
-  // ── 준비 단계: Space → 웨이브 시작 ────────────────
-  if (key === ' ' && phase === 'pre') {
+  // ── 준비 단계: Space / Enter → 웨이브 시작 ──────────
+  if ((key === ' ' || key === 'Enter') && phase === 'pre') {
     e.preventDefault();
     $('btn-wave')?.click();
     return;
