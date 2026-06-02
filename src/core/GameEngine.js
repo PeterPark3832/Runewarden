@@ -523,7 +523,8 @@ function startRun() {
   // Tempest Sovereign 페이즈 전환 연출 (DLC 3)
   enemySystem.onBossPhaseTransition = (id, phase) => {
     if (phase === 2) {
-      log(i18n.t('boss_sovereign_descend'), 'bad');
+      showClearBanner(i18n.t('boss_sovereign_descend'));
+      log(i18n.t('boss_sovereign_descend'), 'danger');
       audio?.play('boss_enrage');
     }
   };
@@ -1040,10 +1041,13 @@ function beginWave() {
                         state._cursedWave === 'revive');
   updateHUD();
   tutorial?.triggerEvent('wave_started');
-  if (state.wave === 11) tutorial?.triggerHint('camo_wave', i18n.t('hint_camo_title'), i18n.t('hint_camo_text'));
   // DLC Act 진입 시 일회성 소개 팝업
   if (state.wave === 16) tutorial?.triggerDlcIntro('shadow');
   if (state.wave === 24) tutorial?.triggerDlcIntro('solar');
+  // DLC 3: Wave 32 비행 적 첫 등장 힌트
+  if (state.wave === 32 && hasDLC('storm_imperium')) {
+    log(i18n.t('hint_wave32_flying'), 'info');
+  }
 }
 
 // ── 웨이브 클리어 ─────────────────────────────────────
@@ -1559,7 +1563,7 @@ function onEnemyReachEnd({ type: enemyType, displayName, isBoss = false } = {}) 
   if (state.nexusHp <= 0) { audio.play('defeat'); endGame(false); }
 }
 
-function onEnemyKilled(reward, isSplitChild = false) {
+function onEnemyKilled(reward, isSplitChild = false, isFlying = false) {
   // QW#3: 적 등급별 히트스톱 (보스 75ms, 엘리트/탱크 40ms — 일반 적은 생략)
   if (reward >= 20) hitStop(75);
   else if (reward >= 3) hitStop(40);
@@ -1621,7 +1625,8 @@ function onEnemyKilled(reward, isSplitChild = false) {
   }
 
   // ── Storm Charge 패시브 (Storm Imperium Warden DLC) ───
-  if (state?.warden?.passive === 'storm_charge') {
+  // 비행 적 처치 시에만 충전 — 설계 명세: "비행 적 처치 시 +1 충전"
+  if (state?.warden?.passive === 'storm_charge' && isFlying) {
     _triggerStormCharge('kill');
   }
 
@@ -2255,6 +2260,23 @@ function _startMenuBGM() {
 document.addEventListener('click', _startMenuBGM, { once: true });
 document.addEventListener('keydown', _startMenuBGM, { once: true });
 
+// 크래시 로깅 — 최근 10개 에러를 localStorage에 보존
+(function _installCrashLogger() {
+  function _appendCrashLog(entry) {
+    try {
+      const log = JSON.parse(localStorage.getItem('rw_crash_log') || '[]');
+      log.unshift(entry);
+      localStorage.setItem('rw_crash_log', JSON.stringify(log.slice(0, 10)));
+    } catch {}
+  }
+  window.addEventListener('error', (e) => {
+    _appendCrashLog({ ts: Date.now(), msg: e.message, src: e.filename, line: e.lineno });
+  });
+  window.addEventListener('unhandledrejection', (e) => {
+    _appendCrashLog({ ts: Date.now(), msg: String(e.reason) });
+  });
+}());
+
 $('btn-start').addEventListener('click', openWardenSelect);
 $('btn-continue')?.addEventListener('click', () => {
   let saveData = null;
@@ -2513,8 +2535,8 @@ document.addEventListener('keydown', (e) => {
     return;
   }
 
-  // ── 준비 단계: Space → 웨이브 시작 ────────────────
-  if (key === ' ' && phase === 'pre') {
+  // ── 준비 단계: Space / Enter → 웨이브 시작 ──────────
+  if ((key === ' ' || key === 'Enter') && phase === 'pre') {
     e.preventDefault();
     $('btn-wave')?.click();
     return;

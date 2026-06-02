@@ -15,6 +15,7 @@ const _BASE_TOWER_DEFS = {
     range: 4.2,
     attackSpeed: 950,
     splash: 0,
+    canTargetFlying: true,
     tags: [],
     shape: 'archer',
   },
@@ -123,6 +124,7 @@ const _BASE_TOWER_DEFS = {
     range: 5.0,
     attackSpeed: 3500,
     splash: 0,
+    canTargetFlying: true,
     tags: ['Physical'],
     shape: 'archer',
   },
@@ -154,6 +156,7 @@ const _BASE_TOWER_DEFS = {
     range: 7.0,           // 최장 사거리 (Archer 4.2의 1.7배)
     attackSpeed: 1800,
     splash: 0,
+    canTargetFlying: true,
     camoDetect: true,     // 위장 적 감지 가능
     tags: [],
     shape: 'archer',
@@ -170,6 +173,7 @@ const _BASE_TOWER_DEFS = {
     range: 5.5,           // 장거리 (Glacial과 동일)
     attackSpeed: 3200,    // 느린 공속 — 한 방이 강력
     splash: 0,
+    canTargetFlying: true,
     tags: ['Shadow'],
     shape: 'archer',
   },
@@ -183,6 +187,7 @@ const _BASE_TOWER_DEFS = {
     range: 3.5,
     attackSpeed: 420,     // 매우 빠른 공속 (Tesla 700보다 빠름)
     splash: 0,
+    canTargetFlying: true,
     tags: ['Shadow'],
     shape: 'archer',
   },

@@ -351,10 +351,10 @@ export const ENEMY_DEFS = {
   },
   tempest_sovereign: {
     id: 'tempest_sovereign', name: 'Tempest Sovereign', nameKo: '폭풍 군주',
-    hp: 4000, speed: 10, reward: 60, size: 44,
+    hp: 3600, speed: 10, reward: 60, size: 44,
     color: '#4ECDC4',
     flying: true, windImmune: true, damageReduction: 0.20,
-    isBoss: true, phase2Hp: 2000, dlc: 'storm_imperium',
+    isBoss: true, phase2Hp: 1800, dlc: 'storm_imperium',
   },
 };
 
@@ -855,7 +855,7 @@ export class EnemySystem {
       if (e) {
         this._handleSplitOnDeath(e);
         this._removeEnemy(e, true);
-        this.onEnemyKilled(e.reward, e.isSplitChild ?? false);
+        this.onEnemyKilled(e.reward, e.isSplitChild ?? false, e.def?.flying ?? false);
       }
     }
     this._pendingRemove.clear();
@@ -1558,6 +1558,7 @@ export class EnemySystem {
 
   _removeEnemy(e, withAnim = true) {
     this.enemies = this.enemies.filter(x => x.id !== e.id);
+    e.windDots = null;
 
     if (!e.el) return;
 
