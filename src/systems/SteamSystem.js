@@ -181,8 +181,11 @@ export class SteamSystem {
     const dlc = DLC_DEFS[dlcKey];
     if (!dlc) return false;
 
-    // 개발 모드 우회 (콘솔: localStorage.setItem('rw_dev','1') 후 새로고침)
+    // 개발 모드 우회: rw_dev 플래그
     if (localStorage.getItem('rw_dev') === '1') return true;
+    // Steam 미연결 상태 (로컬 실행 / npm start) → 모든 DLC 잠금 해제
+    // 실제 Steam 배포 시에는 _ready=true 후 아래 API 체크가 동작
+    if (!this._ready) return true;
 
     // localStorage 오버라이드 (크리에이터 키·베타 배포용)
     const overrides = JSON.parse(localStorage.getItem('rw_dlc_owned') ?? '[]');
