@@ -870,6 +870,7 @@ export class EnemySystem {
     // extra_prep: 첫 스폰을 spawnDelay ms 뒤로 미룸 (음수 타이머 시작)
     this._spawnTimer        = -spawnDelay;
     this._spawnIndex        = 0;
+    this._waveExtraSpawns   = 0;   // 분열 자식 등 큐 외 스폰 수 (진행률 표시용)
     this._waveActive        = true;
     this._cursedWaveRevive  = cursedRevive;
     this._ambushTriggered   = false;
@@ -879,6 +880,14 @@ export class EnemySystem {
     return this._waveActive &&
            this._spawnIndex >= this._spawnQueue.length &&
            this.enemies.length === 0;
+  }
+
+  // 웨이브 진행률 (HUD 표시용) — total은 기습/분열 스폰 포함
+  getWaveProgress() {
+    if (!this._waveActive) return null;
+    const total = this._spawnQueue.length + (this._waveExtraSpawns ?? 0);
+    const remaining = (this._spawnQueue.length - this._spawnIndex) + this.enemies.length;
+    return { total, gone: Math.max(0, Math.min(total, total - remaining)) };
   }
 
   // ── 메인 업데이트 ─────────────────────────────────────
@@ -1085,6 +1094,12 @@ export class EnemySystem {
         enemy.badgesEl = badgesEl;
         enemy._statusKey = '';
         this._ensureWings(g, enemy, def);  // 비행 적 날개 + _flyOffset (풀 재사용 시에도)
+        // 애니메이션 래퍼 재바인딩 + 이전 생애의 상태(격노/죽음 애니메이션) 초기화
+        const animEl = g.querySelector('.enemy-anim') ?? g;
+        animEl.classList.remove('enemy-enraged');
+        animEl.style.animation = '';
+        g.style.animation = '';
+        enemy._animEl = animEl;
         this.layer.appendChild(g);  // bring to front (z-order)
         this.enemies.push(enemy);
         return;
@@ -1538,6 +1553,20 @@ export class EnemySystem {
 
     // 비행 적: 날개 + 공중 부유 오프셋 (translateY -4px)
     this._ensureWings(g, enemy, def);
+
+    // ── 애니메이션 래퍼 ─────────────────────────────────
+    // 루트 g의 transform 속성은 위치(translate) 전용 — CSS transform 애니메이션이
+    // 이를 덮어쓰면 적이 맵 원점에 렌더되는 치명 버그가 발생한다.
+    // 모든 모션(아이들 bob/격노 펄스/죽음 연출)은 내부 래퍼에서만 수행한다.
+    const animCls = [...g.classList].filter(c => c.startsWith('enemy-') && c !== 'enemy-unit');
+    const animEl = svgEl('g', { class: 'enemy-anim' + (animCls.length ? ' ' + animCls.join(' ') : '') });
+    animEl.style.transformBox = 'fill-box';
+    animEl.style.transformOrigin = 'center';
+    while (g.firstChild) animEl.appendChild(g.firstChild);
+    g.appendChild(animEl);
+    animCls.forEach(c => g.classList.remove(c));
+    enemy._animEl = animEl;
+
     g.setAttribute('transform', `translate(${start.x},${start.y})`);
     this.layer.appendChild(g);
     enemy.el = g;
@@ -1626,6 +1655,7 @@ export class EnemySystem {
 
   _spawnAt(type, x, y, waypointIndex, options = {}) {
     this._spawn(type);
+    this._waveExtraSpawns = (this._waveExtraSpawns ?? 0) + 1; // 진행률 total 반영
     const e = this.enemies[this.enemies.length - 1];
     if (e && e.type === type) {
       e.x = x; e.y = y; e.waypointIndex = Math.max(1, waypointIndex);
@@ -1682,9 +1712,9 @@ export class EnemySystem {
     };
     const palette = ELEMENT_COLORS[e._killingElement] ?? null;
 
-    // 1) 몸통 팽창 후 소멸
-    el.style.transformOrigin = `${cx}px ${cy}px`;
-    el.style.animation = 'enemyDeath 0.4s ease-out forwards';
+    // 1) 몸통 팽창 후 소멸 — 반드시 애니메이션 래퍼에 적용 (루트 transform 보호)
+    const deathEl = e._animEl ?? el;
+    deathEl.style.animation = 'enemyDeath 0.4s ease-out forwards';
 
     // 2) 방향성 파티클 — CSS custom properties로 translate 방향 지정
     const isBig = e.isElite || e.isBoss;
@@ -1858,7 +1888,7 @@ export class EnemySystem {
       // QW#2: 격노 Rim Glow — CSS 클래스 + 커스텀 컬러 변수
       if (e.el) {
         e.el.style.setProperty('--enrage-glow', enrageColor);
-        e.el.classList.add('enemy-enraged');
+        (e._animEl ?? e.el).classList.add('enemy-enraged');
       }
     }
 
@@ -2108,7 +2138,8 @@ export class EnemySystem {
         d: `M ${(s * 0.4).toFixed(1)} ${(-s * 0.1).toFixed(1)} Q ${(s * 1.6).toFixed(1)} ${(-s * 1.15).toFixed(1)} ${(s * 1.95).toFixed(1)} ${(-s * 0.3).toFixed(1)} Q ${(s * 1.3).toFixed(1)} ${(s * 0.18).toFixed(1)} ${(s * 0.45).toFixed(1)} ${(s * 0.24).toFixed(1)} Z`,
         ...wingAttrs,
       }));
-      g.insertBefore(wings, g.firstChild);   // 몸통·그림자 뒤 레이어
+      const host = g.querySelector('.enemy-anim') ?? g;
+      host.insertBefore(wings, host.firstChild);   // 몸통·그림자 뒤 레이어
     }
     wings.classList.remove('wings-grounded');
     enemy.wingsEl = wings;

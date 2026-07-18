@@ -111,6 +111,26 @@ export function updateHUD() {
   renderHand();
 }
 
+// ── 웨이브 진행률 바 (RAF 루프에서 호출 — DOM 쓰기는 변화 시에만) ──
+let _lastWaveProgKey = '';
+export function updateWaveProgress(prog) {
+  const box = $('wave-progress');
+  if (!box) return;
+  if (!prog || prog.total <= 0) {
+    if (_lastWaveProgKey !== 'off') {
+      box.classList.add('hidden');
+      _lastWaveProgKey = 'off';
+    }
+    return;
+  }
+  const key = `${prog.gone}/${prog.total}`;
+  if (key === _lastWaveProgKey) return;
+  _lastWaveProgKey = key;
+  box.classList.remove('hidden');
+  $('wave-progress-fill').style.width = ((prog.gone / prog.total) * 100).toFixed(1) + '%';
+  $('wave-progress-text').textContent = `${prog.gone} / ${prog.total}`;
+}
+
 // ── 카드 아트 SVG 생성 ─────────────────────────────────
 export function makeCardArtSVG(card) {
   // 전용 일러스트가 등록된 카드는 우선 사용 (CardArt.js)

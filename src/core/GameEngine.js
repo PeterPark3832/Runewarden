@@ -27,7 +27,7 @@ import { resolveSpell as _resolveSpellImpl } from './SpellResolver.js';
 import { HEX_W } from '../config/constants.js';
 import { log, spawnFloatText, shakeNexus, setWaveButton } from './GameUtils.js';
 import { shared } from './GameState.js';
-import { updateHUD, renderHand, onBossUpdate, updateShadowChargeHUD, updateSolarChargeHUD, updateStormChargeHUD, showClearBanner, showAmbushBanner, updateMenuRank } from '../ui/HUDUpdater.js';
+import { updateHUD, renderHand, onBossUpdate, updateShadowChargeHUD, updateSolarChargeHUD, updateStormChargeHUD, updateWaveProgress, showClearBanner, showAmbushBanner, updateMenuRank } from '../ui/HUDUpdater.js';
 import { showScreen, openWardenSelect, openDifficultySelect, openCodex, openDeckView } from '../ui/UIOrchestrator.js';
 import { registerDLC, hasDLC, clearDLCs } from '../systems/DLCRegistry.js';
 import { MAX_PLAYER_LEVEL, getWaveXpGrant, getLevelFromXp, XP_THRESHOLDS } from '../systems/PlayerLevelSystem.js';
@@ -916,6 +916,7 @@ function gameLoop(now) {
   if (state.phase === 'wave') {
     enemySystem.update(delta);
     towerSystem.update(delta);
+    updateWaveProgress(enemySystem.getWaveProgress());
 
     if (enemySystem.isWaveClear()) {
       onWaveCleared();
