@@ -3491,6 +3491,23 @@ kbd {
 }
 
 /* ── Screen Shake ────────────────────────────────────────── */
+/* 일시정지 메뉴 — 화면 효과 토글 */
+.pause-fx-toggle {
+  display: flex; align-items: center; gap: 8px;
+  margin: 10px 0 4px; padding: 6px 4px;
+  font-size: 0.85rem; color: var(--text-dim);
+  cursor: pointer; user-select: none;
+}
+.pause-fx-toggle input { accent-color: var(--gold); width: 15px; height: 15px; cursor: pointer; }
+.pause-fx-toggle:hover span { color: var(--text); }
+
+/* ── 화면 효과 줄이기 (사진과민성 배려) ──────────────────
+   body.fx-reduced 상태에서 전체 화면 플래시/흔들림 억제 */
+.fx-reduced #app.boss-slain,
+.fx-reduced #map-area.screen-flash-gold,
+.fx-reduced #map-area.screen-flash-phase2,
+.fx-reduced .screen-shake { animation: none !important; }
+
 @keyframes screenShake {
   0%, 100% { transform: translate(0, 0); }
   15%  { transform: translate(-3px,  1px); }

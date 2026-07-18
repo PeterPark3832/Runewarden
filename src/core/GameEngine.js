@@ -1443,6 +1443,8 @@ function onNodeClose() {
   setWaveButton(i18n.t('btn_start_wave_n', state.wave + 1), false);
   updateHUD();
   log(i18n.t('log_prepare_wave', state.wave + 1));
+  // 상점 구매/이벤트 선택이 종료 시 유실되지 않도록 노드 종료 시점에도 저장
+  saveCheckpoint();
 }
 
 // ── 상점 콜백: 카드 구매 ─────────────────────────────
@@ -2398,6 +2400,23 @@ $('btn-pause-howto').addEventListener('click', () => {
     sfxSlider.value = Math.round(audio.getSFXVolume() * 100);
     sfxSlider.addEventListener('input', e => {
       audio.setSFXVolume(e.target.value / 100);
+    });
+  }
+})();
+
+// 화면 효과 줄이기 (흔들림/플래시 억제 — 사진과민성 배려)
+(() => {
+  const KEY = 'rw_reduced_fx';
+  const apply = on => document.body.classList.toggle('fx-reduced', on);
+  let saved = false;
+  try { saved = localStorage.getItem(KEY) === '1'; } catch {}
+  apply(saved);
+  const box = $('reduced-fx-toggle');
+  if (box) {
+    box.checked = saved;
+    box.addEventListener('change', () => {
+      apply(box.checked);
+      try { localStorage.setItem(KEY, box.checked ? '1' : '0'); } catch {}
     });
   }
 })();

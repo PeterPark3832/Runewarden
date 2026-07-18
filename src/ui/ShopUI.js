@@ -57,7 +57,7 @@ export class ShopUI {
           </button>
         </div>
         <div class="shop-shortcuts">
-          <kbd>1</kbd><kbd>2</kbd><kbd>3</kbd> Buy &nbsp;·&nbsp; <kbd>R</kbd> Reroll &nbsp;·&nbsp; <kbd>L</kbd> Leave
+          <kbd>1</kbd><kbd>2</kbd><kbd>3</kbd> ${i18n.t('shop_key_buy')} &nbsp;·&nbsp; <kbd>R</kbd> ${i18n.t('shop_key_reroll')} &nbsp;·&nbsp; <kbd>L</kbd> ${i18n.t('shop_key_leave')}
         </div>
       </div>
     `;

@@ -998,7 +998,7 @@ export class EnemySystem {
         e.ironShielding -= delta;
         if (e.ironShielding <= 0) {
           e.ironShielding = 0;
-          e.el?.classList.remove('boss-shielding');
+          (e._animEl ?? e.el)?.classList.remove('boss-shielding');
         }
       }
       if (e.ironShieldCd > 0) e.ironShieldCd -= delta;
@@ -1846,7 +1846,7 @@ export class EnemySystem {
       } else if (e.ironShieldCd <= 0) {
         e.ironShielding = 800;
         e.ironShieldCd  = 3500;
-        e.el?.classList.add('boss-shielding');
+        (e._animEl ?? e.el)?.classList.add('boss-shielding');
       }
     }
 
@@ -1903,7 +1903,7 @@ export class EnemySystem {
         e.bodyEl.setAttribute('stroke', '#FF00FF');
       }
       // QW#2: 페이즈2 전환 Rim Glow
-      e.el?.classList.add('enemy-phase2');
+      (e._animEl ?? e.el)?.classList.add('enemy-phase2');
       this.onBossUpdate?.({ hp: Math.max(0, e.hp), maxHp: e.maxHp, name: e.name, phase2: true });
       audio.play('boss_warning');
     }
@@ -1913,7 +1913,7 @@ export class EnemySystem {
       e.phase2 = true;
       e.speed  = e.baseSpeed * 1.6;
       if (e.bodyEl) { e.bodyEl.setAttribute('fill', '#E8791A'); e.bodyEl.setAttribute('stroke', '#FF6600'); }
-      e.el?.classList.add('enemy-phase2');
+      (e._animEl ?? e.el)?.classList.add('enemy-phase2');
       this.onBossUpdate?.({ hp: Math.max(0, e.hp), maxHp: e.maxHp, name: e.name, phase2: true });
       audio.play('boss_warning');
       for (let i = 0; i < 6; i++) setTimeout(() => this._spawnAt('solar_ember', e.x, e.y, e.waypointIndex), i * 120);
@@ -1941,7 +1941,7 @@ export class EnemySystem {
       e.baseSpeed = 28;
       e.speed = 28;
       if (e.bodyEl) { e.bodyEl.setAttribute('fill', '#023E8A'); e.bodyEl.setAttribute('stroke', '#00B4D8'); }
-      e.el?.classList.add('enemy-phase2');
+      (e._animEl ?? e.el)?.classList.add('enemy-phase2');
       this.onBossUpdate?.({ hp: Math.max(0, e.hp), maxHp: e.maxHp, name: e.name, phase2: true });
       if (this.onBossPhaseTransition) this.onBossPhaseTransition(e.id, 2);
       audio.play('boss_warning');
@@ -2311,6 +2311,7 @@ export class EnemySystem {
 
   // ── 화면 흔들림 (넥서스 피격 / 보스 사망) ─────────────
   _triggerScreenShake() {
+    if (document.body.classList.contains('fx-reduced')) return; // 화면 효과 줄이기 설정
     const mapArea = document.getElementById('map-area');
     if (!mapArea) return;
     mapArea.classList.remove('screen-shake');
