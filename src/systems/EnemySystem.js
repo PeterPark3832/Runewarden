@@ -971,6 +971,7 @@ export class EnemySystem {
         }
         enemy.badgesEl = badgesEl;
         enemy._statusKey = '';
+        this._ensureWings(g, enemy, def);  // 비행 적 날개 + _flyOffset (풀 재사용 시에도)
         this.layer.appendChild(g);  // bring to front (z-order)
         this.enemies.push(enemy);
         return;
@@ -1443,8 +1444,8 @@ export class EnemySystem {
     const badgesEl = svgEl('g', { class: 'status-badges' });
     g.appendChild(badgesEl);
 
-    // 비행 적: 공중 부유 오프셋 (translateY -4px)
-    if (def.flying) enemy._flyOffset = -4;
+    // 비행 적: 날개 + 공중 부유 오프셋 (translateY -4px)
+    this._ensureWings(g, enemy, def);
     g.setAttribute('transform', `translate(${start.x},${start.y})`);
     this.layer.appendChild(g);
     enemy.el = g;
@@ -1992,30 +1993,82 @@ export class EnemySystem {
   // grounding_amulet 유물 등으로 임계값 완화 (기본 0.5 → 0.65 등)
   setGroundingThreshold(val) { this._groundingSlowThreshold = val; }
 
+  // ── 비행 적 날개 SVG (생성/풀 재사용 공용) ────────────
+  _ensureWings(g, enemy, def) {
+    let wings = g.querySelector('.fly-wings');
+    if (!def.flying) { wings?.remove(); return; }
+    this._ensureWingStyle();
+    if (!wings) {
+      const s = def.size;
+      wings = svgEl('g', { class: 'fly-wings', 'pointer-events': 'none' });
+      const wingAttrs = {
+        fill: 'rgba(255,255,255,0.28)',
+        stroke: 'rgba(255,255,255,0.55)',
+        'stroke-width': 0.8,
+      };
+      wings.appendChild(svgEl('path', {
+        class: 'fly-wing fly-wing-l',
+        d: `M ${(-s * 0.4).toFixed(1)} ${(-s * 0.1).toFixed(1)} Q ${(-s * 1.6).toFixed(1)} ${(-s * 1.15).toFixed(1)} ${(-s * 1.95).toFixed(1)} ${(-s * 0.3).toFixed(1)} Q ${(-s * 1.3).toFixed(1)} ${(s * 0.18).toFixed(1)} ${(-s * 0.45).toFixed(1)} ${(s * 0.24).toFixed(1)} Z`,
+        ...wingAttrs,
+      }));
+      wings.appendChild(svgEl('path', {
+        class: 'fly-wing fly-wing-r',
+        d: `M ${(s * 0.4).toFixed(1)} ${(-s * 0.1).toFixed(1)} Q ${(s * 1.6).toFixed(1)} ${(-s * 1.15).toFixed(1)} ${(s * 1.95).toFixed(1)} ${(-s * 0.3).toFixed(1)} Q ${(s * 1.3).toFixed(1)} ${(s * 0.18).toFixed(1)} ${(s * 0.45).toFixed(1)} ${(s * 0.24).toFixed(1)} Z`,
+        ...wingAttrs,
+      }));
+      g.insertBefore(wings, g.firstChild);   // 몸통·그림자 뒤 레이어
+    }
+    wings.classList.remove('wings-grounded');
+    enemy.wingsEl = wings;
+    enemy._flyOffset = -4;
+  }
+
+  _ensureWingStyle() {
+    if (document.getElementById('fly-wing-style')) return;
+    const s = document.createElement('style');
+    s.id = 'fly-wing-style';
+    s.textContent = `
+      @keyframes wingFlapL { 0%,100% { transform: rotate(9deg);  } 50% { transform: rotate(-17deg); } }
+      @keyframes wingFlapR { 0%,100% { transform: rotate(-9deg); } 50% { transform: rotate(17deg);  } }
+      .fly-wing   { transform-box: fill-box; }
+      .fly-wing-l { transform-origin: 100% 55%; animation: wingFlapL 0.55s ease-in-out infinite; }
+      .fly-wing-r { transform-origin: 0% 55%;   animation: wingFlapR 0.55s ease-in-out infinite; }
+      .fly-wings.wings-grounded .fly-wing {
+        animation-play-state: paused;
+        opacity: 0.3;
+        transform: scaleY(0.4);
+        transition: opacity 0.3s, transform 0.3s;
+      }
+    `;
+    document.head.appendChild(s);
+  }
+
   // 비행 적을 duration ms 동안 착지 상태로 만든다 (타워가 일반 적처럼 타격 가능)
   applyGrounding(id, duration) {
     const e = this.enemies.find(en => en.id === id);
     if (!e || !e.def?.flying) return;
     if (!this._groundedSet.has(id)) {
       this._groundedSet.add(id);
-      // grounding 진입 시 SVG 부드럽게 착지
+      // grounding 진입 시 SVG 부드럽게 착지 + 날개 접힘
       if (e.el) {
         e.el.style.transition = 'transform 0.3s';
         // translateY를 포함한 전체 transform은 _updateEnemySVG가 관리하므로
         // flying 오프셋용 커스텀 속성만 기록
         e._flyOffset = 0;
       }
+      e.wingsEl?.classList.add('wings-grounded');
       if (this.onEnemyGrounded) this.onEnemyGrounded(id);
     }
     clearTimeout(e._groundingTimer);
     e._groundingTimer = setTimeout(() => {
       this._groundedSet.delete(id);
       e._groundingTimer = null;
-      // 착지 해제: 다시 공중으로
+      // 착지 해제: 다시 공중으로 + 날개 펼침
       if (e.el) {
         e.el.style.transition = 'transform 0.3s';
         e._flyOffset = -4;
       }
+      e.wingsEl?.classList.remove('wings-grounded');
     }, duration);
   }
 

@@ -421,8 +421,8 @@ export class TowerSystem {
       setTimeout(() => { if (tg) tg.style.animation = ''; }, 150);
     }
 
-    // ── 포구 회전 (cannon / divine_cannon / ballista) ────
-    if (tid === 'cannon' || tid === 'divine_cannon' || tid === 'ballista' || tower.def.shape === 'cannon') {
+    // ── 포구 회전 (cannon / divine_cannon / ballista / storm_ballista) ────
+    if (tid === 'cannon' || tid === 'divine_cannon' || tid === 'ballista' || tower.def.shape === 'cannon' || tower.def.shape === 'ballista') {
       const angleDeg = Math.atan2(ey - ty, ex - tx) * 180 / Math.PI + 90;
       const barrel = this.renderer?.getTowerBarrel(tower.col, tower.row);
       if (barrel) barrel.setAttribute('transform', `rotate(${angleDeg.toFixed(1)}, ${tx.toFixed(1)}, ${ty.toFixed(1)})`);

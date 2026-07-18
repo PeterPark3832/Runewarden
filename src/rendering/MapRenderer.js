@@ -780,7 +780,7 @@ export class MapRenderer {
         fill: col, stroke: acc, 'stroke-width': sw,
       }));
 
-    } else if (id === 'cannon' || id === 'ballista' || id === 'divine_cannon' || def.shape === 'cannon') {
+    } else if (id === 'cannon' || id === 'ballista' || id === 'divine_cannon' || def.shape === 'cannon' || def.shape === 'ballista') {
       // 육각형 — 묵직한 포격 계열
       g.appendChild(svgEl('polygon', {
         points: this._polyPts(x, y, r, 6, -Math.PI / 6),
@@ -848,6 +848,154 @@ export class MapRenderer {
       // 날카로운 내부 라인
       g.appendChild(svgEl('line', { x1: x, y1: y - r * 0.3, x2: x, y2: y + r * 0.7,
         stroke: acc, 'stroke-width': 1.5, opacity: '0.7' }));
+
+    // ── DLC 시그니처 타워 형태 ─────────────────────────
+    } else if (id === 'light_prism') {
+      // 상향 삼각 프리즘 + 내부 굴절 광선
+      g.appendChild(svgEl('polygon', {
+        points: this._polyPts(x, y, r, 3, -Math.PI / 2),
+        fill: col, stroke: acc, 'stroke-width': sw,
+      }));
+      g.appendChild(svgEl('line', { x1: x - r * 0.4, y1: y + r * 0.28, x2: x, y2: y - r * 0.45,
+        stroke: acc, 'stroke-width': 1, opacity: '0.8' }));
+      g.appendChild(svgEl('line', { x1: x, y1: y - r * 0.45, x2: x + r * 0.4, y2: y + r * 0.28,
+        stroke: '#fff', 'stroke-width': 1, opacity: '0.5' }));
+
+    } else if (id === 'crusader') {
+      // 방패 실루엣 + 십자 문양
+      g.appendChild(svgEl('path', {
+        d: `M ${x - r * 0.7} ${y - r * 0.7} L ${x + r * 0.7} ${y - r * 0.7} L ${x + r * 0.7} ${y + r * 0.15} Q ${x + r * 0.7} ${y + r * 0.7} ${x} ${y + r * 0.95} Q ${x - r * 0.7} ${y + r * 0.7} ${x - r * 0.7} ${y + r * 0.15} Z`,
+        fill: col, stroke: acc, 'stroke-width': sw,
+      }));
+      g.appendChild(svgEl('line', { x1: x, y1: y - r * 0.45, x2: x, y2: y + r * 0.5,
+        stroke: acc, 'stroke-width': 1.6, opacity: '0.85' }));
+      g.appendChild(svgEl('line', { x1: x - r * 0.32, y1: y - r * 0.12, x2: x + r * 0.32, y2: y - r * 0.12,
+        stroke: acc, 'stroke-width': 1.6, opacity: '0.85' }));
+
+    } else if (id === 'solar_scythe') {
+      // 원판 + 초승달 낫날
+      g.appendChild(svgEl('circle', {
+        cx: x, cy: y, r: r * 0.8, fill: col, stroke: acc, 'stroke-width': sw,
+      }));
+      g.appendChild(svgEl('path', {
+        d: `M ${x - r * 0.15} ${y - r * 0.95} A ${r * 0.95} ${r * 0.95} 0 0 1 ${x + r * 0.85} ${y + r * 0.45}`,
+        fill: 'none', stroke: acc, 'stroke-width': 2.4, 'stroke-linecap': 'round',
+      }));
+
+    } else if (id === 'wind_anchor') {
+      // 터빈 링 + 3개 회전 날개 (grounding 오라 타워)
+      g.appendChild(svgEl('circle', {
+        cx: x, cy: y, r: r * 0.75, fill: col, stroke: acc, 'stroke-width': sw,
+      }));
+      for (let i = 0; i < 3; i++) {
+        const a = i * 2 * Math.PI / 3;
+        const bx = x + Math.cos(a) * r * 0.75, by = y + Math.sin(a) * r * 0.75;
+        const cx2 = x + Math.cos(a + 0.7) * r * 1.05, cy2 = y + Math.sin(a + 0.7) * r * 1.05;
+        g.appendChild(svgEl('path', {
+          d: `M ${bx.toFixed(1)} ${by.toFixed(1)} Q ${cx2.toFixed(1)} ${cy2.toFixed(1)} ${(x + Math.cos(a + 1.1) * r * 0.75).toFixed(1)} ${(y + Math.sin(a + 1.1) * r * 0.75).toFixed(1)}`,
+          fill: 'none', stroke: acc, 'stroke-width': 1.8, opacity: '0.85', 'stroke-linecap': 'round',
+        }));
+      }
+      g.appendChild(svgEl('circle', { cx: x, cy: y, r: 2.5, fill: acc }));
+
+    } else if (id === 'storm_conduit') {
+      // 오각형 코어 + 궤도 링 (아우라 타워)
+      g.appendChild(svgEl('polygon', {
+        points: this._polyPts(x, y, r * 0.72, 5, -Math.PI / 2),
+        fill: col, stroke: acc, 'stroke-width': sw,
+      }));
+      g.appendChild(svgEl('ellipse', {
+        cx: x, cy: y, rx: r * 1.02, ry: r * 0.42,
+        fill: 'none', stroke: acc, 'stroke-width': 1, opacity: '0.6',
+      }));
+
+    } else if (id === 'tempest_tower') {
+      // 6각별 — 폭풍 방출 실루엣
+      g.appendChild(svgEl('polygon', {
+        points: this._starPts(x, y, r, r * 0.55, 6, -Math.PI / 2),
+        fill: col, stroke: acc, 'stroke-width': sw,
+      }));
+      g.appendChild(svgEl('circle', { cx: x, cy: y, r: r * 0.28, fill: acc, opacity: '0.55' }));
+
+    } else if (id === 'void_sentinel') {
+      // 세로 长 다이아몬드 + 감시자 눈
+      g.appendChild(svgEl('polygon', {
+        points: `${x},${y - r * 1.05} ${x + r * 0.62},${y} ${x},${y + r * 1.05} ${x - r * 0.62},${y}`,
+        fill: col, stroke: acc, 'stroke-width': sw,
+      }));
+      g.appendChild(svgEl('ellipse', { cx: x, cy: y, rx: r * 0.30, ry: r * 0.16,
+        fill: acc, opacity: '0.9' }));
+
+    } else if (id === 'phantom_sniper') {
+      // 长 다이아몬드 + 스코프 링
+      g.appendChild(svgEl('polygon', {
+        points: `${x},${y - r * 1.0} ${x + r * 0.5},${y} ${x},${y + r * 1.0} ${x - r * 0.5},${y}`,
+        fill: col, stroke: acc, 'stroke-width': sw,
+      }));
+      g.appendChild(svgEl('circle', { cx: x, cy: y - r * 0.35, r: r * 0.26,
+        fill: 'none', stroke: acc, 'stroke-width': 1.4, opacity: '0.9' }));
+      g.appendChild(svgEl('line', { x1: x - r * 0.26, y1: y - r * 0.35, x2: x + r * 0.26, y2: y - r * 0.35,
+        stroke: acc, 'stroke-width': 0.8, opacity: '0.7' }));
+
+    } else if (id === 'shadow_weaver') {
+      // 다이아몬드 + 거미줄 방사선
+      g.appendChild(svgEl('polygon', {
+        points: this._polyPts(x, y, r * 0.88, 4, -Math.PI / 4),
+        fill: col, stroke: acc, 'stroke-width': sw,
+      }));
+      for (let i = 0; i < 4; i++) {
+        const a = i * Math.PI / 2 + Math.PI / 4;
+        g.appendChild(svgEl('line', {
+          x1: x, y1: y,
+          x2: (x + Math.cos(a) * r * 1.05).toFixed(1), y2: (y + Math.sin(a) * r * 1.05).toFixed(1),
+          stroke: acc, 'stroke-width': 0.8, opacity: '0.55',
+        }));
+      }
+
+    // ── shape 필드 기반 폴백 (신규 DLC 타워 자동 대응) ──
+    } else if (def.shape === 'archer') {
+      g.appendChild(svgEl('polygon', {
+        points: this._polyPts(x, y, r, 4, -Math.PI / 4),
+        fill: col, stroke: acc, 'stroke-width': sw,
+      }));
+
+    } else if (def.shape === 'mage') {
+      g.appendChild(svgEl('polygon', {
+        points: this._polyPts(x, y, r, 8, Math.PI / 8),
+        fill: col, stroke: acc, 'stroke-width': sw,
+      }));
+      g.appendChild(svgEl('line', { x1: x, y1: y - r * 0.55, x2: x, y2: y + r * 0.55,
+        stroke: acc, 'stroke-width': 1.2, opacity: '0.7' }));
+      g.appendChild(svgEl('line', { x1: x - r * 0.55, y1: y, x2: x + r * 0.55, y2: y,
+        stroke: acc, 'stroke-width': 1.2, opacity: '0.7' }));
+
+    } else if (def.shape === 'drake') {
+      g.appendChild(svgEl('polygon', {
+        points: this._starPts(x, y, r, r * 0.45, 5, -Math.PI / 2),
+        fill: col, stroke: acc, 'stroke-width': sw,
+      }));
+
+    } else if (def.shape === 'tesla') {
+      g.appendChild(svgEl('polygon', {
+        points: this._polyPts(x, y, r, 5, -Math.PI / 2),
+        fill: col, stroke: acc, 'stroke-width': sw,
+      }));
+      g.appendChild(svgEl('circle', { cx: x - r * 0.35, cy: y - r * 0.2, r: 2.5,
+        fill: acc, opacity: '0.8' }));
+      g.appendChild(svgEl('circle', { cx: x + r * 0.35, cy: y - r * 0.2, r: 2.5,
+        fill: acc, opacity: '0.8' }));
+
+    } else if (def.shape === 'druid') {
+      g.appendChild(svgEl('circle', {
+        cx: x, cy: y, r: r * 0.85, fill: col, stroke: acc, 'stroke-width': sw,
+      }));
+      for (let i = 0; i < 3; i++) {
+        const a = (i * 2 * Math.PI / 3) - Math.PI / 2;
+        g.appendChild(svgEl('circle', {
+          cx: (x + r * 0.85 * Math.cos(a)).toFixed(1), cy: (y + r * 0.85 * Math.sin(a)).toFixed(1),
+          r: r * 0.28, fill: acc, opacity: '0.85',
+        }));
+      }
 
     } else {
       // 기본 폴백: 원형
