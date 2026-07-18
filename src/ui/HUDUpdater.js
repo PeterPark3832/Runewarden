@@ -9,6 +9,7 @@ import { TOWER_DEFS } from '../data/towers.js';
 import { MAX_RANK } from '../systems/MetaSystem.js';
 import { MAX_PLAYER_LEVEL, XP_THRESHOLDS } from '../systems/PlayerLevelSystem.js';
 import { ACT_SIZE } from '../config/constants.js';
+import { getCardArt } from './CardArt.js';
 
 const $ = id => document.getElementById(id);
 
@@ -112,6 +113,10 @@ export function updateHUD() {
 
 // ── 카드 아트 SVG 생성 ─────────────────────────────────
 export function makeCardArtSVG(card) {
+  // 전용 일러스트가 등록된 카드는 우선 사용 (CardArt.js)
+  const custom = getCardArt(card.id);
+  if (custom) return custom;
+
   const W = 100, H = 50, cx = 50, cy = 25;
   const ic = card.icon ?? '◆';
   const hexPts = (r) => Array.from({ length: 6 }, (_, i) => {
