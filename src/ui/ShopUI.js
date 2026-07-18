@@ -3,7 +3,7 @@ import { CARD_DEFS } from '../data/cards.js';
 import { i18n } from '../i18n/i18n.js';
 import { weightedPickRarity, MAX_PLAYER_LEVEL } from '../systems/PlayerLevelSystem.js';
 import { shared } from '../core/GameState.js';
-import { makeCardArtSVG } from './HUDUpdater.js';
+import { makeCardArtSVG, emphasizeStats } from './HUDUpdater.js';
 
 const SHOP_SIZE    = 3;   // 카드 슬롯 수
 const REROLL_COST  = 2;
@@ -51,7 +51,7 @@ export class ShopUI {
             ${i18n.t('shop_reroll')} <span id="reroll-cost">(2g)</span>
             <span id="reroll-remaining" class="reroll-remain"></span>
           </button>
-          <button id="shop-add-card" class="btn-secondary shop-addcard-btn">카드+1 (8g)</button>
+          <button id="shop-add-card" class="btn-secondary shop-addcard-btn">${i18n.t('shop_add_card')} (8g)</button>
           <button id="shop-leave" class="btn-primary shop-leave-btn">
             ${i18n.t('shop_leave')}
           </button>
@@ -226,7 +226,7 @@ export class ShopUI {
                 : ''}${effectiveCost > 0 ? effectiveCost + 'g' : i18n.t('free')}
             </div>
           </div>
-          <div class="shop-card-desc">${_cDesc}</div>
+          <div class="shop-card-desc">${emphasizeStats(_cDesc)}</div>
           <div class="shop-rarity-bar"></div>
         </div>
         <button class="btn-buy ${canAfford ? 'can-buy' : ''}" data-uid="${card.uid}">

@@ -142,6 +142,12 @@ export function makeCardArtSVG(card) {
   return `<svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg"><polygon points="${cx},${cy - 22} ${cx + 16},${cy} ${cx},${cy + 22} ${cx - 16},${cy}" fill="rgba(212,175,55,.10)" stroke="rgba(212,175,55,.40)" stroke-width="1.2"/><text x="${cx}" y="${cy + 8}" text-anchor="middle" font-size="20" opacity=".88">${ic}</text></svg>`;
 }
 
+// 카드 설명 내 수치 강조 — 숫자 토큰(+40%, 2g, 50 등)을 금색 볼드 span으로 감쌈
+export function emphasizeStats(text) {
+  if (!text) return text;
+  return String(text).replace(/([+\-−]?\d+(?:[.,]\d+)?(?:%|g\b)?)/g, '<span class="card-stat">$1</span>');
+}
+
 // ── 카드 핸드 렌더링 ──────────────────────────────────
 export function renderHand() {
   const { state, cardSystem } = shared;
@@ -197,7 +203,7 @@ export function renderHand() {
         <span class="card-cost">${isCurse ? '—' : (effectiveCost > 0 ? effectiveCost + 'g' : i18n.t('free').toUpperCase())}</span>
       </div>
       <div class="card-type-badge">${i18n.t('card_type_' + card.type) ?? card.type}${surcharge && !isCurse ? ' (' + i18n.t('card_surcharge_label') + ')' : ''}${isBanned ? ' 🚫' : ''}</div>
-      <div class="card-desc">${cDesc}</div>
+      <div class="card-desc">${emphasizeStats(cDesc)}</div>
     `;
 
     if ((canAfford || isSelected) && !isBanned && !isCurse) {
@@ -207,7 +213,7 @@ export function renderHand() {
   }
 
   if (cardSystem.hand.length === 0) {
-    container.innerHTML = `<div style="color:#555;font-size:0.8rem;padding:0.5rem;">${i18n.t('hand_empty')}</div>`;
+    container.innerHTML = `<div class="hand-empty">${i18n.t('hand_empty')}</div>`;
   }
 }
 

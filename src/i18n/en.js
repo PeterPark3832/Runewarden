@@ -41,6 +41,7 @@ const _BASE_EN = {
   shop_title:     "Warden's Shop",
   shop_subtitle:  'Choose cards to add to your deck.',
   shop_reroll:    '🎲 Reroll',
+  shop_add_card:  '🃏 Card +1',
   shop_leave:     'Leave Shop →',
   shop_rerolls_left: (n) => `${n} left`,
   shop_no_rerolls:   'No rerolls',

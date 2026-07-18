@@ -21,13 +21,18 @@
   --radius:    6px;
   --card-w:    110px;
   --card-h:    155px;
+  --font-mono: 'Share Tech Mono', monospace;
 }
 
 html, body { width: 100%; height: 100%; overflow: hidden; background: var(--bg); color: var(--text); font-family: 'Crimson Text', serif; }
 
 /* ── Screens ──────────────────────────────────────────── */
 .screen { position: absolute; inset: 0; display: none; }
-.screen.active { display: flex; }
+.screen.active { display: flex; animation: screenFadeIn 0.4s ease-out; }
+@keyframes screenFadeIn {
+  from { opacity: 0; transform: scale(1.012); }
+  to   { opacity: 1; transform: scale(1); }
+}
 
 /* ── Main Menu ────────────────────────────────────────── */
 #screen-menu {
@@ -714,6 +719,7 @@ html, body { width: 100%; height: 100%; overflow: hidden; background: var(--bg);
 }
 .card-desc { font-size: 0.82rem; color: #c0c0d0; line-height: 1.35; }
 .card-stat { color: var(--gold); font-weight: 700; font-family: 'Share Tech Mono', monospace; }
+.hand-empty { color: var(--text-dim); font-size: 0.8rem; padding: 0.5rem; font-style: italic; opacity: 0.7; }
 .card-icon { font-size: 1.4rem; margin-bottom: 0.15rem; }
 
 /* ── 카드 아트 존 ──────────────────────────────────────── */
@@ -889,8 +895,10 @@ html, body { width: 100%; height: 100%; overflow: hidden; background: var(--bg);
   z-index: 100;
   overflow-y: auto;
   padding: 1.5rem 1rem;
+  animation: overlayBackdropIn 0.25s ease-out;
 }
 .overlay.hidden { display: none; }
+@keyframes overlayBackdropIn { from { opacity: 0; } to { opacity: 1; } }
 
 /* 오버레이 내부 박스는 자연 높이 사용, 최대 100vh 제한 */
 .overlay-box {

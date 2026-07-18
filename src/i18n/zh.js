@@ -40,6 +40,7 @@ const _BASE_ZH = {
   shop_title:     '守护者商店',
   shop_subtitle:  '选择卡牌加入你的牌组。',
   shop_reroll:    '🎲 重随',
+  shop_add_card:  '🃏 卡牌 +1',
   shop_leave:     '离开商店 →',
   shop_rerolls_left: (n) => `剩余${n}次`,
   shop_no_rerolls:   '无法重随',

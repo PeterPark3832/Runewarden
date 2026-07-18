@@ -41,6 +41,7 @@ const _BASE_KO = {
   shop_title:     '워든의 상점',
   shop_subtitle:  '덱에 추가할 카드를 선택하세요.',
   shop_reroll:    '🎲 재진열',
+  shop_add_card:  '🃏 카드 +1',
   shop_leave:     '상점 나가기 →',
   shop_rerolls_left: (n) => `${n}회 남음`,
   shop_no_rerolls:   '재진열 불가',
