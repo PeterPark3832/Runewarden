@@ -359,6 +359,41 @@ export const ENEMY_DEFS = {
   },
 };
 
+// ── 색상 셰이드 헬퍼 (장비 오버레이용) ─────────────────
+function _shadeHex(hex, amt) {
+  const m = /^#?([0-9a-f]{6})$/i.exec(hex ?? '');
+  if (!m) return amt > 0 ? '#cccccc' : '#222222';
+  const n = parseInt(m[1], 16);
+  const t = amt > 0 ? 255 : 0, p = Math.abs(amt);
+  const mix = v => Math.round(v + (t - v) * p);
+  return `rgb(${mix((n >> 16) & 255)},${mix((n >> 8) & 255)},${mix(n & 255)})`;
+}
+
+// ── 패밀리 장비 테이블 — 타입 → 실루엣 확장 장식 ───────
+// 보스는 BossArt.js 전용 일러스트 사용 (여기 제외)
+const FAMILY_GEAR = {
+  // Act 1–3 (기본)
+  goblin: 'ears', fast: 'fins', tank: 'horns', elite: 'spikes',
+  shielded: 'helm', berserker: 'horns',
+  necromancer: 'hood', stone_golem: 'plates', juggernaut: 'plates',
+  colossus: 'horns', plague_carrier: 'spikes', siege_beast: 'horns',
+  void_stalker: 'spikes',
+  phantom: 'wispTail', void_wraith: 'wispTail', shadow_elite: 'spikes',
+  shadow_hound: 'ears', void_reaper: 'hood', void_knight: 'helm',
+  abyssal_wraith: 'wispTail', void_herald: 'crown', void_shade: 'wispTail',
+  void_spawn: 'antennae', phantom_giant: 'horns', shadow_titan: 'plates',
+  // DLC2 Solar Dominion
+  solar_ember: 'antennae', solar_acolyte: 'hood', sunfire_dancer: 'fins',
+  solar_zealot: 'spikes', solar_knight: 'helm', blinded_crusader: 'helm',
+  blazing_golem: 'plates', gilded_titan: 'plates', solar_herald: 'crown',
+  sun_herald: 'crown',
+  // DLC3 Storm Imperium
+  gust_sprite: 'antennae', storm_hawk: 'fins', squall_knight: 'helm',
+  tempest_wraith: 'wispTail', lightning_drake: 'horns', cyclone_rider: 'fins',
+  storm_golem: 'plates', thunder_berserker: 'horns', storm_sentinel: 'helm',
+  gale_slasher: 'spikes',
+};
+
 export class EnemySystem {
   constructor(layer, onEnemyReachEnd, onEnemyKilled, onBossUpdate) {
     this.layer = layer;
@@ -653,6 +688,83 @@ export class EnemySystem {
           E(-s*0.25, -s*0.2, s*0.25, -s*0.2, s*0.18, s*0.1);
           g.classList.add('enemy-bob');
         }
+    }
+
+    // 패밀리 장비 오버레이 (실루엣 확장 — 뿔/투구/후드 등)
+    if (!def.isBoss) this._addFamilyGear(g, type, def);
+  }
+
+  // ── 패밀리 장비 — 타입별 실루엣 확장 장식 ─────────────
+  // 몸통 밖에만 그려 기존 눈/디테일과 겹치지 않는다. 풀 재사용 시에도 유지됨.
+  _addFamilyGear(g, type, def) {
+    const kind = FAMILY_GEAR[type];
+    if (!kind) return;
+    const s  = def.size;
+    const dk = _shadeHex(def.color, -0.45);
+    const lt = _shadeHex(def.color, 0.35);
+    const P  = (d, attrs = {}) => g.appendChild(svgEl('path', { d, 'pointer-events': 'none', ...attrs }));
+
+    switch (kind) {
+      case 'horns':
+        P(`M ${-s*0.35} ${-s*0.72} Q ${-s*0.75} ${-s*1.1} ${-s*0.6} ${-s*1.5} Q ${-s*0.32} ${-s*1.1} ${-s*0.18} ${-s*0.8} Z`,
+          { fill: dk, stroke: lt, 'stroke-width': 0.8 });
+        P(`M ${s*0.35} ${-s*0.72} Q ${s*0.75} ${-s*1.1} ${s*0.6} ${-s*1.5} Q ${s*0.32} ${-s*1.1} ${s*0.18} ${-s*0.8} Z`,
+          { fill: dk, stroke: lt, 'stroke-width': 0.8 });
+        break;
+      case 'plates':
+        P(`M ${-s*0.8} ${-s*0.05} Q 0 ${-s*0.28} ${s*0.8} ${-s*0.05}`,
+          { fill: 'none', stroke: dk, 'stroke-width': 1.3, opacity: '0.75' });
+        P(`M ${-s*0.72} ${s*0.32} Q 0 ${s*0.12} ${s*0.72} ${s*0.32}`,
+          { fill: 'none', stroke: dk, 'stroke-width': 1.3, opacity: '0.65' });
+        g.appendChild(svgEl('circle', { cx: (-s*0.5).toFixed(1), cy: (s*0.14).toFixed(1), r: (s*0.07).toFixed(1), fill: lt, opacity: '0.8', 'pointer-events': 'none' }));
+        g.appendChild(svgEl('circle', { cx: (s*0.5).toFixed(1), cy: (s*0.14).toFixed(1), r: (s*0.07).toFixed(1), fill: lt, opacity: '0.8', 'pointer-events': 'none' }));
+        break;
+      case 'helm':
+        P(`M ${-s*0.62} ${-s*0.35} Q ${-s*0.66} ${-s*1.0} 0 ${-s*1.05} Q ${s*0.66} ${-s*1.0} ${s*0.62} ${-s*0.35} Q 0 ${-s*0.62} ${-s*0.62} ${-s*0.35} Z`,
+          { fill: dk, stroke: lt, 'stroke-width': 0.9 });
+        P(`M 0 ${-s*1.05} L 0 ${-s*1.32}`,
+          { stroke: lt, 'stroke-width': 1.4, 'stroke-linecap': 'round' });
+        break;
+      case 'hood':
+        P(`M ${-s*0.7} ${-s*0.28} Q 0 ${-s*1.3} ${s*0.7} ${-s*0.28} Q 0 ${-s*0.72} ${-s*0.7} ${-s*0.28} Z`,
+          { fill: dk, stroke: _shadeHex(def.color, 0.15), 'stroke-width': 0.7, opacity: '0.95' });
+        break;
+      case 'spikes':
+        for (const fx of [-0.5, 0, 0.5]) {
+          P(`M ${s*(fx - 0.16)} ${-s*0.68} L ${s*fx} ${-s*1.18} L ${s*(fx + 0.16)} ${-s*0.68} Z`,
+            { fill: dk, stroke: lt, 'stroke-width': 0.5, opacity: '0.95' });
+        }
+        break;
+      case 'wispTail':
+        P(`M ${-s*0.35} ${s*0.6} Q ${-s*0.6} ${s*1.05} ${-s*0.3} ${s*1.35}`,
+          { fill: 'none', stroke: lt, 'stroke-width': 1.1, opacity: '0.55', 'stroke-linecap': 'round' });
+        P(`M ${s*0.3} ${s*0.62} Q ${s*0.55} ${s*1.0} ${s*0.25} ${s*1.3}`,
+          { fill: 'none', stroke: lt, 'stroke-width': 0.9, opacity: '0.45', 'stroke-linecap': 'round' });
+        break;
+      case 'crown':
+        P(`M ${-s*0.42} ${-s*0.78} L ${-s*0.3} ${-s*1.2} L ${-s*0.12} ${-s*0.9} L 0 ${-s*1.35} L ${s*0.12} ${-s*0.9} L ${s*0.3} ${-s*1.2} L ${s*0.42} ${-s*0.78} Z`,
+          { fill: lt, stroke: dk, 'stroke-width': 0.6 });
+        break;
+      case 'antennae':
+        P(`M ${-s*0.2} ${-s*0.6} Q ${-s*0.45} ${-s*1.1} ${-s*0.35} ${-s*1.35}`,
+          { fill: 'none', stroke: lt, 'stroke-width': 0.9, 'stroke-linecap': 'round' });
+        P(`M ${s*0.2} ${-s*0.6} Q ${s*0.45} ${-s*1.1} ${s*0.35} ${-s*1.35}`,
+          { fill: 'none', stroke: lt, 'stroke-width': 0.9, 'stroke-linecap': 'round' });
+        g.appendChild(svgEl('circle', { cx: (-s*0.35).toFixed(1), cy: (-s*1.38).toFixed(1), r: (s*0.1).toFixed(1), fill: lt, 'pointer-events': 'none' }));
+        g.appendChild(svgEl('circle', { cx: (s*0.35).toFixed(1), cy: (-s*1.38).toFixed(1), r: (s*0.1).toFixed(1), fill: lt, 'pointer-events': 'none' }));
+        break;
+      case 'fins':
+        P(`M ${-s*0.85} ${-s*0.1} L ${-s*1.5} ${-s*0.45} L ${-s*1.15} ${s*0.15} Z`,
+          { fill: dk, stroke: lt, 'stroke-width': 0.6, opacity: '0.9' });
+        P(`M ${s*0.85} ${-s*0.1} L ${s*1.5} ${-s*0.45} L ${s*1.15} ${s*0.15} Z`,
+          { fill: dk, stroke: lt, 'stroke-width': 0.6, opacity: '0.9' });
+        break;
+      case 'ears':
+        P(`M ${-s*0.4} ${-s*0.55} L ${-s*0.85} ${-s*1.15} L ${-s*0.15} ${-s*0.8} Z`,
+          { fill: def.color, stroke: dk, 'stroke-width': 0.8 });
+        P(`M ${s*0.4} ${-s*0.55} L ${s*0.85} ${-s*1.15} L ${s*0.15} ${-s*0.8} Z`,
+          { fill: def.color, stroke: dk, 'stroke-width': 0.8 });
+        break;
     }
   }
 
