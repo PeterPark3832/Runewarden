@@ -3070,33 +3070,38 @@ kbd {
 .victory-banner { box-shadow: 0 0 75px rgba(212,175,55,0.65); }
 .act-clear-banner { box-shadow: 0 0 48px rgba(80,180,255,0.38); }
 
-/* ── QW#2: Enemy Enrage Rim Glow ────────────────────────── */
+/* ── QW#2: Enemy Enrage Rim Glow ──────────────────────────
+   ⚠️ .enemy-enraged는 루트 적 <g>에 붙음 — transform 애니메이션 금지 (위 주석 참고) */
 @keyframes enragedPulse {
-  from { transform: scale(1.0); opacity: 0.88; }
-  to   { transform: scale(1.06); opacity: 1.0; }
+  from { opacity: 0.82; }
+  to   { opacity: 1.0; }
 }
 .enemy-enraged { animation: enragedPulse 0.52s ease-in-out infinite alternate; }
 
-/* ── 적 아이들 애니메이션 (GPU cheap properties) ── */
+/* ── 적 아이들 애니메이션 ──────────────────────────────
+   ⚠️ 루트 <g class="enemy-unit">에 적용되므로 transform 애니메이션 절대 금지!
+   SVG에서 CSS transform은 transform *속성*(translate 위치)을 통째로 덮어써서
+   모든 적이 맵 원점 (0,0)에 겹쳐 렌더되는 치명적 버그가 발생한다.
+   opacity만 사용할 것. (스케일 모션이 필요하면 내부 래퍼 <g>에 적용) */
 @keyframes enemyBob {
-  0%, 100% { opacity: 0.90; transform: scale(1.0); }
-  50%       { opacity: 1.0;  transform: scale(1.03); }
+  0%, 100% { opacity: 0.90; }
+  50%       { opacity: 1.0; }
 }
 @keyframes enemyBobFast {
-  0%, 100% { opacity: 0.88; transform: scale(1.0); }
-  50%       { opacity: 1.0;  transform: scale(1.04); }
+  0%, 100% { opacity: 0.85; }
+  50%       { opacity: 1.0; }
 }
 @keyframes enemyPulseGlow {
   0%, 100% { opacity: 0.85; }
   50%       { opacity: 1.0; }
 }
 @keyframes enemyWisp {
-  0%, 100% { opacity: 0.75; transform: scale(0.97); }
-  50%       { opacity: 1.0;  transform: scale(1.0); }
+  0%, 100% { opacity: 0.70; }
+  50%       { opacity: 1.0; }
 }
 @keyframes enemyHeavy {
-  0%, 100% { opacity: 0.88; transform: scale(0.98); }
-  50%       { opacity: 1.0;  transform: scale(1.0); }
+  0%, 100% { opacity: 0.88; }
+  50%       { opacity: 1.0; }
 }
 
 .enemy-bob       { animation: enemyBob      2.4s ease-in-out infinite; }
