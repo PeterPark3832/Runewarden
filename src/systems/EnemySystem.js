@@ -1,5 +1,6 @@
 // 적 이동 및 상태 관리 시스템
 import { ENEMY_PATH, hexToPixel, svgEl } from '../rendering/MapRenderer.js';
+import { drawBossArt } from '../rendering/BossArt.js';
 import { audio } from './AudioSystem.js';
 import { HEX_W } from '../config/constants.js'; // eslint-disable-line no-unused-vars
 
@@ -1140,18 +1141,9 @@ export class EnemySystem {
         'stroke-dasharray': '3 2', 'pointer-events': 'none' }));
 
     } else if (type === 'abyssal_dragon') {
-      // DLC1 최종 보스: 심연 드래곤
+      // DLC1 최종 보스: 전용 일러스트 (심연 드래곤)
       const s = def.size;
-      g.appendChild(svgEl('circle', { cx: 0, cy: 0, r: s * 0.6,
-        fill: 'rgba(60,0,100,0.45)', stroke: '#7700CC', 'stroke-width': 2.5 }));
-      for (let i = 0; i < 6; i++) {
-        const a = (i / 6) * Math.PI * 2;
-        g.appendChild(svgEl('line', {
-          x1: 0, y1: 0,
-          x2: (s * 0.78 * Math.cos(a)).toFixed(1), y2: (s * 0.78 * Math.sin(a)).toFixed(1),
-          stroke: '#9B59B6', 'stroke-width': 2, opacity: '0.6',
-        }));
-      }
+      drawBossArt(g, type, s);
       const adLabel = svgEl('text', {
         x: 0, y: -s - 12, 'text-anchor': 'middle', 'dominant-baseline': 'middle',
         fill: '#9B59B6', 'font-size': '9px',
@@ -1169,18 +1161,9 @@ export class EnemySystem {
       this._ensureBossGlowStyle();
 
     } else if (type === 'shadow_colossus') {
-      // DLC1 Act 4 보스: 보이드 거인
+      // DLC1 Act 4 보스: 전용 일러스트 (그림자 거상)
       const s = def.size;
-      g.appendChild(svgEl('circle', { cx: 0, cy: 0, r: s * 0.58,
-        fill: 'rgba(10,0,25,0.65)', stroke: '#5500AA', 'stroke-width': 3 }));
-      for (let i = 0; i < 8; i++) {
-        const a = (i / 8) * Math.PI * 2;
-        g.appendChild(svgEl('line', {
-          x1: (s * 0.34 * Math.cos(a)).toFixed(1), y1: (s * 0.34 * Math.sin(a)).toFixed(1),
-          x2: (s * 0.76 * Math.cos(a)).toFixed(1), y2: (s * 0.76 * Math.sin(a)).toFixed(1),
-          stroke: '#6600CC', 'stroke-width': 2, opacity: '0.7',
-        }));
-      }
+      drawBossArt(g, type, s);
       const scLabel = svgEl('text', {
         x: 0, y: -s - 12, 'text-anchor': 'middle', 'dominant-baseline': 'middle',
         fill: '#9B59B6', 'font-size': '9px',
@@ -1198,19 +1181,8 @@ export class EnemySystem {
       this._ensureBossGlowStyle();
 
     } else if (type === 'void_titan') {
-      // Void Titan: 심연 보스
-      g.appendChild(svgEl('circle', { cx: 0, cy: 0, r: def.size * 0.6,
-        fill: 'rgba(80,0,120,0.5)', stroke: '#9B59B6', 'stroke-width': 2.5 }));
-      // 보이드 크랙 (별 모양)
-      for (let i = 0; i < 6; i++) {
-        const a = (i / 6) * Math.PI * 2;
-        g.appendChild(svgEl('line', {
-          x1: 0, y1: 0,
-          x2: (def.size * 0.75 * Math.cos(a)).toFixed(1),
-          y2: (def.size * 0.75 * Math.sin(a)).toFixed(1),
-          stroke: '#E8DAEF', 'stroke-width': 1.5, opacity: '0.6',
-        }));
-      }
+      // Void Titan: 전용 일러스트 (심연 거인)
+      drawBossArt(g, type, def.size);
       // 이름 라벨
       const vtLabel = svgEl('text', {
         x: 0, y: -def.size - 12,
@@ -1231,13 +1203,8 @@ export class EnemySystem {
       this._ensureBossGlowStyle();
 
     } else if (type === 'boss') {
-      // 보스: 겹원 + 왕관 모양
-      g.appendChild(svgEl('circle', { cx: 0, cy: 0, r: def.size * 0.55,
-        fill: 'rgba(0,0,0,0.35)', stroke: '#FFD700', 'stroke-width': 2 }));
-      g.appendChild(svgEl('polygon', {
-        points: `0,${-def.size*0.45} ${def.size*0.3},${-def.size*0.1} ${-def.size*0.3},${-def.size*0.1}`,
-        fill: '#FFD700',
-      }));
+      // 보스: 전용 일러스트 (황금 갑주 기사)
+      drawBossArt(g, type, def.size);
       // 보스 이름 레이블
       const label = svgEl('text', {
         x: 0, y: -def.size - 12,
@@ -1356,19 +1323,8 @@ export class EnemySystem {
         fill: 'rgba(255,215,0,0.55)' }));
 
     } else if (type === 'solar_titan') {
-      // 중간 보스급: 왕관 + 태양 방사 + 글로우
-      g.appendChild(svgEl('circle', { cx: 0, cy: 0, r: def.size * 0.58,
-        fill: 'rgba(232,121,26,0.4)', stroke: '#E8791A', 'stroke-width': 2.5 }));
-      for (let i = 0; i < 8; i++) {
-        const a = (i / 8) * Math.PI * 2;
-        g.appendChild(svgEl('line', {
-          x1: (def.size * 0.42 * Math.cos(a)).toFixed(1),
-          y1: (def.size * 0.42 * Math.sin(a)).toFixed(1),
-          x2: (def.size * 0.78 * Math.cos(a)).toFixed(1),
-          y2: (def.size * 0.78 * Math.sin(a)).toFixed(1),
-          stroke: '#F5C518', 'stroke-width': 2, opacity: '0.75',
-        }));
-      }
+      // 중간 보스급: 전용 일러스트 (태양 거병)
+      drawBossArt(g, type, def.size);
       const stLabel = svgEl('text', {
         x: 0, y: -def.size - 12,
         'text-anchor': 'middle', 'dominant-baseline': 'middle',
@@ -1386,23 +1342,8 @@ export class EnemySystem {
       this._ensureBossGlowStyle();
 
     } else if (type === 'sun_god') {
-      // 최종 보스: 황금 왕관 + 방사형 광선 8개
-      g.appendChild(svgEl('circle', { cx: 0, cy: 0, r: def.size * 0.58,
-        fill: 'rgba(245,197,24,0.35)', stroke: '#F5C518', 'stroke-width': 3 }));
-      for (let i = 0; i < 8; i++) {
-        const a = (i / 8) * Math.PI * 2;
-        g.appendChild(svgEl('line', {
-          x1: (def.size * 0.38 * Math.cos(a)).toFixed(1),
-          y1: (def.size * 0.38 * Math.sin(a)).toFixed(1),
-          x2: (def.size * 0.82 * Math.cos(a)).toFixed(1),
-          y2: (def.size * 0.82 * Math.sin(a)).toFixed(1),
-          stroke: '#F5C518', 'stroke-width': 2.5, opacity: '0.9',
-        }));
-      }
-      g.appendChild(svgEl('polygon', {
-        points: `0,${-def.size*0.42} ${def.size*0.28},${-def.size*0.08} ${-def.size*0.28},${-def.size*0.08}`,
-        fill: '#FFD700',
-      }));
+      // 최종 보스: 전용 일러스트 (태양신)
+      drawBossArt(g, type, def.size);
       const sgLabel = svgEl('text', {
         x: 0, y: -def.size - 14,
         'text-anchor': 'middle', 'dominant-baseline': 'middle',
@@ -1416,6 +1357,45 @@ export class EnemySystem {
       g.appendChild(svgEl('circle', { cx: 0, cy: 0, r: def.size + 8,
         fill: 'none', stroke: '#F5C518', 'stroke-width': 2.5, opacity: '0.5',
         style: 'transform-origin: 0px 0px; animation: bossGlow 1.0s ease-in-out infinite alternate',
+      }));
+      this._boss = enemy;
+      this._ensureBossGlowStyle();
+
+    } else if (type === 'typhoon_warlord') {
+      // DLC3 중간보스: 전용 일러스트 (태풍 군주)
+      drawBossArt(g, type, def.size);
+      const twLabel = svgEl('text', {
+        x: 0, y: -def.size - 12,
+        'text-anchor': 'middle', 'dominant-baseline': 'middle',
+        fill: '#48CAE4', 'font-size': '9px',
+        'font-family': 'Cinzel, serif', 'font-weight': 'bold',
+        'pointer-events': 'none',
+        stroke: 'rgba(0,0,0,0.8)', 'stroke-width': '2', 'paint-order': 'stroke',
+      });
+      twLabel.textContent = 'TYPHOON WARLORD';
+      g.appendChild(twLabel);
+      g.appendChild(svgEl('circle', { cx: 0, cy: 0, r: def.size + 6,
+        fill: 'none', stroke: '#48CAE4', 'stroke-width': 2, opacity: '0.4',
+        style: 'transform-origin: 0px 0px; animation: bossGlow 1.2s ease-in-out infinite alternate',
+      }));
+      this._ensureBossGlowStyle();
+
+    } else if (type === 'tempest_sovereign') {
+      // DLC3 최종보스: 전용 일러스트 (폭풍 군주)
+      drawBossArt(g, type, def.size);
+      const tsLabel = svgEl('text', {
+        x: 0, y: -def.size - 14,
+        'text-anchor': 'middle', 'dominant-baseline': 'middle',
+        fill: '#4ECDC4', 'font-size': '10px',
+        'font-family': 'Cinzel, serif', 'font-weight': 'bold',
+        'pointer-events': 'none',
+        stroke: 'rgba(0,0,0,0.9)', 'stroke-width': '2', 'paint-order': 'stroke',
+      });
+      tsLabel.textContent = 'TEMPEST SOVEREIGN';
+      g.appendChild(tsLabel);
+      g.appendChild(svgEl('circle', { cx: 0, cy: 0, r: def.size + 8,
+        fill: 'none', stroke: '#4ECDC4', 'stroke-width': 2.5, opacity: '0.45',
+        style: 'transform-origin: 0px 0px; animation: bossGlow 1.1s ease-in-out infinite alternate',
       }));
       this._boss = enemy;
       this._ensureBossGlowStyle();
