@@ -968,9 +968,8 @@ kbd {
 
 /* ── SVG Map Elements ─────────────────────────────────── */
 .hex-cell { cursor: pointer; transition: opacity 0.15s; }
-.hex-cell:hover .hex-bg { opacity: 0.8; }
-.hex-cell.placeable .hex-bg { stroke: #3a3a5a; }
-.hex-cell.path-cell .hex-bg { fill: #1a1a30; stroke: #252540; }
+.hex-cell:hover .hex-bg { opacity: 0.85; }
+/* fill/stroke는 MapRenderer가 맵 테마별로 SVG 속성에 직접 지정 — CSS로 덮지 않음 */
 .hex-cell.selected-cell .hex-bg { stroke: var(--gold); stroke-width: 2; }
 
 .enemy-unit { pointer-events: none; will-change: transform; }

@@ -1,5 +1,6 @@
 // SVG 헥스 그리드 렌더러 — flat-top 헥사곤 사용
 // 헥스 좌표계: offset(col, row), 픽셀 변환 포함
+// v2.0 비주얼 오버홀: 지형 텍스처, 곡선 경로, 포탈/넥서스, 환경 장식, 비네트
 
 import { HEX_SIZE, HEX_W, HEX_H } from '../config/constants.js';
 
@@ -18,6 +19,7 @@ let _pathSet         = new Set(_activePathData.map(([c,r]) => `${c},${r}`));
 let _pathAdjacentSet = _buildAdjacent(_pathSet);
 let _mapHexColor     = null;   // 맵 테마 헥스 배경색 (null = 기본)
 let _mapPathColor    = null;   // 맵 테마 경로색 (null = 기본)
+let _mapId           = null;   // 맵 id — 장식 테마 결정용
 
 function _buildAdjacent(pathSet) {
   const OFFSETS = [[1,0],[-1,0],[0,1],[0,-1],[1,-1],[-1,1],[1,1],[-1,-1]];
@@ -40,6 +42,7 @@ export function setActiveMap(pathArray, mapDef = null) {
   _pathAdjacentSet = _buildAdjacent(_pathSet);
   _mapHexColor     = mapDef?.hexColor  ?? null;
   _mapPathColor    = mapDef?.pathColor ?? null;
+  _mapId           = mapDef?.id        ?? null;
 }
 
 /** 현재 활성 경로 반환 (EnemySystem의 웨이포인트 계산용) */
@@ -78,6 +81,69 @@ export function svgEl(tag, attrs = {}) {
   return el;
 }
 
+// ── 색상 유틸 ─────────────────────────────────────────
+function _hexToRgb(hex) {
+  const m = /^#?([0-9a-f]{6})$/i.exec(hex);
+  if (!m) return { r: 34, g: 34, b: 64 };
+  const n = parseInt(m[1], 16);
+  return { r: (n >> 16) & 255, g: (n >> 8) & 255, b: n & 255 };
+}
+/** amt > 0: 밝게(흰색 혼합), amt < 0: 어둡게(검정 혼합). amt ∈ [-1, 1] */
+function _shade(hex, amt) {
+  const { r, g, b } = _hexToRgb(hex);
+  const t = amt > 0 ? 255 : 0;
+  const p = Math.abs(amt);
+  const mix = v => Math.round(v + (t - v) * p);
+  return `rgb(${mix(r)},${mix(g)},${mix(b)})`;
+}
+function _withAlpha(hex, a) {
+  const { r, g, b } = _hexToRgb(hex);
+  return `rgba(${r},${g},${b},${a})`;
+}
+/** 'rgba(r,g,b,a)' 문자열의 알파만 교체 */
+function _rgbaAlpha(rgba, a) {
+  const m = /rgba?\(([^)]+)\)/.exec(rgba);
+  if (!m) return rgba;
+  const [r, g, b] = m[1].split(',').map(s => parseFloat(s));
+  return `rgba(${r},${g},${b},${a})`;
+}
+
+// ── 시드 기반 PRNG (맵별 장식 배치가 항상 동일하도록) ──
+function _mulberry32(seed) {
+  let a = seed >>> 0;
+  return function () {
+    a |= 0; a = (a + 0x6D2B79F5) | 0;
+    let t = Math.imul(a ^ (a >>> 15), 1 | a);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+function _hashStr(s) {
+  let h = 2166136261;
+  for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619); }
+  return h >>> 0;
+}
+
+// ── 맵별 장식 테마 ─────────────────────────────────────
+// 각 맵 id → 장식 프롭 구성. 미등록 맵은 dlc 색감 기반 폴백.
+const DECOR_THEMES = {
+  crossroads:         { props: ['tree', 'rock', 'grass'],        accent: '#4a7a4a' },
+  serpent:            { props: ['tree', 'tree', 'grass', 'rock'], accent: '#3f8a3f' },
+  gauntlet:           { props: ['deadtree', 'rock', 'ember'],    accent: '#b06030' },
+  twin_peaks:         { props: ['pine', 'rock', 'icecrystal'],   accent: '#7ec8e3' },
+  labyrinth:          { props: ['runestone', 'crystal', 'rock'], accent: '#8c3cdc' },
+  void_corridor:      { props: ['voidspike', 'crystal', 'rock'], accent: '#7b2fbe' },
+  phantom_crossing:   { props: ['voidspike', 'deadtree', 'crystal'], accent: '#9040d0' },
+  abyssal_spiral:     { props: ['voidspike', 'crystal', 'voidspike'], accent: '#a050f0' },
+  solar_forum:        { props: ['obelisk', 'sunstone', 'rock'],  accent: '#f5c518' },
+  sunken_temple:      { props: ['obelisk', 'rock', 'sunstone'],  accent: '#e8791a' },
+  blazing_corridor:   { props: ['sunstone', 'ember', 'obelisk'], accent: '#ffa01e' },
+  cloud_citadel:      { props: ['stormshard', 'rock', 'wisp'],   accent: '#4ecdc4' },
+  storm_strait:       { props: ['stormshard', 'wisp', 'rock'],   accent: '#00b4d8' },
+  lightning_corridor: { props: ['stormshard', 'stormshard', 'wisp'], accent: '#48cae4' },
+};
+const DEFAULT_THEME = { props: ['tree', 'rock', 'grass'], accent: '#4a7a4a' };
+
 // ── MapRenderer 클래스 ─────────────────────────────────
 export class MapRenderer {
   constructor(svgEl, onCellClick, onCellHover) {
@@ -85,6 +151,7 @@ export class MapRenderer {
     this.onCellClick = onCellClick;
     this.onCellHover = onCellHover ?? (() => {});
     this.cellMap = new Map();   // "col,row" → <g> 요소
+    this.decorMap = new Map();  // "col,row" → 장식 <g> (타워 배치 시 숨김)
     this.towerLayer = null;
     this.enemyLayer = null;
     this.projectileLayer = null;
@@ -93,40 +160,82 @@ export class MapRenderer {
   }
 
   // SVG stop 요소 생성 헬퍼 (offset/stop-color는 attribute로만 설정 가능)
-  _mkStop(offset, color) {
+  _mkStop(offset, color, opacity = null) {
     const s = svgEl('stop');
     s.setAttribute('offset', offset);
     s.setAttribute('stop-color', color);
+    if (opacity !== null) s.setAttribute('stop-opacity', opacity);
     return s;
   }
 
   _init() {
-    // SVG defs — 헥스 깊이감용 radialGradient 정의
+    this._injectMapStyles();
+
+    const hexBase = _mapHexColor ?? '#222240';
+
+    // ── SVG defs ──────────────────────────────────────
     const defs = svgEl('defs');
-    // 기본 헥스 그라디언트 (중앙 약간 밝음) — 맵 테마 반영
-    const hexBase   = _mapHexColor ?? '#222240';
-    const hexOuter  = _mapHexColor ?? '#141428';
-    const rg = svgEl('radialGradient', { id: 'hexGrad', cx: '50%', cy: '40%', r: '60%' });
-    rg.appendChild(this._mkStop('0%',   hexBase));
-    rg.appendChild(this._mkStop('100%', hexOuter));
-    // 경로 인접 셀 그라디언트 (초록 서브톤 — 테마 비의존)
-    const rg2 = svgEl('radialGradient', { id: 'hexGradAdj', cx: '50%', cy: '40%', r: '60%' });
-    rg2.appendChild(this._mkStop('0%', '#1e2e1e'));
-    rg2.appendChild(this._mkStop('100%', '#10180f'));
-    defs.appendChild(rg); defs.appendChild(rg2);
+
+    // 헥스 지형 그라디언트 3종 — 셀별로 섞어서 유기적 지면 느낌
+    const variants = [
+      ['hexGrad',  0.06, -0.28],
+      ['hexGradB', 0.10, -0.24],
+      ['hexGradC', 0.03, -0.33],
+    ];
+    for (const [id, lite, dark] of variants) {
+      const rg = svgEl('radialGradient', { id, cx: '50%', cy: '38%', r: '68%' });
+      rg.appendChild(this._mkStop('0%',   _shade(hexBase, lite)));
+      rg.appendChild(this._mkStop('100%', _shade(hexBase, dark)));
+      defs.appendChild(rg);
+    }
+
+    // 배경(보드 밖) 그라디언트 — 맵색을 짙게 깔아 보드와 이어지게
+    const bgGrad = svgEl('radialGradient', { id: 'boardBgGrad', cx: '50%', cy: '42%', r: '75%' });
+    bgGrad.appendChild(this._mkStop('0%',   _shade(hexBase, -0.42)));
+    bgGrad.appendChild(this._mkStop('100%', _shade(hexBase, -0.72)));
+    defs.appendChild(bgGrad);
+
+    // 비네트 그라디언트 (중앙 투명 → 가장자리 어둡게)
+    const vg = svgEl('radialGradient', { id: 'vignetteGrad', cx: '50%', cy: '48%', r: '72%' });
+    vg.appendChild(this._mkStop('0%',  '#000000', 0));
+    vg.appendChild(this._mkStop('72%', '#000000', 0));
+    vg.appendChild(this._mkStop('100%', '#000000', 0.42));
+    defs.appendChild(vg);
+
+    // 지형 노이즈 필터 — 유기적 텍스처 (보드 전체에 1회 적용, 정적이라 비용 낮음)
+    const noise = svgEl('filter', { id: 'terrainNoise', x: '0%', y: '0%', width: '100%', height: '100%' });
+    noise.appendChild(svgEl('feTurbulence', {
+      type: 'fractalNoise', baseFrequency: '0.055', numOctaves: '3',
+      stitchTiles: 'stitch', result: 'noise',
+    }));
+    const noiseMatrix = svgEl('feColorMatrix', {
+      in: 'noise', type: 'matrix',
+      values: '0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0.5 0.5 0.5 0 0',
+    });
+    noise.appendChild(noiseMatrix);
+    defs.appendChild(noise);
+
+    // 소프트 글로우 필터 (경로/포탈용)
+    const glow = svgEl('filter', { id: 'mapSoftGlow', x: '-60%', y: '-60%', width: '220%', height: '220%' });
+    glow.appendChild(svgEl('feGaussianBlur', { stdDeviation: '5' }));
+    defs.appendChild(glow);
+
     this.svg.appendChild(defs);
 
-    // 배경
-    const bg = svgEl('rect', { x: 0, y: 0, width: '100%', height: '100%', fill: '#0f0f22' });
-    this.svg.appendChild(bg);
+    // ── 배경 ──────────────────────────────────────────
+    this.svg.appendChild(svgEl('rect', {
+      x: 0, y: 0, width: '100%', height: '100%', fill: 'url(#boardBgGrad)',
+    }));
 
-    // 레이어 그룹 (그리기 순서 = z-order)
-    const gridLayer = svgEl('g', { id: 'grid-layer' });
-    const pathLayer = svgEl('g', { id: 'path-layer' });   // 헥스 위, 타워 아래
-    this.towerLayer = svgEl('g', { id: 'tower-layer' });
-    this.enemyLayer = svgEl('g', { id: 'enemy-layer' });
+    // ── 레이어 그룹 (그리기 순서 = z-order) ────────────
+    const gridLayer  = svgEl('g', { id: 'grid-layer' });
+    const decorLayer = svgEl('g', { id: 'decor-layer', 'pointer-events': 'none' });
+    const pathLayer  = svgEl('g', { id: 'path-layer' });   // 헥스 위, 타워 아래
+    this.towerLayer  = svgEl('g', { id: 'tower-layer' });
+    this.enemyLayer  = svgEl('g', { id: 'enemy-layer' });
     this.projectileLayer = svgEl('g', { id: 'projectile-layer' });
     this.svg.appendChild(gridLayer);
+    this.svg.appendChild(decorLayer);
     this.svg.appendChild(pathLayer);
     this.svg.appendChild(this.towerLayer);
     this.svg.appendChild(this.enemyLayer);
@@ -139,24 +248,86 @@ export class MapRenderer {
       }
     }
 
+    // viewBox 크기 계산 (노이즈/비네트 오버레이에 필요)
+    const totalW = COLS * HEX_W * 0.75 + HEX_SIZE * 1.25;
+    const totalH = ROWS * HEX_H + HEX_H;
+
+    // 지형 노이즈 오버레이 — 그리드 위에 은은하게
+    gridLayer.appendChild(svgEl('rect', {
+      x: 0, y: 0, width: totalW, height: totalH,
+      filter: 'url(#terrainNoise)', opacity: '0.05',
+      'pointer-events': 'none',
+    }));
+
+    // 환경 장식 (경로/인접 제외 셀에 시드 기반 배치)
+    this._drawDecorations(decorLayer);
+
     // 경로 오버레이 (헥스 위에 그림)
     this._drawPathLine(pathLayer);
 
+    // ── 최상단 FX 레이어: 비네트 + 부유 입자 ──────────
+    const fxLayer = svgEl('g', { id: 'map-fx-layer', 'pointer-events': 'none' });
+    fxLayer.appendChild(svgEl('rect', {
+      x: 0, y: 0, width: totalW, height: totalH, fill: 'url(#vignetteGrad)',
+    }));
+    this._drawMotes(fxLayer, totalW, totalH);
+    this.svg.appendChild(fxLayer);
+
     // SVG viewBox 설정
-    const totalW = COLS * HEX_W * 0.75 + HEX_SIZE * 1.25;
-    const totalH = ROWS * HEX_H + HEX_H;
     this.svg.setAttribute('viewBox', `0 0 ${totalW} ${totalH}`);
     this.svg.setAttribute('preserveAspectRatio', 'xMidYMid meet');
+  }
+
+  // 맵 전용 CSS 키프레임 주입 (1회)
+  _injectMapStyles() {
+    if (document.getElementById('map-fx-style')) return;
+    const s = document.createElement('style');
+    s.id = 'map-fx-style';
+    s.textContent = `
+      @keyframes pathFlow    { to { stroke-dashoffset: -26; } }
+      @keyframes portalSpin  { to { transform: rotate(360deg); } }
+      @keyframes portalSpinR { to { transform: rotate(-360deg); } }
+      @keyframes nexusBreath { 0%,100% { opacity: 0.55; } 50% { opacity: 1; } }
+      @keyframes chevronPulse{ 0%,100% { opacity: 0.28; } 50% { opacity: 0.7; } }
+      @keyframes moteDrift   {
+        0%   { transform: translate(0, 0);       opacity: 0; }
+        15%  { opacity: 0.5; }
+        85%  { opacity: 0.35; }
+        100% { transform: translate(var(--mx, 8px), var(--my, -46px)); opacity: 0; }
+      }
+      .path-center-line { animation: pathFlow 1.7s linear infinite; }
+      .portal-ring      { animation: portalSpin 9s linear infinite; }
+      .portal-ring-r    { animation: portalSpinR 13s linear infinite; }
+      .nexus-glow       { animation: nexusBreath 2.6s ease-in-out infinite; }
+      .path-chevron     { animation: chevronPulse 2.2s ease-in-out infinite; }
+      .map-mote         { animation: moteDrift var(--dur, 9s) linear infinite; }
+    `;
+    document.head.appendChild(s);
+  }
+
+  // ── Catmull-Rom → cubic bezier 경로 문자열 ───────────
+  _smoothPathD(points) {
+    if (points.length < 2) return '';
+    const p = i => points[Math.max(0, Math.min(points.length - 1, i))];
+    let d = `M ${p(0).x.toFixed(1)} ${p(0).y.toFixed(1)}`;
+    for (let i = 0; i < points.length - 1; i++) {
+      const p0 = p(i - 1), p1 = p(i), p2 = p(i + 1), p3 = p(i + 2);
+      const c1x = p1.x + (p2.x - p0.x) / 6, c1y = p1.y + (p2.y - p0.y) / 6;
+      const c2x = p2.x - (p3.x - p1.x) / 6, c2y = p2.y - (p3.y - p1.y) / 6;
+      d += ` C ${c1x.toFixed(1)} ${c1y.toFixed(1)}, ${c2x.toFixed(1)} ${c2y.toFixed(1)}, ${p2.x.toFixed(1)} ${p2.y.toFixed(1)}`;
+    }
+    return d;
   }
 
   _drawPathLine(layer) {
     const path = ENEMY_PATH.current;  // 현재 활성 맵 경로 (getter)
 
     // 맵 테마 경로색 결정
-    const pathColor    = _mapPathColor ?? 'rgba(220,70,70,0.4)';
-    const pathFill     = pathColor.replace(/[\d.]+\)$/, s => String(parseFloat(s) * 0.45) + ')');
-    const pathStroke   = pathColor;
-    const lineColor    = pathColor.replace(/[\d.]+\)$/, s => String(Math.min(1, parseFloat(s) + 0.1)) + ')');
+    const pathColor = _mapPathColor ?? 'rgba(220,70,70,0.4)';
+    const pathFill  = _rgbaAlpha(pathColor, 0.10);
+    const bedColor  = _rgbaAlpha(pathColor, 0.13);
+    const glowColor = _rgbaAlpha(pathColor, 0.15);
+    const lineColor = _rgbaAlpha(pathColor, 0.75);
 
     // 1) 경로 헥스마다 반투명 오버레이 — 헥스 위에 그려지므로 선명하게 보임
     for (const [c, r] of path) {
@@ -164,76 +335,307 @@ export class MapRenderer {
       layer.appendChild(svgEl('polygon', {
         points: hexCorners(x, y),
         fill: pathFill,
-        stroke: pathStroke,
+        stroke: _rgbaAlpha(pathColor, 0.20),
         'stroke-width': 1,
         'pointer-events': 'none',
       }));
     }
 
-    // 2) 경로 중심선
-    const pts = path.map(([c, r]) => {
-      const { x, y } = hexToPixel(c, r);
-      return `${x},${y}`;
-    }).join(' ');
-    layer.appendChild(svgEl('polyline', {
-      points: pts, fill: 'none',
-      stroke: lineColor,
-      'stroke-width': 2.5,
+    // 2) 부드러운 곡선 경로 (Catmull-Rom) — 3중 레이어: 글로우 / 로드베드 / 중심선
+    const pts = path.map(([c, r]) => hexToPixel(c, r));
+    const d = this._smoothPathD(pts);
+
+    layer.appendChild(svgEl('path', {
+      d, fill: 'none', stroke: glowColor, 'stroke-width': 17,
       'stroke-linecap': 'round', 'stroke-linejoin': 'round',
-      'stroke-dasharray': '7 5',
+      filter: 'url(#mapSoftGlow)', 'pointer-events': 'none',
+    }));
+    layer.appendChild(svgEl('path', {
+      d, fill: 'none', stroke: bedColor, 'stroke-width': 10,
+      'stroke-linecap': 'round', 'stroke-linejoin': 'round',
+      'pointer-events': 'none',
+    }));
+    layer.appendChild(svgEl('path', {
+      d, fill: 'none', stroke: lineColor, 'stroke-width': 2,
+      'stroke-linecap': 'round', 'stroke-linejoin': 'round',
+      'stroke-dasharray': '10 16', class: 'path-center-line',
       'pointer-events': 'none',
     }));
 
-    // 3) 방향 화살표
-    for (let i = 2; i < path.length; i += 3) {
-      const [c1, r1] = path[i - 1];
-      const [c2, r2] = path[i];
-      const p1 = hexToPixel(c1, r1);
-      const p2 = hexToPixel(c2, r2);
+    // 3) 방향 셰브런 (삼각형 폴리곤 — 텍스트 화살표 대체)
+    for (let i = 2; i < path.length - 1; i += 3) {
+      const p1 = hexToPixel(...path[i - 1]);
+      const p2 = hexToPixel(...path[i]);
       const mx = (p1.x + p2.x) / 2;
       const my = (p1.y + p2.y) / 2;
-      const angle = Math.atan2(p2.y - p1.y, p2.x - p1.x) * 180 / Math.PI;
-      const arr = svgEl('text', {
-        x: mx, y: my,
-        'text-anchor': 'middle', 'dominant-baseline': 'middle',
-        fill: 'rgba(255,150,150,0.75)', 'font-size': '10px',
-        transform: `rotate(${angle},${mx},${my})`,
+      const ang = Math.atan2(p2.y - p1.y, p2.x - p1.x) * 180 / Math.PI;
+      const chev = svgEl('polygon', {
+        points: '-4,-5 4,0 -4,5 -1.5,0',
+        fill: lineColor, class: 'path-chevron',
+        transform: `translate(${mx.toFixed(1)},${my.toFixed(1)}) rotate(${ang.toFixed(1)})`,
         'pointer-events': 'none',
       });
-      arr.textContent = '▶';
-      layer.appendChild(arr);
+      layer.appendChild(chev);
     }
 
-    // 4) 시작 마커
-    const [sc, sr] = path[0];
-    const sp = hexToPixel(sc, sr);
-    // 외부 글로우 링 (CSS 애니메이션)
-    layer.appendChild(svgEl('circle', {
-      cx: sp.x, cy: sp.y, r: 18,
-      fill: 'none', stroke: '#e74c3c', 'stroke-width': 1.5, opacity: '0.3',
-      class: 'spawn-marker', 'pointer-events': 'none',
-    }));
-    layer.appendChild(svgEl('circle', {
-      cx: sp.x, cy: sp.y, r: 14,
-      fill: 'rgba(231,76,60,0.35)', stroke: '#e74c3c', 'stroke-width': 2,
-      'pointer-events': 'none',
-    }));
-    layer.appendChild(this._label(sp.x, sp.y, 'SPAWN', '#ff8888', '8px'));
+    // 4) 시작 포탈 — 회전하는 이중 룬 링
+    const sp = hexToPixel(...path[0]);
+    this._drawPortal(layer, sp.x, sp.y, '#e74c3c', 'SPAWN');
 
-    // 5) 종료 마커
-    const [ec, er] = path[path.length - 1];
-    const ep = hexToPixel(ec, er);
-    layer.appendChild(svgEl('circle', {
-      cx: ep.x, cy: ep.y, r: 18,
-      fill: 'none', stroke: '#8E44AD', 'stroke-width': 1.5, opacity: '0.3',
-      class: 'exit-marker', 'pointer-events': 'none',
+    // 5) 종료 지점 — 넥서스 크리스탈
+    const ep = hexToPixel(...path[path.length - 1]);
+    this._drawNexus(layer, ep.x, ep.y);
+  }
+
+  // 회전 룬 링 포탈 (스폰 지점)
+  _drawPortal(layer, x, y, color, label) {
+    const g = svgEl('g', { 'pointer-events': 'none' });
+
+    // 바닥 글로우
+    g.appendChild(svgEl('circle', {
+      cx: x, cy: y, r: 17, fill: color, opacity: '0.16', filter: 'url(#mapSoftGlow)',
     }));
-    layer.appendChild(svgEl('circle', {
-      cx: ep.x, cy: ep.y, r: 14,
-      fill: 'rgba(142,68,173,0.35)', stroke: '#8E44AD', 'stroke-width': 2,
-      'pointer-events': 'none',
+    // 외곽 회전 링 (점선) — transform-box로 자체 중심 회전
+    const ring1 = svgEl('circle', {
+      cx: x, cy: y, r: 16, fill: 'none', stroke: color, 'stroke-width': 1.6,
+      'stroke-dasharray': '5 4', opacity: '0.75', class: 'portal-ring',
+    });
+    ring1.style.transformOrigin = `${x}px ${y}px`;
+    g.appendChild(ring1);
+    // 내부 역회전 링
+    const ring2 = svgEl('circle', {
+      cx: x, cy: y, r: 11, fill: 'none', stroke: color, 'stroke-width': 1.1,
+      'stroke-dasharray': '2.5 5', opacity: '0.6', class: 'portal-ring-r',
+    });
+    ring2.style.transformOrigin = `${x}px ${y}px`;
+    g.appendChild(ring2);
+    // 중심 코어
+    g.appendChild(svgEl('circle', {
+      cx: x, cy: y, r: 6.5, fill: color, opacity: '0.5', class: 'spawn-marker',
     }));
-    layer.appendChild(this._label(ep.x, ep.y, 'EXIT', '#bb88ff', '8px'));
+    g.appendChild(svgEl('circle', { cx: x, cy: y, r: 3, fill: '#fff', opacity: '0.85' }));
+
+    const t = this._label(x, y + 27, label, _withAlpha('#ffffff', 0.0), '7px');
+    t.setAttribute('fill', color);
+    t.setAttribute('opacity', '0.85');
+    t.setAttribute('letter-spacing', '2');
+    t.setAttribute('font-family', 'Cinzel, serif');
+    g.appendChild(t);
+
+    layer.appendChild(g);
+  }
+
+  // 넥서스 크리스탈 (수호 대상 — 기존 EXIT 마커 대체)
+  _drawNexus(layer, x, y) {
+    const g = svgEl('g', { 'pointer-events': 'none' });
+    const c = '#8E44AD';
+    const glow = '#c39bd3';
+
+    // 바닥 글로우 + 룬 링
+    g.appendChild(svgEl('circle', {
+      cx: x, cy: y, r: 19, fill: c, opacity: '0.20', filter: 'url(#mapSoftGlow)',
+      class: 'nexus-glow',
+    }));
+    const ring = svgEl('circle', {
+      cx: x, cy: y, r: 16.5, fill: 'none', stroke: glow, 'stroke-width': 1.2,
+      'stroke-dasharray': '3 6', opacity: '0.55', class: 'portal-ring',
+    });
+    ring.style.transformOrigin = `${x}px ${y}px`;
+    g.appendChild(ring);
+
+    // 크리스탈 본체 (세로 다이아몬드) + 하이라이트 면
+    g.appendChild(svgEl('polygon', {
+      points: `${x},${y - 13} ${x + 8},${y} ${x},${y + 13} ${x - 8},${y}`,
+      fill: c, stroke: glow, 'stroke-width': 1.5, class: 'exit-marker',
+    }));
+    g.appendChild(svgEl('polygon', {
+      points: `${x},${y - 13} ${x + 8},${y} ${x},${y + 2}`,
+      fill: '#ffffff', opacity: '0.18',
+    }));
+    // 크리스탈 코어 반짝임
+    g.appendChild(svgEl('circle', {
+      cx: x, cy: y - 2, r: 2.2, fill: '#fff', opacity: '0.9', class: 'nexus-glow',
+    }));
+
+    const t = this._label(x, y + 28, 'NEXUS', glow, '7px');
+    t.setAttribute('letter-spacing', '2');
+    t.setAttribute('opacity', '0.9');
+    t.setAttribute('font-family', 'Cinzel, serif');
+    g.appendChild(t);
+
+    layer.appendChild(g);
+  }
+
+  // ── 환경 장식 프롭 (시드 기반 결정적 배치) ─────────────
+  _drawDecorations(layer) {
+    const theme = DECOR_THEMES[_mapId] ?? DEFAULT_THEME;
+    const rand = _mulberry32(_hashStr(_mapId ?? 'default'));
+    const hexBase = _mapHexColor ?? '#222240';
+
+    for (let c = 0; c < COLS; c++) {
+      for (let r = 0; r < ROWS; r++) {
+        if (isPathCell(c, r)) continue;
+        // 인접 셀은 배치 후보라 장식 확률 낮게, 그 외 셀은 높게
+        const chance = isPathAdjacent(c, r) ? 0.10 : 0.34;
+        if (rand() > chance) continue;
+
+        const { x, y } = hexToPixel(c, r);
+        const kind = theme.props[Math.floor(rand() * theme.props.length)];
+        const g = svgEl('g', { class: 'map-decor' });
+
+        const n = rand() < 0.3 ? 2 : 1;
+        for (let i = 0; i < n; i++) {
+          const ox = (rand() - 0.5) * HEX_SIZE * 0.9;
+          const oy = (rand() - 0.5) * HEX_SIZE * 0.8;
+          const scale = 0.75 + rand() * 0.5;
+          this._drawProp(g, kind, x + ox, y + oy, scale, theme.accent, hexBase, rand);
+        }
+        g.setAttribute('opacity', String(0.55 + rand() * 0.3));
+        layer.appendChild(g);
+        this.decorMap.set(`${c},${r}`, g);
+      }
+    }
+  }
+
+  // 개별 프롭 SVG (절차 생성 — 이모지/이미지 없음)
+  _drawProp(g, kind, x, y, s, accent, hexBase, rand) {
+    const dk = _shade(hexBase, -0.45);   // 그림자/윤곽용 어두운 색
+    switch (kind) {
+      case 'tree': {
+        const h = 13 * s;
+        g.appendChild(svgEl('ellipse', { cx: x, cy: y + h * 0.42, rx: 5 * s, ry: 1.8 * s, fill: dk, opacity: '0.5' }));
+        g.appendChild(svgEl('rect', { x: x - 1.1 * s, y: y + h * 0.1, width: 2.2 * s, height: h * 0.32, fill: '#4a3222', rx: 0.8 }));
+        g.appendChild(svgEl('polygon', { points: `${x},${y - h * 0.55} ${x + 5.5 * s},${y + h * 0.18} ${x - 5.5 * s},${y + h * 0.18}`, fill: _shade(accent, -0.25), stroke: dk, 'stroke-width': 0.6 }));
+        g.appendChild(svgEl('polygon', { points: `${x},${y - h * 0.85} ${x + 4.2 * s},${y - h * 0.12} ${x - 4.2 * s},${y - h * 0.12}`, fill: accent, stroke: dk, 'stroke-width': 0.6 }));
+        break;
+      }
+      case 'pine': {
+        const h = 15 * s;
+        g.appendChild(svgEl('ellipse', { cx: x, cy: y + h * 0.4, rx: 4.4 * s, ry: 1.6 * s, fill: dk, opacity: '0.5' }));
+        g.appendChild(svgEl('polygon', { points: `${x},${y - h * 0.62} ${x + 4 * s},${y + h * 0.38} ${x - 4 * s},${y + h * 0.38}`, fill: _shade(accent, -0.35), stroke: _shade(accent, 0.1), 'stroke-width': 0.5 }));
+        g.appendChild(svgEl('line', { x1: x, y1: y - h * 0.55, x2: x, y2: y + h * 0.3, stroke: _shade(accent, 0.25), 'stroke-width': 0.6, opacity: '0.6' }));
+        break;
+      }
+      case 'deadtree': {
+        const h = 12 * s;
+        g.appendChild(svgEl('path', {
+          d: `M ${x} ${y + h * 0.4} L ${x} ${y - h * 0.3} M ${x} ${y - h * 0.05} L ${x + 3.5 * s} ${y - h * 0.42} M ${x} ${y - h * 0.18} L ${x - 3 * s} ${y - h * 0.5}`,
+          stroke: '#4a3a30', 'stroke-width': 1.4 * s, fill: 'none', 'stroke-linecap': 'round',
+        }));
+        break;
+      }
+      case 'rock': {
+        const r0 = 4.5 * s;
+        const pts = [];
+        for (let i = 0; i < 5; i++) {
+          const a = (i / 5) * Math.PI * 2 + rand();
+          const rr = r0 * (0.75 + rand() * 0.4);
+          pts.push(`${(x + rr * Math.cos(a)).toFixed(1)},${(y + rr * 0.72 * Math.sin(a)).toFixed(1)}`);
+        }
+        g.appendChild(svgEl('polygon', { points: pts.join(' '), fill: _shade(hexBase, 0.16), stroke: dk, 'stroke-width': 0.8 }));
+        g.appendChild(svgEl('line', { x1: x - r0 * 0.3, y1: y - r0 * 0.15, x2: x + r0 * 0.25, y2: y + r0 * 0.1, stroke: dk, 'stroke-width': 0.5, opacity: '0.6' }));
+        break;
+      }
+      case 'grass': {
+        for (let i = -1; i <= 1; i++) {
+          g.appendChild(svgEl('path', {
+            d: `M ${x + i * 2.4 * s} ${y + 3 * s} Q ${x + i * 3.4 * s} ${y - 1.5 * s} ${x + i * 4 * s} ${y - 3.6 * s}`,
+            stroke: _shade(accent, -0.1), 'stroke-width': 0.9, fill: 'none', opacity: '0.7', 'stroke-linecap': 'round',
+          }));
+        }
+        break;
+      }
+      case 'crystal': case 'icecrystal': case 'stormshard': {
+        const h = 9 * s;
+        const tilt = (rand() - 0.5) * 14;
+        const cg = svgEl('g', { transform: `rotate(${tilt.toFixed(1)},${x},${y})` });
+        cg.appendChild(svgEl('ellipse', { cx: x, cy: y + h * 0.5, rx: 3.6 * s, ry: 1.3 * s, fill: dk, opacity: '0.5' }));
+        cg.appendChild(svgEl('polygon', {
+          points: `${x},${y - h} ${x + 2.8 * s},${y - h * 0.2} ${x + 1.6 * s},${y + h * 0.45} ${x - 1.6 * s},${y + h * 0.45} ${x - 2.8 * s},${y - h * 0.2}`,
+          fill: _withAlpha(accent.startsWith('#') ? accent : '#8c3cdc', 0.75), stroke: _shade(accent, 0.3), 'stroke-width': 0.7,
+        }));
+        cg.appendChild(svgEl('line', { x1: x, y1: y - h * 0.9, x2: x, y2: y + h * 0.4, stroke: '#fff', 'stroke-width': 0.5, opacity: '0.5' }));
+        g.appendChild(cg);
+        break;
+      }
+      case 'runestone': {
+        const h = 10 * s;
+        g.appendChild(svgEl('ellipse', { cx: x, cy: y + h * 0.5, rx: 4 * s, ry: 1.4 * s, fill: dk, opacity: '0.5' }));
+        g.appendChild(svgEl('rect', { x: x - 3 * s, y: y - h * 0.55, width: 6 * s, height: h, rx: 2 * s, fill: _shade(hexBase, 0.2), stroke: dk, 'stroke-width': 0.8 }));
+        g.appendChild(svgEl('path', {
+          d: `M ${x - 1.2 * s} ${y - h * 0.25} L ${x + 1.2 * s} ${y} L ${x - 1.2 * s} ${y + h * 0.25}`,
+          stroke: accent, 'stroke-width': 0.9, fill: 'none', opacity: '0.9',
+        }));
+        break;
+      }
+      case 'obelisk': {
+        const h = 13 * s;
+        g.appendChild(svgEl('ellipse', { cx: x, cy: y + h * 0.42, rx: 3.6 * s, ry: 1.4 * s, fill: dk, opacity: '0.5' }));
+        g.appendChild(svgEl('polygon', {
+          points: `${x - 2.4 * s},${y + h * 0.38} ${x - 1.2 * s},${y - h * 0.6} ${x + 1.2 * s},${y - h * 0.6} ${x + 2.4 * s},${y + h * 0.38}`,
+          fill: _shade(hexBase, 0.22), stroke: _shade(accent, -0.1), 'stroke-width': 0.7,
+        }));
+        g.appendChild(svgEl('line', { x1: x, y1: y - h * 0.45, x2: x, y2: y + h * 0.25, stroke: accent, 'stroke-width': 0.8, opacity: '0.8' }));
+        break;
+      }
+      case 'sunstone': {
+        g.appendChild(svgEl('circle', { cx: x, cy: y, r: 3.4 * s, fill: _withAlpha(accent, 0.55), stroke: accent, 'stroke-width': 0.7 }));
+        for (let i = 0; i < 4; i++) {
+          const a = i * Math.PI / 2 + Math.PI / 4;
+          g.appendChild(svgEl('line', {
+            x1: x + Math.cos(a) * 4.4 * s, y1: y + Math.sin(a) * 4.4 * s,
+            x2: x + Math.cos(a) * 6.4 * s, y2: y + Math.sin(a) * 6.4 * s,
+            stroke: accent, 'stroke-width': 0.7, opacity: '0.7',
+          }));
+        }
+        break;
+      }
+      case 'ember': {
+        for (let i = 0; i < 3; i++) {
+          const ox = (rand() - 0.5) * 8 * s, oy = (rand() - 0.5) * 6 * s;
+          g.appendChild(svgEl('circle', { cx: x + ox, cy: y + oy, r: (0.9 + rand() * 0.9) * s, fill: '#ff7030', opacity: String(0.4 + rand() * 0.4) }));
+        }
+        break;
+      }
+      case 'voidspike': {
+        const h = 11 * s;
+        const tilt = (rand() - 0.5) * 22;
+        const vg2 = svgEl('g', { transform: `rotate(${tilt.toFixed(1)},${x},${y})` });
+        vg2.appendChild(svgEl('polygon', {
+          points: `${x},${y - h} ${x + 2.2 * s},${y + h * 0.3} ${x - 2.2 * s},${y + h * 0.3}`,
+          fill: _shade(hexBase, -0.2), stroke: accent, 'stroke-width': 0.7, opacity: '0.9',
+        }));
+        vg2.appendChild(svgEl('polygon', {
+          points: `${x + 3.5 * s},${y - h * 0.45} ${x + 5 * s},${y + h * 0.28} ${x + 2.2 * s},${y + h * 0.28}`,
+          fill: _shade(hexBase, -0.3), stroke: _withAlpha(accent, 0.6), 'stroke-width': 0.5,
+        }));
+        g.appendChild(vg2);
+        break;
+      }
+      case 'wisp': {
+        g.appendChild(svgEl('ellipse', { cx: x, cy: y, rx: 6 * s, ry: 2.2 * s, fill: _withAlpha(accent, 0.14) }));
+        g.appendChild(svgEl('ellipse', { cx: x + 3 * s, cy: y - 1.5 * s, rx: 4 * s, ry: 1.6 * s, fill: _withAlpha(accent, 0.10) }));
+        break;
+      }
+    }
+  }
+
+  // 부유 입자 (분위기 연출 — GPU 트랜스폼만 사용)
+  _drawMotes(layer, w, h) {
+    const theme = DECOR_THEMES[_mapId] ?? DEFAULT_THEME;
+    const rand = _mulberry32(_hashStr((_mapId ?? 'default') + ':motes'));
+    for (let i = 0; i < 14; i++) {
+      const mote = svgEl('circle', {
+        cx: (rand() * w).toFixed(0), cy: (rand() * h).toFixed(0),
+        r: (0.8 + rand() * 1.4).toFixed(1),
+        fill: theme.accent, opacity: '0', class: 'map-mote',
+      });
+      mote.style.setProperty('--dur', `${(7 + rand() * 8).toFixed(1)}s`);
+      mote.style.setProperty('--mx', `${((rand() - 0.5) * 30).toFixed(0)}px`);
+      mote.style.setProperty('--my', `${(-30 - rand() * 40).toFixed(0)}px`);
+      mote.style.animationDelay = `${(rand() * 9).toFixed(1)}s`;
+      layer.appendChild(mote);
+    }
   }
 
   _label(x, y, text, fill, size = '11px') {
@@ -256,38 +658,37 @@ export class MapRenderer {
     const g = svgEl('g', { class: `hex-cell${isPath ? ' path-cell' : ' placeable'}` });
 
     const isAdj = !isPath && isPathAdjacent(col, row);
-    // 맵 테마 헥스 배경색 적용
-    const themeHex = _mapHexColor;
+    // 셀별 지형 변주 — 결정적 해시로 그라디언트 3종 중 선택
+    const variant = ['url(#hexGrad)', 'url(#hexGradB)', 'url(#hexGradC)'][(col * 7 + row * 13) % 3];
+    const hexBase = _mapHexColor ?? '#222240';
+    const baseFill = isPath ? _shade(hexBase, -0.18) : variant;
+
     const poly = svgEl('polygon', {
       class: 'hex-bg',
       points: hexCorners(x, y),
-      fill: isPath ? (themeHex ?? '#1f1520') : isAdj ? 'url(#hexGradAdj)' : 'url(#hexGrad)',
-      stroke: isPath ? '#3a2030' : isAdj ? '#1e3a1e' : '#232340',
+      fill: baseFill,
+      stroke: isPath ? _shade(hexBase, -0.05) : _shade(hexBase, -0.12),
       'stroke-width': 1,
     });
+    poly.dataset.baseFill = baseFill;   // hover/타워 제거 후 원상복구용
     g.appendChild(poly);
 
     if (!isPath) {
-      // 경로 인접 셀: 초록 점으로 배치 추천 표시
-      const dotColor = isAdj ? '#2e6b2e' : '#2a2a50';
-      const dotR     = isAdj ? 3 : 2;
-      const dot = svgEl('circle', { cx: x, cy: y, r: dotR, fill: dotColor, 'pointer-events': 'none' });
-      g.appendChild(dot);
-
-      // 인접 셀: 추가 하이라이트 링
+      // 경로 인접 셀: 은은한 하이라이트 링으로 배치 추천 표시
       if (isAdj) {
-        const ring = svgEl('polygon', {
+        g.appendChild(svgEl('polygon', {
           points: hexCorners(x, y),
           fill: 'none',
-          stroke: 'rgba(46,107,46,0.25)',
+          stroke: 'rgba(120,200,120,0.18)',
           'stroke-width': 1.5,
           'pointer-events': 'none',
-        });
-        g.appendChild(ring);
+        }));
+        g.appendChild(svgEl('circle', {
+          cx: x, cy: y, r: 2, fill: 'rgba(120,200,120,0.35)', 'pointer-events': 'none',
+        }));
       }
 
-      const baseFill    = isAdj ? '#182218' : '#16162e';
-      const hoverFill   = isAdj ? '#1e3a1e' : '#1e2248';
+      const hoverFill = _shade(hexBase, 0.14);
 
       g.addEventListener('click', () => this.onCellClick(col, row, g));
       g.addEventListener('mouseenter', () => {
@@ -295,7 +696,7 @@ export class MapRenderer {
         this.onCellHover(col, row, true);
       });
       g.addEventListener('mouseleave', () => {
-        if (!g.dataset.tower) poly.setAttribute('fill', baseFill);
+        if (!g.dataset.tower) poly.setAttribute('fill', poly.dataset.baseFill);
         this.onCellHover(col, row, false);
       });
     }
@@ -315,6 +716,9 @@ export class MapRenderer {
     cell.querySelector('.hex-bg').setAttribute('fill', towerDef.color + '33');
     cell.querySelector('.hex-bg').setAttribute('stroke', towerDef.color);
     cell.dataset.tower = towerDef.id;
+
+    // 이 셀의 환경 장식 숨김 (타워와 겹침 방지)
+    this.decorMap.get(key)?.setAttribute('display', 'none');
 
     // 타워 SVG 그리기
     const tg = svgEl('g', { id: `tower-${col}-${row}`, class: 'tower-group', 'pointer-events': 'none' });
@@ -484,10 +888,13 @@ export class MapRenderer {
     const key = `${col},${row}`;
     const cell = this.cellMap.get(key);
     if (cell) {
-      cell.querySelector('.hex-bg').setAttribute('fill', '#16162e');
-      cell.querySelector('.hex-bg').setAttribute('stroke', '#2a2a45');
+      const poly = cell.querySelector('.hex-bg');
+      poly.setAttribute('fill', poly.dataset.baseFill ?? '#16162e');
+      poly.setAttribute('stroke', _shade(_mapHexColor ?? '#222240', -0.12));
       delete cell.dataset.tower;
     }
+    // 숨겼던 환경 장식 복원
+    this.decorMap.get(key)?.removeAttribute('display');
   }
 
   // 타워에 강화 시각 표시 (augCount: 1 또는 2)
