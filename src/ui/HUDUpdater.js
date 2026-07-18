@@ -114,7 +114,7 @@ export function updateHUD() {
 // ── 카드 아트 SVG 생성 ─────────────────────────────────
 export function makeCardArtSVG(card) {
   // 전용 일러스트가 등록된 카드는 우선 사용 (CardArt.js)
-  const custom = getCardArt(card.id);
+  const custom = getCardArt(card);
   if (custom) return custom;
 
   const W = 100, H = 50, cx = 50, cy = 25;

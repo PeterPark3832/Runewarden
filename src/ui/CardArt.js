@@ -293,8 +293,426 @@ export const CARD_ART = {
   ),
 };
 
-/** 카드 id에 전용 아트가 있으면 SVG 문자열 반환, 없으면 null */
-export function getCardArt(cardId) {
-  const fn = CARD_ART[cardId];
-  return fn ? fn() : null;
+// ═══════════════════════════════════════════════════════
+// 절차 합성기 — 전용 아트가 없는 카드용 (백드롭 테마 × 모티프 × 시드 변주)
+// ═══════════════════════════════════════════════════════
+
+import { TOWER_DEFS } from '../data/towers.js';
+
+// 시드 PRNG — 같은 카드는 항상 같은 변주
+function _hash(s) {
+  let h = 2166136261;
+  for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619); }
+  return h >>> 0;
+}
+function _rng(seed) {
+  let a = seed >>> 0;
+  return function () {
+    a |= 0; a = (a + 0x6D2B79F5) | 0;
+    let t = Math.imul(a ^ (a >>> 15), 1 | a);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+// ── 테마 백드롭 정의 ──────────────────────────────────
+// 각 테마: 하늘 그라디언트, 지면색, 강조색, 입자색
+const THEMES = {
+  arcane: { top: '#141830', bot: '#1c1430', ground: '#0e0a1c', accent: '#9B59B6', spark: '#c9a6e8' },
+  ember:  { top: '#241018', bot: '#301410', ground: '#120806', accent: '#ff7030', spark: '#ffc060' },
+  frost:  { top: '#0c1830', bot: '#12283e', ground: '#0c1a28', accent: '#7ec8e3', spark: '#dff2ff' },
+  electric:{ top: '#0e1226', bot: '#1c1430', ground: '#0c0a18', accent: '#ffe860', spark: '#fff8c0' },
+  vault:  { top: '#241a08', bot: '#141008', ground: '#100c04', accent: '#f5c518', spark: '#ffe890' },
+  grove:  { top: '#101c1a', bot: '#16281a', ground: '#0c1810', accent: '#4CAF50', spark: '#a8e0a0' },
+  shadow: { top: '#12041e', bot: '#1e0830', ground: '#0c0416', accent: '#9040d0', spark: '#c890ff' },
+  solar:  { top: '#2e1800', bot: '#180c02', ground: '#100a04', accent: '#f5c518', spark: '#ffd860' },
+  storm:  { top: '#04141f', bot: '#0c2a3a', ground: '#04101a', accent: '#4ECDC4', spark: '#7ee8f0' },
+};
+
+// 카드 → 테마 결정 (DLC 우선, 그 외 키워드 휴리스틱)
+function _pickTheme(card) {
+  if (card.dlc === 'shadow_realm')   return 'shadow';
+  if (card.dlc === 'solar_dominion') return 'solar';
+  if (card.dlc === 'storm_imperium') return 'storm';
+  const key = `${card.id} ${card.effect?.type ?? ''} ${card.tower ?? ''}`.toLowerCase();
+  if (/fire|burn|blaze|inferno|drake|ember/.test(key)) return 'ember';
+  if (/frost|freeze|ice|blizzard|glacial|winter|slow/.test(key)) return 'frost';
+  if (/bolt|lightning|tesla|chain|storm|shock|overcharge|haste|surge/.test(key)) return 'electric';
+  if (/gold|salvage|loot|greed|treasure|toll|market/.test(key)) return 'vault';
+  if (/nature|heal|druid|growth|cycle|bloom/.test(key)) return 'grove';
+  return 'arcane';
+}
+
+// 공통 백드롭: 하늘 + 지면 + 시드 입자
+function _backdrop(t, rand, gid) {
+  const stars = [];
+  const n = 4 + Math.floor(rand() * 4);
+  for (let i = 0; i < n; i++) {
+    stars.push(`<circle cx="${(4 + rand() * 92).toFixed(1)}" cy="${(3 + rand() * 30).toFixed(1)}" r="${(0.5 + rand() * 0.7).toFixed(2)}" fill="${t.spark}" opacity="${(0.35 + rand() * 0.45).toFixed(2)}"/>`);
+  }
+  const gy = 40 + rand() * 3;
+  return {
+    defs: sky(gid, t.top, t.bot),
+    body: `<rect width="100" height="50" fill="url(#${gid})"/>` + stars.join('') +
+      `<path d="M 0 ${(gy + 1).toFixed(1)} Q 28 ${(gy - 2.5).toFixed(1)} 52 ${gy.toFixed(1)} Q 78 ${(gy + 2.5).toFixed(1)} 100 ${(gy - 1.5).toFixed(1)} L 100 50 L 0 50 Z" fill="${t.ground}"/>`,
+    groundY: gy,
+  };
+}
+
+// ── 소환 카드: 타워 실루엣 (인게임 형태와 동일 어휘) ──
+function _towerGlyph(card, t, rand) {
+  const def = TOWER_DEFS[card.tower] ?? {};
+  const col = def.color ?? '#3a3a5a';
+  const acc = def.accentColor ?? t.accent;
+  const shape = def.shape ?? 'archer';
+  const cx = 50, base = 40, sw = 'stroke-width';
+  let s = `<ellipse cx="${cx}" cy="${base + 1}" rx="12" ry="2.6" fill="#000" opacity="0.4"/>` +
+          `<path d="M ${cx - 8} ${base} L ${cx - 6} ${base - 4} L ${cx + 6} ${base - 4} L ${cx + 8} ${base} Z" fill="#1c1826" stroke="${acc}" ${sw}="0.5" opacity="0.9"/>`;
+  const glow = `<circle cx="${cx}" cy="20" r="14" fill="${acc}" opacity="0.10"/>`;
+  if (shape === 'cannon' || shape === 'ballista') {
+    s += `<path d="M ${cx - 7} ${base - 4} L ${cx - 5.5} 20 L ${cx + 5.5} 20 L ${cx + 7} ${base - 4} Z" fill="${col}" stroke="${acc}" ${sw}="0.8"/>` +
+         `<g transform="rotate(${(-30 + rand() * 14).toFixed(0)} ${cx} 19)"><rect x="${cx - 1.8}" y="6" width="3.6" height="14" rx="1.4" fill="${col}" stroke="${acc}" ${sw}="0.7"/></g>` +
+         `<circle cx="${cx}" cy="19" r="4.2" fill="${col}" stroke="${acc}" ${sw}="0.9"/>`;
+  } else if (shape === 'mage') {
+    s += `<path d="M ${cx - 5.5} ${base - 4} L ${cx - 4} 16 L ${cx + 4} 16 L ${cx + 5.5} ${base - 4} Z" fill="${col}" stroke="${acc}" ${sw}="0.8"/>` +
+         `<path d="M ${cx - 4.5} 16 L ${cx} 6 L ${cx + 4.5} 16 Z" fill="${col}" stroke="${acc}" ${sw}="0.8"/>` +
+         `<circle cx="${cx}" cy="11" r="2" fill="${acc}" opacity="0.95"/><circle cx="${cx}" cy="11" r="4.2" fill="${acc}" opacity="0.25"/>`;
+  } else if (shape === 'drake') {
+    const pts = [];
+    for (let i = 0; i < 10; i++) {
+      const r = i % 2 === 0 ? 9 : 4.2, a = i * Math.PI / 5 - Math.PI / 2;
+      pts.push(`${(cx + r * Math.cos(a)).toFixed(1)},${(17 + r * Math.sin(a)).toFixed(1)}`);
+    }
+    s += `<path d="M ${cx - 5} ${base - 4} L ${cx - 3.5} 24 L ${cx + 3.5} 24 L ${cx + 5} ${base - 4} Z" fill="${col}" stroke="${acc}" ${sw}="0.8"/>` +
+         `<polygon points="${pts.join(' ')}" fill="${col}" stroke="${acc}" ${sw}="0.9"/>` +
+         `<circle cx="${cx}" cy="17" r="2.4" fill="${acc}" opacity="0.9"/>`;
+  } else if (shape === 'tesla') {
+    s += `<path d="M ${cx - 5} ${base - 4} L ${cx - 3.5} 20 L ${cx + 3.5} 20 L ${cx + 5} ${base - 4} Z" fill="${col}" stroke="${acc}" ${sw}="0.8"/>` +
+         `<ellipse cx="${cx}" cy="19" rx="5.5" ry="2.4" fill="${col}" stroke="${acc}" ${sw}="0.8"/>` +
+         `<circle cx="${cx}" cy="13" r="3.4" fill="${col}" stroke="${acc}" ${sw}="0.9"/><circle cx="${cx}" cy="13" r="1.4" fill="${t.spark}"/>` +
+         `<path d="M ${cx - 3} 11 L ${cx - 10} 7 L ${cx - 6} 12 M ${cx + 3} 11 L ${cx + 10} 5 L ${cx + 6} 11" fill="none" stroke="${t.spark}" ${sw}="0.8" stroke-linecap="round"/>`;
+  } else if (shape === 'druid') {
+    s += `<path d="M ${cx - 4.5} ${base - 4} L ${cx - 3.5} 24 L ${cx + 3.5} 24 L ${cx + 4.5} ${base - 4} Z" fill="${col}" stroke="${acc}" ${sw}="0.8"/>` +
+         `<circle cx="${cx}" cy="17" r="8" fill="${col}" stroke="${acc}" ${sw}="0.9"/>`;
+    for (let i = 0; i < 3; i++) {
+      const a = i * 2 * Math.PI / 3 - Math.PI / 2;
+      s += `<circle cx="${(cx + 8 * Math.cos(a)).toFixed(1)}" cy="${(17 + 8 * Math.sin(a)).toFixed(1)}" r="2.6" fill="${acc}" opacity="0.9"/>`;
+    }
+  } else {
+    // archer 계열: 첨탑 + 다이아몬드 정점
+    s += `<path d="M ${cx - 5} ${base - 4} L ${cx - 3.5} 18 L ${cx + 3.5} 18 L ${cx + 5} ${base - 4} Z" fill="${col}" stroke="${acc}" ${sw}="0.8"/>` +
+         `<polygon points="${cx},9 ${cx + 5},16 ${cx},23 ${cx - 5},16" fill="${col}" stroke="${acc}" ${sw}="0.9"/>` +
+         `<circle cx="${cx}" cy="16" r="1.6" fill="${acc}" opacity="0.95"/>`;
+  }
+  return glow + s;
+}
+
+// ── 주문 카드: 원소 모티프 ─────────────────────────────
+function _spellMotif(card, theme, t, rand, gid) {
+  const cx = 44 + rand() * 12, cy = 20 + rand() * 6;
+  const rot = (rand() * 30 - 15).toFixed(0);
+  switch (theme) {
+    case 'ember': {
+      let s = `<circle cx="${cx}" cy="${cy}" r="11" fill="url(#${gid}c)"/>` +
+              `<circle cx="${cx}" cy="${cy}" r="4.6" fill="#fff4c0" opacity="0.9"/>` +
+              `<path d="M ${cx - 6} ${cy - 8} Q ${cx - 9} ${cy - 15} ${cx - 6} ${cy - 20} Q ${cx - 3} ${cy - 13} ${cx - 2} ${cy - 9} Z" fill="${t.accent}" opacity="0.85"/>`;
+      for (let i = 0; i < 3 + Math.floor(rand() * 3); i++) {
+        s += `<circle cx="${(cx - 20 + rand() * 40).toFixed(1)}" cy="${(cy - 14 + rand() * 24).toFixed(1)}" r="${(0.7 + rand() * 0.8).toFixed(2)}" fill="${t.spark}"/>`;
+      }
+      return { defs: rad(gid + 'c', [['0%', '#fff8d0'], ['35%', '#ffd040'], ['70%', '#ff6b1a'], ['100%', '#c02a10', 0.3]]), body: s };
+    }
+    case 'frost': {
+      const v = Math.floor(rand() * 3);
+      let s = '';
+      if (v === 0) {
+        // 대형 눈결정
+        s = `<g transform="rotate(${rot} ${cx} ${cy})" stroke="${t.spark}" stroke-width="1.1" opacity="0.96">` +
+            `<path d="M ${cx} ${cy - 12} V ${cy + 12} M ${cx - 10.4} ${cy - 6} L ${cx + 10.4} ${cy + 6} M ${cx + 10.4} ${cy - 6} L ${cx - 10.4} ${cy + 6}"/>` +
+            `<path d="M ${cx} ${cy - 11} L ${cx - 2.4} ${cy - 8.8} M ${cx} ${cy - 11} L ${cx + 2.4} ${cy - 8.8} M ${cx} ${cy + 11} L ${cx - 2.4} ${cy + 8.8} M ${cx} ${cy + 11} L ${cx + 2.4} ${cy + 8.8}"/></g>`;
+      } else if (v === 1) {
+        // 얼음 파편 군집 (3개 크리스탈)
+        s = `<g stroke="${t.spark}" stroke-width="0.7">` +
+            `<polygon points="${cx},${cy - 11} ${cx + 4.5},${cy - 1} ${cx + 2.5},${cy + 9} ${cx - 2.5},${cy + 9} ${cx - 4.5},${cy - 1}" fill="rgba(126,200,227,0.55)"/>` +
+            `<polygon points="${cx - 10},${cy - 3} ${cx - 6.5},${cy + 3} ${cx - 8},${cy + 10} ${cx - 12},${cy + 6}" fill="rgba(126,200,227,0.4)"/>` +
+            `<polygon points="${cx + 10},${cy - 4} ${cx + 13.5},${cy + 3} ${cx + 11},${cy + 10} ${cx + 7.5},${cy + 4}" fill="rgba(126,200,227,0.4)"/></g>` +
+            `<path d="M ${cx} ${cy - 9} V ${cy + 6}" stroke="#fff" stroke-width="0.5" opacity="0.6"/>`;
+      } else {
+        // 빙결 오브 (균열 얼음 구)
+        s = `<circle cx="${cx}" cy="${cy}" r="10" fill="rgba(126,200,227,0.28)" stroke="${t.spark}" stroke-width="1.1"/>` +
+            `<path d="M ${cx - 6} ${cy - 4} L ${cx - 1} ${cy} L ${cx - 4} ${cy + 6} M ${cx + 2} ${cy - 7} L ${cx + 4} ${cy - 1} L ${cx + 8} ${cy + 2}" fill="none" stroke="#fff" stroke-width="0.7" opacity="0.8"/>` +
+            `<circle cx="${cx - 3}" cy="${cy - 4}" r="2.2" fill="#fff" opacity="0.35"/>`;
+      }
+      s += `<circle cx="${cx}" cy="${cy}" r="13" fill="${t.accent}" opacity="0.10"/>`;
+      for (let i = 0; i < 4; i++) s += `<circle cx="${(8 + rand() * 84).toFixed(1)}" cy="${(6 + rand() * 30).toFixed(1)}" r="${(0.6 + rand() * 0.6).toFixed(2)}" fill="${t.spark}" opacity="0.8"/>`;
+      return { defs: '', body: s };
+    }
+    case 'electric': {
+      const bx = cx;
+      const v = Math.floor(rand() * 3);
+      if (v === 1) {
+        // 방전 오브
+        return { defs: '', body:
+          `<circle cx="${bx}" cy="${cy}" r="8.5" fill="#22375e" stroke="${t.accent}" stroke-width="1"/>` +
+          `<circle cx="${bx}" cy="${cy}" r="3" fill="${t.spark}"/>` +
+          `<path d="M ${bx - 8} ${cy - 3} L ${bx - 18} ${cy - 8} L ${bx - 13} ${cy - 2} L ${bx - 20} ${cy + 1}" fill="none" stroke="${t.spark}" stroke-width="0.9" stroke-linecap="round"/>` +
+          `<path d="M ${bx + 8} ${cy - 2} L ${bx + 18} ${cy - 9} L ${bx + 13} ${cy - 2} L ${bx + 21} ${cy}" fill="none" stroke="${t.spark}" stroke-width="0.9" stroke-linecap="round"/>` +
+          `<path d="M ${bx - 2} ${cy - 8} L ${bx - 5} ${cy - 16} L ${bx} ${cy - 12} L ${bx - 1} ${cy - 18}" fill="none" stroke="${t.accent}" stroke-width="0.8" stroke-linecap="round"/>` +
+          `<circle cx="${bx}" cy="${cy}" r="13" fill="${t.accent}" opacity="0.12"/>` };
+      }
+      if (v === 2) {
+        // 교차 이중 낙뢰
+        return { defs: '', body:
+          `<ellipse cx="50" cy="6" rx="30" ry="5" fill="#181c36"/>` +
+          `<path d="M 40 8 L 33 20 L 38 20 L 30 34 L 44 19 L 39 19 L 45 8 Z" fill="${t.accent}" stroke="${t.spark}" stroke-width="0.5"/>` +
+          `<path d="M 64 8 L 58 18 L 62 18 L 55 30 L 67 17 L 62 17 L 68 8 Z" fill="${t.spark}" opacity="0.85"/>` +
+          `<ellipse cx="33" cy="39" rx="8" ry="2" fill="${t.accent}" opacity="0.4"/>` +
+          `<ellipse cx="58" cy="35" rx="6" ry="1.6" fill="${t.spark}" opacity="0.3"/>` };
+      }
+      return { defs: '', body:
+        `<ellipse cx="${bx}" cy="7" rx="26" ry="5.5" fill="#181c36"/>` +
+        `<ellipse cx="${bx - 17}" cy="9" rx="11" ry="4" fill="#20244a" opacity="0.9"/>` +
+        `<path d="M ${bx + 2} 10 L ${bx - 6} 22 L ${bx - 1} 22 L ${bx - 8} 36 L ${bx + 8} 20 L ${bx + 2} 20 L ${bx + 9} 10 Z" fill="${t.accent}" stroke="${t.spark}" stroke-width="0.6"/>` +
+        `<ellipse cx="${bx - 3}" cy="41" rx="10" ry="2.2" fill="${t.accent}" opacity="0.45"/>` +
+        `<path d="M ${bx - 14} 36 L ${bx - 17} 32 M ${bx + 10} 37 L ${bx + 13} 33" stroke="${t.accent}" stroke-width="0.8" opacity="0.7" stroke-linecap="round"/>` };
+    }
+    case 'vault': {
+      let s = `<ellipse cx="50" cy="41" rx="15" ry="3.4" fill="#2a1e08"/>` +
+              `<path d="M 38 41 Q 37 33 42 32 L 58 32 Q 63 33 62 41 Z" fill="#4a3410" stroke="${t.accent}" stroke-width="0.8"/>` +
+              `<circle cx="50" cy="30" r="11" fill="url(#${gid}g)" opacity="0.6"/>`;
+      for (let i = 0; i < 4; i++) {
+        s += `<circle cx="${(44 + rand() * 12).toFixed(1)}" cy="${(28 + rand() * 6).toFixed(1)}" r="${(2.4 + rand()).toFixed(1)}" fill="#ffd44a" stroke="#8a6a10" stroke-width="0.4"/>`;
+      }
+      for (let i = 0; i < 4 + Math.floor(rand() * 3); i++) {
+        s += `<circle cx="${(24 + rand() * 52).toFixed(1)}" cy="${(8 + rand() * 18).toFixed(1)}" r="${(1.5 + rand()).toFixed(1)}" fill="#ffd44a"/>`;
+      }
+      return { defs: rad(gid + 'g', [['0%', '#ffe890'], ['100%', '#b8860b', 0]]), body: s };
+    }
+    case 'grove': {
+      let s = `<path d="M ${cx} ${cy + 12} Q ${cx - 2} ${cy} ${cx} ${cy - 10}" fill="none" stroke="#3a6a30" stroke-width="1.4"/>` +
+              `<path d="M ${cx} ${cy - 2} Q ${cx - 9} ${cy - 6} ${cx - 10} ${cy - 14} Q ${cx - 2} ${cy - 11} ${cx} ${cy - 5} Z" fill="${t.accent}" opacity="0.9"/>` +
+              `<path d="M ${cx} ${cy - 5} Q ${cx + 9} ${cy - 9} ${cx + 11} ${cy - 16} Q ${cx + 3} ${cy - 13} ${cx} ${cy - 7} Z" fill="#6ac060" opacity="0.9"/>` +
+              `<circle cx="${cx}" cy="${cy - 6}" r="12" fill="${t.accent}" opacity="0.10"/>`;
+      for (let i = 0; i < 4; i++) s += `<circle cx="${(cx - 16 + rand() * 32).toFixed(1)}" cy="${(cy - 16 + rand() * 26).toFixed(1)}" r="${(0.7 + rand() * 0.6).toFixed(2)}" fill="${t.spark}" opacity="0.8"/>`;
+      return { defs: '', body: s };
+    }
+    case 'shadow': {
+      const v = Math.floor(rand() * 3);
+      if (v === 1) {
+        // 공허 균열 (세로 틈 + 뻗어나오는 촉수 빛)
+        return { defs: rad(gid + 'r', [['0%', '#e0c0ff'], ['50%', '#8030c0'], ['100%', '#30084a', 0]]), body:
+          `<ellipse cx="${cx}" cy="${cy}" rx="4" ry="14" fill="url(#${gid}r)"/>` +
+          `<path d="M ${cx} ${cy - 13} Q ${cx + 1.6} ${cy} ${cx} ${cy + 13} Q ${cx - 1.6} ${cy} ${cx} ${cy - 13} Z" fill="#f0e0ff"/>` +
+          `<path d="M ${cx - 2} ${cy - 8} Q ${cx - 12} ${cy - 12} ${cx - 17} ${cy - 8} M ${cx + 2} ${cy - 4} Q ${cx + 12} ${cy - 8} ${cx + 16} ${cy - 2} M ${cx - 2} ${cy + 5} Q ${cx - 11} ${cy + 8} ${cx - 15} ${cy + 14} M ${cx + 2} ${cy + 8} Q ${cx + 10} ${cy + 11} ${cx + 13} ${cy + 16}" fill="none" stroke="${t.accent}" stroke-width="0.8" opacity="0.65"/>` };
+      }
+      if (v === 2) {
+        // 궤도 공허 오브 3개 + 초승달
+        let orbs = '';
+        for (let i = 0; i < 3; i++) {
+          const a = rot / 57.3 + i * 2.09;
+          orbs += `<circle cx="${(cx + 13 * Math.cos(a)).toFixed(1)}" cy="${(cy + 9 * Math.sin(a)).toFixed(1)}" r="${(2 + rand()).toFixed(1)}" fill="#a060e0" opacity="0.9"/>`;
+        }
+        return { defs: '', body:
+          `<path d="M ${cx + 3} ${cy - 10} A 10.5 10.5 0 1 0 ${cx + 3} ${cy + 10} A 8 8 0 1 1 ${cx + 3} ${cy - 10} Z" fill="#c9a6e8" opacity="0.9"/>` +
+          `<ellipse cx="${cx}" cy="${cy}" rx="17" ry="12" fill="none" stroke="${t.accent}" stroke-width="0.5" opacity="0.45"/>` + orbs +
+          `<circle cx="${cx}" cy="${cy}" r="16" fill="${t.accent}" opacity="0.08"/>` };
+      }
+      return { defs: rad(gid + 'n', [['0%', '#f0e0ff'], ['30%', '#c060ff'], ['100%', '#4a0a80', 0]]), body:
+        `<circle cx="${cx}" cy="${cy}" r="12" fill="url(#${gid}n)"/>` +
+        `<circle cx="${cx}" cy="${cy}" r="15.5" fill="none" stroke="${t.accent}" stroke-width="0.9" opacity="0.7"/>` +
+        `<circle cx="${cx}" cy="${cy}" r="19" fill="none" stroke="${t.accent}" stroke-width="0.5" opacity="0.4"/>` +
+        `<g transform="rotate(${rot} ${cx} ${cy})" fill="#2a0a48">` +
+        `<path d="M ${cx} ${cy - 12} L ${cx + 2.4} ${cy - 4} L ${cx} ${cy - 5.6} L ${cx - 2.4} ${cy - 4} Z"/>` +
+        `<path d="M ${cx + 12} ${cy} L ${cx + 4} ${cy + 2.4} L ${cx + 5.6} ${cy} L ${cx + 4} ${cy - 2.4} Z"/>` +
+        `<path d="M ${cx} ${cy + 12} L ${cx - 2.4} ${cy + 4} L ${cx} ${cy + 5.6} L ${cx + 2.4} ${cy + 4} Z"/>` +
+        `<path d="M ${cx - 12} ${cy} L ${cx - 4} ${cy - 2.4} L ${cx - 5.6} ${cy} L ${cx - 4} ${cy + 2.4} Z"/></g>` +
+        `<circle cx="${cx}" cy="${cy}" r="3.4" fill="#e8d0ff"/>` };
+    }
+    case 'solar': {
+      const v = Math.floor(rand() * 3);
+      if (v === 1) {
+        // 태양 원반 + 후광 링
+        return { defs: rad(gid + 's', [['0%', '#fff8e0'], ['40%', '#f5c518'], ['100%', '#e8791a', 0.2]]), body:
+          `<circle cx="${cx}" cy="${cy}" r="11" fill="url(#${gid}s)"/>` +
+          `<circle cx="${cx}" cy="${cy}" r="4.6" fill="#fff6d8"/>` +
+          `<circle cx="${cx}" cy="${cy}" r="15" fill="none" stroke="${t.accent}" stroke-width="0.8" opacity="0.6"/>` +
+          `<circle cx="${cx}" cy="${cy}" r="18.5" fill="none" stroke="${t.accent}" stroke-width="0.4" opacity="0.35" stroke-dasharray="3 3"/>` +
+          `<path d="M ${cx - 21} ${cy} H ${cx - 17} M ${cx + 17} ${cy} H ${cx + 21} M ${cx} ${cy - 20} V ${cy - 16} M ${cx} ${cy + 16} V ${cy + 20}" stroke="${t.spark}" stroke-width="0.8" stroke-linecap="round"/>` };
+      }
+      if (v === 2) {
+        // 방사 광선 버스트 (12방향)
+        let rays = '';
+        for (let i = 0; i < 12; i++) {
+          const a = i * Math.PI / 6, len = i % 2 === 0 ? 17 : 11;
+          rays += `<path d="M ${(cx + 7 * Math.cos(a)).toFixed(1)} ${(cy + 7 * Math.sin(a)).toFixed(1)} L ${(cx + len * Math.cos(a)).toFixed(1)} ${(cy + len * Math.sin(a)).toFixed(1)}" stroke="${i % 2 === 0 ? t.accent : t.spark}" stroke-width="${i % 2 === 0 ? 1.4 : 0.8}" stroke-linecap="round" opacity="${i % 2 === 0 ? 0.95 : 0.7}"/>`;
+        }
+        return { defs: rad(gid + 'u', [['0%', '#fff8e0'], ['60%', '#f5c518'], ['100%', '#e8791a', 0.15]]), body:
+          rays + `<circle cx="${cx}" cy="${cy}" r="6.5" fill="url(#${gid}u)"/>` +
+          `<circle cx="${cx}" cy="${cy}" r="2.6" fill="#fff6d8"/>` };
+      }
+      return { defs: rad(gid + 's', [['0%', '#fff8e0'], ['40%', '#f5c518'], ['100%', '#e8791a', 0.25]]) + sky(gid + 'b', '#fff0b0', 'rgba(245,197,24,0.15)'), body:
+        `<circle cx="50" cy="12" r="8.5" fill="url(#${gid}s)"/>` +
+        `<circle cx="50" cy="12" r="3.8" fill="#fff6d8"/>` +
+        `<path d="M 44 16 L 38 41 L 62 41 L 56 16 Z" fill="url(#${gid}b)" opacity="0.85"/>` +
+        `<ellipse cx="50" cy="41" rx="15" ry="2.8" fill="${t.accent}" opacity="0.4"/>` +
+        `<path d="M 38 12 H 33 M 62 12 H 67 M 42 5 L 39 1 M 58 5 L 61 1" stroke="${t.accent}" stroke-width="0.8" opacity="0.8" stroke-linecap="round"/>` };
+    }
+    case 'storm': {
+      const v = Math.floor(rand() * 3);
+      if (v === 1) {
+        // 사이클론 소용돌이
+        return { defs: '', body:
+          `<path d="M ${cx} ${cy - 13} Q ${cx + 15} ${cy - 10} ${cx + 13} ${cy} Q ${cx + 11} ${cy + 9} ${cx} ${cy + 10} Q ${cx - 10} ${cy + 11} ${cx - 11} ${cy + 2} Q ${cx - 12} ${cy - 6} ${cx - 3} ${cy - 7} Q ${cx + 5} ${cy - 8} ${cx + 6} ${cy - 1} Q ${cx + 7} ${cy + 5} ${cx} ${cy + 5}" fill="none" stroke="${t.accent}" stroke-width="1.3" stroke-linecap="round" opacity="0.9"/>` +
+          `<path d="M ${cx - 2} ${cy - 17} Q ${cx + 20} ${cy - 15} ${cx + 17} ${cy + 1}" fill="none" stroke="${t.spark}" stroke-width="0.7" opacity="0.55" stroke-linecap="round"/>` +
+          `<circle cx="${cx}" cy="${cy}" r="2.2" fill="${t.spark}"/>` +
+          `<circle cx="${cx}" cy="${cy}" r="16" fill="${t.accent}" opacity="0.08"/>` };
+      }
+      if (v === 2) {
+        // 돌풍 날개 (바람 갈퀴 3줄 + 깃털)
+        return { defs: '', body:
+          `<path d="M ${cx - 22} ${cy - 6} Q ${cx - 4} ${cy - 12} ${cx + 18} ${cy - 7} Q ${cx + 8} ${cy - 5} ${cx + 2} ${cy - 4}" fill="none" stroke="${t.accent}" stroke-width="1.2" stroke-linecap="round" opacity="0.85"/>` +
+          `<path d="M ${cx - 18} ${cy + 1} Q ${cx + 2} ${cy - 4} ${cx + 22} ${cy + 2} Q ${cx + 10} ${cy + 3} ${cx + 4} ${cy + 4}" fill="none" stroke="${t.spark}" stroke-width="1" stroke-linecap="round" opacity="0.75"/>` +
+          `<path d="M ${cx - 14} ${cy + 8} Q ${cx + 2} ${cy + 4} ${cx + 16} ${cy + 9}" fill="none" stroke="${t.accent}" stroke-width="0.8" stroke-linecap="round" opacity="0.6"/>` +
+          `<path d="M ${cx + 16} ${cy - 7} L ${cx + 21} ${cy - 11} M ${cx + 22} ${cy + 2} L ${cx + 27} ${cy - 1}" stroke="${t.spark}" stroke-width="0.7" stroke-linecap="round" opacity="0.8"/>` +
+          `<circle cx="${cx + 24}" cy="${cy - 12}" r="1" fill="${t.spark}"/>` };
+      }
+      return { defs: '', body:
+        `<ellipse cx="50" cy="7" rx="30" ry="5.5" fill="#0c2230"/>` +
+        `<ellipse cx="30" cy="9" rx="12" ry="3.6" fill="#123040" opacity="0.9"/>` +
+        `<path d="M ${cx} 10 L ${cx - 7} 23 L ${cx - 2} 23 L ${cx - 9} 37 L ${cx + 6} 21 L ${cx} 21 L ${cx + 6} 10 Z" fill="#aefcff" stroke="#e0feff" stroke-width="0.5"/>` +
+        `<path d="M ${cx + 16} 12 Q ${cx + 24} 16 ${cx + 16} 21 M ${cx - 20} 14 Q ${cx - 27} 18 ${cx - 20} 23" fill="none" stroke="${t.accent}" stroke-width="0.9" opacity="0.6"/>` +
+        `<ellipse cx="${(cx - 4).toFixed(1)}" cy="41" rx="9" ry="2" fill="#aefcff" opacity="0.4"/>` };
+    }
+    default: { // arcane — 룬 서클 + 성광
+      let s = `<circle cx="${cx}" cy="${cy}" r="12.5" fill="none" stroke="${t.accent}" stroke-width="0.9" opacity="0.8"/>` +
+              `<circle cx="${cx}" cy="${cy}" r="8.5" fill="none" stroke="${t.accent}" stroke-width="0.5" opacity="0.55" stroke-dasharray="2.5 2"/>` +
+              `<g transform="rotate(${rot} ${cx} ${cy})">` +
+              `<path d="M ${cx} ${cy - 6.5} L ${cx + 1.9} ${cy - 1.9} L ${cx + 6.5} ${cy} L ${cx + 1.9} ${cy + 1.9} L ${cx} ${cy + 6.5} L ${cx - 1.9} ${cy + 1.9} L ${cx - 6.5} ${cy} L ${cx - 1.9} ${cy - 1.9} Z" fill="${t.accent}" opacity="0.9"/></g>` +
+              `<circle cx="${cx}" cy="${cy}" r="2" fill="#fff" opacity="0.9"/>` +
+              `<circle cx="${cx}" cy="${cy}" r="15" fill="${t.accent}" opacity="0.10"/>`;
+      for (let i = 0; i < 4; i++) {
+        const a = rand() * Math.PI * 2, r = 15 + rand() * 6;
+        s += `<circle cx="${(cx + r * Math.cos(a)).toFixed(1)}" cy="${(cy + r * Math.sin(a) * 0.7).toFixed(1)}" r="${(0.6 + rand() * 0.7).toFixed(2)}" fill="${t.spark}" opacity="0.85"/>`;
+      }
+      return { defs: '', body: s };
+    }
+  }
+}
+
+// ── 강화 카드: 룬 받침 + 키워드 아이템 ─────────────────
+function _augmentMotif(card, t, rand) {
+  const key = `${card.id} ${card.effect?.type ?? ''}`.toLowerCase();
+  const cx = 50, cy = 22;
+  // 받침: 룬 원 + 부유 링
+  let s = `<ellipse cx="${cx}" cy="38" rx="13" ry="3" fill="#000" opacity="0.4"/>` +
+          `<ellipse cx="${cx}" cy="36" rx="11" ry="2.6" fill="none" stroke="${t.accent}" stroke-width="0.8" opacity="0.65"/>` +
+          `<ellipse cx="${cx}" cy="33" rx="7.5" ry="1.8" fill="none" stroke="${t.accent}" stroke-width="0.5" opacity="0.45"/>` +
+          `<circle cx="${cx}" cy="${cy}" r="14" fill="${t.accent}" opacity="0.08"/>`;
+  const item = (() => {
+    if (/shield|bulwark|fortify|guardian|titan/.test(key)) {
+      return `<path d="M ${cx - 6} ${cy - 8} L ${cx + 6} ${cy - 8} L ${cx + 6} ${cy + 1} Q ${cx + 6} ${cy + 7} ${cx} ${cy + 9} Q ${cx - 6} ${cy + 7} ${cx - 6} ${cy + 1} Z" fill="#28304a" stroke="${t.accent}" stroke-width="1"/>` +
+             `<path d="M ${cx} ${cy - 5} V ${cy + 6} M ${cx - 3.6} ${cy - 1} H ${cx + 3.6}" stroke="${t.accent}" stroke-width="1" opacity="0.9"/>`;
+    }
+    if (/speed|haste|swift|rapid|overclock/.test(key)) {
+      return `<path d="M ${cx - 4.5} ${cy - 8} H ${cx + 4.5} L ${cx + 1.2} ${cy} L ${cx + 4.5} ${cy + 8} H ${cx - 4.5} L ${cx - 1.2} ${cy} Z" fill="#2a2438" stroke="${t.accent}" stroke-width="1"/>` +
+             `<path d="M ${cx - 2} ${cy - 5.5} H ${cx + 2} M ${cx - 2} ${cy + 5.5} H ${cx + 2}" stroke="${t.spark}" stroke-width="1"/>` +
+             `<path d="M ${cx + 7} ${cy - 6} Q ${cx + 12} ${cy - 4} ${cx + 8} ${cy - 1} M ${cx - 7} ${cy - 6} Q ${cx - 12} ${cy - 4} ${cx - 8} ${cy - 1}" fill="none" stroke="${t.accent}" stroke-width="0.8" opacity="0.7"/>`;
+    }
+    if (/range|extend|focus|marksman|eye|sniper/.test(key)) {
+      return `<circle cx="${cx}" cy="${cy}" r="7.5" fill="none" stroke="${t.accent}" stroke-width="1"/>` +
+             `<circle cx="${cx}" cy="${cy}" r="3.6" fill="none" stroke="${t.accent}" stroke-width="0.7" opacity="0.8"/>` +
+             `<path d="M ${cx} ${cy - 11} V ${cy - 6} M ${cx} ${cy + 6} V ${cy + 11} M ${cx - 11} ${cy} H ${cx - 6} M ${cx + 6} ${cy} H ${cx + 11}" stroke="${t.spark}" stroke-width="1" stroke-linecap="round"/>` +
+             `<circle cx="${cx}" cy="${cy}" r="1.4" fill="${t.spark}"/>`;
+    }
+    if (/gold|econ|greed/.test(key)) {
+      return `<circle cx="${cx}" cy="${cy}" r="7" fill="#ffd44a" stroke="#8a6a10" stroke-width="0.8"/>` +
+             `<circle cx="${cx}" cy="${cy}" r="4" fill="none" stroke="#8a6a10" stroke-width="0.6"/>` +
+             `<path d="M ${cx} ${cy - 3} V ${cy + 3}" stroke="#8a6a10" stroke-width="1"/>`;
+    }
+    if (/slow|frost|ice/.test(key)) {
+      return `<g stroke="${t.spark}" stroke-width="1" opacity="0.95">` +
+             `<path d="M ${cx} ${cy - 8} V ${cy + 8} M ${cx - 7} ${cy - 4} L ${cx + 7} ${cy + 4} M ${cx + 7} ${cy - 4} L ${cx - 7} ${cy + 4}"/></g>` +
+             `<circle cx="${cx}" cy="${cy}" r="9" fill="${t.accent}" opacity="0.12"/>`;
+    }
+    if (/burn|inferno|fire/.test(key)) {
+      return `<path d="M ${cx} ${cy + 8} Q ${cx - 7} ${cy + 3} ${cx - 4} ${cy - 3} Q ${cx - 2} ${cy + 1} ${cx} ${cy - 1} Q ${cx + 1} ${cy - 6} ${cx + 4} ${cy - 8} Q ${cx + 4} ${cy - 2} ${cx + 6} ${cy + 2} Q ${cx + 7} ${cy + 6} ${cx} ${cy + 8} Z" fill="#ff7030" stroke="#ffc060" stroke-width="0.7"/>` +
+             `<path d="M ${cx} ${cy + 6} Q ${cx - 2.5} ${cy + 2} ${cx} ${cy - 1.5} Q ${cx + 2.5} ${cy + 2} ${cx} ${cy + 6} Z" fill="#fff0c0"/>`;
+    }
+    if (/aura|hymn|resonance|link|prism|pact/.test(key)) {
+      return `<circle cx="${cx}" cy="${cy}" r="3" fill="${t.accent}"/>` +
+             `<circle cx="${cx}" cy="${cy}" r="6.5" fill="none" stroke="${t.accent}" stroke-width="0.8" opacity="0.75"/>` +
+             `<circle cx="${cx}" cy="${cy}" r="10" fill="none" stroke="${t.accent}" stroke-width="0.6" opacity="0.5"/>` +
+             `<circle cx="${cx}" cy="${cy}" r="13.5" fill="none" stroke="${t.accent}" stroke-width="0.4" opacity="0.3"/>`;
+    }
+    if (/sharpen|dmg|damage|power|prime|edge|catalyst/.test(key)) {
+      return `<path d="M ${cx - 7} ${cy + 7} L ${cx + 4} ${cy - 7} L ${cx + 7} ${cy - 9} L ${cx + 6} ${cy - 5} L ${cx - 5} ${cy + 9} Z" fill="#c8ccd8" stroke="#8a90a0" stroke-width="0.6"/>` +
+             `<path d="M ${cx - 6} ${cy + 7} L ${cx + 5} ${cy - 7}" stroke="#f0f4ff" stroke-width="0.7" opacity="0.9"/>` +
+             `<path d="M ${cx + 7} ${cy - 11} L ${cx + 9} ${cy - 14} M ${cx + 9.5} ${cy - 9} L ${cx + 12.5} ${cy - 10}" stroke="${t.spark}" stroke-width="0.8" stroke-linecap="round"/>`;
+    }
+    // 기본: 기어 룬
+    let gpts = '';
+    for (let i = 0; i < 8; i++) {
+      const a = i * Math.PI / 4 + 0.2;
+      gpts += `<rect x="${(cx + 8.2 * Math.cos(a) - 1.1).toFixed(1)}" y="${(cy + 8.2 * Math.sin(a) - 1.1).toFixed(1)}" width="2.2" height="2.2" fill="${t.accent}" transform="rotate(${(a * 57.3).toFixed(0)} ${(cx + 8.2 * Math.cos(a)).toFixed(1)} ${(cy + 8.2 * Math.sin(a)).toFixed(1)})"/>`;
+    }
+    return `<circle cx="${cx}" cy="${cy}" r="7" fill="#242038" stroke="${t.accent}" stroke-width="1"/>` + gpts +
+           `<circle cx="${cx}" cy="${cy}" r="2.6" fill="none" stroke="${t.accent}" stroke-width="0.9"/>`;
+  })();
+  // 부유 스파크
+  let sparks = '';
+  for (let i = 0; i < 3; i++) {
+    sparks += `<circle cx="${(cx - 16 + rand() * 32).toFixed(1)}" cy="${(8 + rand() * 22).toFixed(1)}" r="${(0.6 + rand() * 0.6).toFixed(2)}" fill="${t.spark}" opacity="0.8"/>`;
+  }
+  return s + item + sparks;
+}
+
+// ── 저주 카드 ─────────────────────────────────────────
+function _curseMotif(rand) {
+  const cx = 50, cy = 22, tilt = (rand() * 16 - 8).toFixed(0);
+  return `<circle cx="${cx}" cy="${cy}" r="14" fill="#4a0a5a" opacity="0.25"/>` +
+    `<g transform="rotate(${tilt} ${cx} ${cy})">` +
+    `<path d="M ${cx} ${cy - 9} Q ${cx + 8} ${cy - 8} ${cx + 8} ${cy} Q ${cx + 8} ${cy + 5} ${cx + 4} ${cy + 7} L ${cx + 4} ${cy + 10} L ${cx - 4} ${cy + 10} L ${cx - 4} ${cy + 7} Q ${cx - 8} ${cy + 5} ${cx - 8} ${cy} Q ${cx - 8} ${cy - 8} ${cx} ${cy - 9} Z" fill="#1a0826" stroke="#b040c0" stroke-width="1"/>` +
+    `<circle cx="${cx - 3.2}" cy="${cy - 1}" r="2.2" fill="#e060f0" opacity="0.9"/>` +
+    `<circle cx="${cx + 3.2}" cy="${cy - 1}" r="2.2" fill="#e060f0" opacity="0.9"/>` +
+    `<path d="M ${cx - 2.5} ${cy + 8} V ${cy + 10} M ${cx} ${cy + 8} V ${cy + 10} M ${cx + 2.5} ${cy + 8} V ${cy + 10}" stroke="#b040c0" stroke-width="0.8"/></g>` +
+    `<path d="M ${cx - 14} ${cy + 12} Q ${cx - 8} ${cy + 16} ${cx - 2} ${cy + 13} M ${cx + 14} ${cy + 12} Q ${cx + 8} ${cy + 17} ${cx + 2} ${cy + 14}" fill="none" stroke="#7a2090" stroke-width="0.9" opacity="0.7"/>`;
+}
+
+// 절차 합성 카드 아트 생성
+function _composeArt(card) {
+  const theme = _pickTheme(card);
+  const t = THEMES[theme];
+  const rand = _rng(_hash(card.id));
+  const gid = 'cg' + (_hash(card.id) % 100000).toString(36);
+  const bd = _backdrop(t, rand, gid);
+
+  let motifDefs = '', motifBody = '';
+  if (card.type === 'summon') {
+    motifBody = _towerGlyph(card, t, rand);
+  } else if (card.type === 'spell') {
+    const m = _spellMotif(card, theme, t, rand, gid);
+    motifDefs = m.defs; motifBody = m.body;
+  } else if (card.type === 'curse') {
+    motifBody = _curseMotif(rand);
+  } else {
+    motifBody = _augmentMotif(card, t, rand);
+  }
+  return wrap(bd.defs + motifDefs, bd.body + motifBody);
+}
+
+/**
+ * 카드 아트 반환 — 전용 아트 우선, 없으면 절차 합성.
+ * @param {object|string} card 카드 정의 객체 (또는 id 문자열 — 전용 아트만 조회)
+ */
+export function getCardArt(card) {
+  if (typeof card === 'string') {
+    const fn = CARD_ART[card];
+    return fn ? fn() : null;
+  }
+  const fn = CARD_ART[card.id];
+  if (fn) return fn();
+  try {
+    return _composeArt(card);
+  } catch {
+    return null; // 합성 실패 시 기존 타입별 패턴으로 폴백
+  }
 }
