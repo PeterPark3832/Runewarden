@@ -15,7 +15,7 @@ import { TOWER_DEFS } from '../data/towers.js';
 import { SteamSystem, STEAM_STATS } from '../systems/SteamSystem.js';
 import { TutorialUI }   from '../ui/TutorialUI.js';
 import { audio, music }  from '../systems/AudioSystem.js';
-import { i18n }          from '../i18n/i18n.js';
+import { i18n, locText } from '../i18n/i18n.js';
 import { RelicUI }       from '../ui/RelicUI.js';
 import { pickRandomRelics, RELIC_DEFS, RELIC_SYNERGIES } from '../data/relics.js';
 import { pickRandomMap, getMapById }   from '../data/maps.js';
@@ -27,7 +27,7 @@ import { resolveSpell as _resolveSpellImpl } from './SpellResolver.js';
 import { HEX_W } from '../config/constants.js';
 import { log, spawnFloatText, shakeNexus, setWaveButton } from './GameUtils.js';
 import { shared } from './GameState.js';
-import { updateHUD, renderHand, onBossUpdate, updateShadowChargeHUD, updateSolarChargeHUD, updateStormChargeHUD, showClearBanner, showAmbushBanner, updateMenuRank } from '../ui/HUDUpdater.js';
+import { updateHUD, renderHand, onBossUpdate, updateShadowChargeHUD, updateSolarChargeHUD, updateStormChargeHUD, updateWaveProgress, showClearBanner, showAmbushBanner, updateMenuRank } from '../ui/HUDUpdater.js';
 import { showScreen, openWardenSelect, openDifficultySelect, openCodex, openDeckView } from '../ui/UIOrchestrator.js';
 import { registerDLC, hasDLC, clearDLCs } from '../systems/DLCRegistry.js';
 import { MAX_PLAYER_LEVEL, getWaveXpGrant, getLevelFromXp, XP_THRESHOLDS } from '../systems/PlayerLevelSystem.js';
@@ -609,18 +609,15 @@ function startRun() {
   audio.play('card_draw');
   renderHand();
   setWaveButton(i18n.t('btn_start_wave'), false);
-  log(`${warden.icon} ${i18n.t('log_run_start', warden.name)}`);
+  log(`${warden.icon} ${i18n.t('log_run_start', locText(warden, 'name'))}`);
   log(`${selectedMap.icon} ${selectedMap.name}  ${diff.icon} ${i18n.t('log_difficulty', i18n.t('diff_' + diff.id))}`, 'gold');
   if (shared.selectedAscension > 0) log(i18n.t('log_ascension', shared.selectedAscension), 'bad');
   log(`Passive: ${i18n.t(warden.passiveKey)}`, 'gold');
 
   // 초보자 카드 타입 힌트 (첫 2런까지만 표시)
   if (meta.runsPlayed <= 1 && TutorialUI.isDone()) {
-    const isKo = i18n.lang === 'ko';
     setTimeout(() => {
-      log(isKo
-        ? '💡 소환(타워 배치) · 강화(타워 업그레이드) · 주문(즉시 발동)'
-        : '💡 Summon (place tower) · Augment (upgrade tower) · Spell (instant)', 'gold');
+      log(i18n.t('log_card_types_hint'), 'gold');
     }, 1800);
   }
 
@@ -916,6 +913,7 @@ function gameLoop(now) {
   if (state.phase === 'wave') {
     enemySystem.update(delta);
     towerSystem.update(delta);
+    updateWaveProgress(enemySystem.getWaveProgress());
 
     if (enemySystem.isWaveClear()) {
       onWaveCleared();
@@ -1442,6 +1440,8 @@ function onNodeClose() {
   setWaveButton(i18n.t('btn_start_wave_n', state.wave + 1), false);
   updateHUD();
   log(i18n.t('log_prepare_wave', state.wave + 1));
+  // 상점 구매/이벤트 선택이 종료 시 유실되지 않도록 노드 종료 시점에도 저장
+  saveCheckpoint();
 }
 
 // ── 상점 콜백: 카드 구매 ─────────────────────────────
@@ -1888,7 +1888,7 @@ function onCardClick(card) {
   audio.play('card_select');
   state.selectedCard = { ...card, activeCost: cost };
   renderHand();
-  const _cName = i18n.lang === 'ko' ? (card.nameKo || card.name) : card.name;
+  const _cName = locText(card, 'name');
   log(card.type === 'summon' ? i18n.t('log_select_summon', _cName) : i18n.t('log_select_augment', _cName));
   tutorial?.triggerEvent('card_selected');
   if (card.type === 'summon') tutorial?.triggerEvent('card_selected_summon');
@@ -2006,7 +2006,7 @@ function updateSellPanel() {
   if (!t) { panel.classList.add('hidden'); return; }
 
   const sellValue = Math.floor((t.investedGold ?? 0) * 0.5);
-  const tName = i18n.lang === 'ko' ? (t.def.nameKo || t.def.name) : t.def.name;
+  const tName = locText(t.def, 'name');
   const starStr  = '★'.repeat(t.starLevel);
   const canUpg   = t.starLevel < 3;
   const upgCost  = t.starLevel * 5;
@@ -2053,7 +2053,7 @@ function onSellTower() {
   if (!t) { state.selectedTower = null; updateSellPanel(); return; }
 
   const sellValue = Math.floor((t.investedGold ?? 0) * 0.5);
-  const tName = i18n.lang === 'ko' ? (t.def.nameKo || t.def.name) : t.def.name;
+  const tName = locText(t.def, 'name');
   towerSystem.removeTower(col, row);
   renderer.removeTower(col, row);
   if (sellValue > 0) addGold(sellValue, null);
@@ -2163,7 +2163,7 @@ function _triggerSolarAutoSpell() {
   const card    = CARD_DEFS.find(c => c.id === spellId);
   if (!card) return;
 
-  const spellName = i18n.lang === 'ko' ? (card.nameKo || card.name) : card.name;
+  const spellName = locText(card, 'name');
   log(i18n.t('dlc_sd_log_auto_cast', spellName), 'gold');
   audio?.play('spell_cast');
   resolveSpell({ ...card.effect, _isAutocast: true });
@@ -2185,7 +2185,7 @@ function _triggerShadowAutoSpell() {
   const card    = CARD_DEFS.find(c => c.id === spellId);
   if (!card) return;
 
-  log(`👁️ ${i18n.t('dlc_sr_log_auto_cast', i18n.lang === 'ko' ? (card.nameKo || card.name) : card.name)}`, 'gold');
+  log(`👁️ ${i18n.t('dlc_sr_log_auto_cast', locText(card, 'name'))}`, 'gold');
   audio?.play('spell_cast');
   resolveSpell({ ...card.effect, _isAutocast: true });   // 무료 자동 발동 — 골드 소모 없음, 연쇄 차단
 }
@@ -2329,7 +2329,7 @@ $('btn-codex').addEventListener('click', openCodex);
 
   function _refreshDailyBtn() {
     const done = !!localStorage.getItem(doneKey);
-    const wardenName = i18n.lang === 'ko' ? (warden.nameKo ?? warden.name) : warden.name;
+    const wardenName = locText(warden, 'name');
     const diffLabel  = i18n.t('diff_' + diffId) ?? diffId;
     if (done) {
       btn.innerHTML = `<span>${i18n.t('daily_done')}</span><span class="btn-daily-sub">${dateStr}</span>`;
@@ -2397,6 +2397,23 @@ $('btn-pause-howto').addEventListener('click', () => {
     sfxSlider.value = Math.round(audio.getSFXVolume() * 100);
     sfxSlider.addEventListener('input', e => {
       audio.setSFXVolume(e.target.value / 100);
+    });
+  }
+})();
+
+// 화면 효과 줄이기 (흔들림/플래시 억제 — 사진과민성 배려)
+(() => {
+  const KEY = 'rw_reduced_fx';
+  const apply = on => document.body.classList.toggle('fx-reduced', on);
+  let saved = false;
+  try { saved = localStorage.getItem(KEY) === '1'; } catch {}
+  apply(saved);
+  const box = $('reduced-fx-toggle');
+  if (box) {
+    box.checked = saved;
+    box.addEventListener('change', () => {
+      apply(box.checked);
+      try { localStorage.setItem(KEY, box.checked ? '1' : '0'); } catch {}
     });
   }
 })();

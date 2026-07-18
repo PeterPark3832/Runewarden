@@ -8,6 +8,7 @@ const _BASE_TOWER_DEFS = {
   archer: {
     id: 'archer',
     name: 'Archer',
+    nameZh: '弓箭塔',
     icon: '🏹',
     color: '#8B5E3C',
     accentColor: '#D4AF37',
@@ -22,6 +23,7 @@ const _BASE_TOWER_DEFS = {
   cannon: {
     id: 'cannon',
     name: 'Cannon',
+    nameZh: '加农炮塔',
     icon: '💣',
     color: '#555',
     accentColor: '#C0392B',
@@ -35,6 +37,7 @@ const _BASE_TOWER_DEFS = {
   frost: {
     id: 'frost',
     name: 'Frost Mage',
+    nameZh: '冰霜法师塔',
     icon: '❄️',
     color: '#2980B9',
     accentColor: '#ECF0F1',
@@ -52,6 +55,7 @@ const _BASE_TOWER_DEFS = {
   fire_drake: {
     id: 'fire_drake',
     name: 'Fire Drake',
+    nameZh: '火龙塔',
     icon: '🐉',
     color: '#8B2200',
     accentColor: '#FF6B1A',
@@ -67,6 +71,7 @@ const _BASE_TOWER_DEFS = {
   tesla: {
     id: 'tesla',
     name: 'Tesla Coil',
+    nameZh: '特斯拉线圈',
     icon: '⚡',
     color: '#1A2A4A',
     accentColor: '#00CED1',
@@ -83,6 +88,7 @@ const _BASE_TOWER_DEFS = {
   druid: {
     id: 'druid',
     name: 'Druid Grove',
+    nameZh: '德鲁伊林地',
     icon: '🌿',
     color: '#1A3A1A',
     accentColor: '#4CAF50',
@@ -102,6 +108,7 @@ const _BASE_TOWER_DEFS = {
   glacial: {
     id: 'glacial',
     name: 'Glacial Sentinel',
+    nameZh: '冰川哨卫',
     icon: '🧊',
     color: '#0A2A4A',
     accentColor: '#00BFFF',
@@ -117,6 +124,7 @@ const _BASE_TOWER_DEFS = {
   ballista: {
     id: 'ballista',
     name: 'Ballista',
+    nameZh: '弩炮',
     icon: '🎯',
     color: '#3D2B1F',
     accentColor: '#C0A080',
@@ -133,6 +141,7 @@ const _BASE_TOWER_DEFS = {
   frost_giant: {
     id: 'frost_giant',
     name: 'Frost Giant',
+    nameZh: '冰霜巨人',
     icon: '🌨️',
     color: '#0A1A3A',
     accentColor: '#87CEEB',
@@ -149,6 +158,7 @@ const _BASE_TOWER_DEFS = {
   marksman: {
     id: 'marksman',
     name: 'Marksman',
+    nameZh: '神射手',
     icon: '🔦',
     color: '#2A1A0A',
     accentColor: '#FFD700',
@@ -166,6 +176,7 @@ const _BASE_TOWER_DEFS = {
   shadow_strike: {
     id: 'shadow_strike',
     name: 'Shadow Strike',
+    nameZh: '暗影突袭',
     icon: '🌑',
     color: '#1A0030',
     accentColor: '#9B59B6',
@@ -180,6 +191,7 @@ const _BASE_TOWER_DEFS = {
   bone_archer: {
     id: 'bone_archer',
     name: 'Bone Archer',
+    nameZh: '白骨弓手',
     icon: '💀',
     color: '#2A1A0A',
     accentColor: '#C8B89A',

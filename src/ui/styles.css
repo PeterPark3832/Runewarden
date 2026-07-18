@@ -21,13 +21,18 @@
   --radius:    6px;
   --card-w:    110px;
   --card-h:    155px;
+  --font-mono: 'Share Tech Mono', monospace;
 }
 
 html, body { width: 100%; height: 100%; overflow: hidden; background: var(--bg); color: var(--text); font-family: 'Crimson Text', serif; }
 
 /* ── Screens ──────────────────────────────────────────── */
 .screen { position: absolute; inset: 0; display: none; }
-.screen.active { display: flex; }
+.screen.active { display: flex; animation: screenFadeIn 0.4s ease-out; }
+@keyframes screenFadeIn {
+  from { opacity: 0; transform: scale(1.012); }
+  to   { opacity: 1; transform: scale(1); }
+}
 
 /* ── Main Menu ────────────────────────────────────────── */
 #screen-menu {
@@ -94,7 +99,31 @@ html, body { width: 100%; height: 100%; overflow: hidden; background: var(--bg);
   letter-spacing: 0.2em;
   text-shadow: 0 0 40px rgba(212,175,55,0.4), 0 2px 4px rgba(0,0,0,0.8);
   margin-bottom: 0.2em;
+  position: relative;
 }
+/* 타이틀 뒤 회전 룬 링 2중 — 정적인 메뉴에 은은한 생동감 */
+.game-title::before,
+.game-title::after {
+  content: '';
+  position: absolute;
+  left: 50%; top: 50%;
+  border-radius: 50%;
+  pointer-events: none;
+  z-index: -1;
+}
+.game-title::before {
+  width: 380px; height: 380px;
+  margin: -190px 0 0 -190px;
+  border: 1px dashed rgba(212,175,55,0.16);
+  animation: titleRingSpin 60s linear infinite;
+}
+.game-title::after {
+  width: 290px; height: 290px;
+  margin: -145px 0 0 -145px;
+  border: 1px dotted rgba(212,175,55,0.12);
+  animation: titleRingSpin 42s linear infinite reverse;
+}
+@keyframes titleRingSpin { to { transform: rotate(360deg); } }
 .game-subtitle {
   color: var(--text-dim);
   font-size: 1rem;
@@ -714,6 +743,7 @@ html, body { width: 100%; height: 100%; overflow: hidden; background: var(--bg);
 }
 .card-desc { font-size: 0.82rem; color: #c0c0d0; line-height: 1.35; }
 .card-stat { color: var(--gold); font-weight: 700; font-family: 'Share Tech Mono', monospace; }
+.hand-empty { color: var(--text-dim); font-size: 0.8rem; padding: 0.5rem; font-style: italic; opacity: 0.7; }
 .card-icon { font-size: 1.4rem; margin-bottom: 0.15rem; }
 
 /* ── 카드 아트 존 ──────────────────────────────────────── */
@@ -831,6 +861,30 @@ html, body { width: 100%; height: 100%; overflow: hidden; background: var(--bg);
   animation: enrageImminentPulse 0.8s ease-in-out infinite;
 }
 
+/* ── 웨이브 진행률 바 ──────────────────────────────────── */
+.wave-progress {
+  display: flex; align-items: center; gap: 8px;
+  margin-top: 6px; padding: 0 2px;
+}
+.wave-progress.hidden { display: none; }
+.wave-progress-track {
+  flex: 1; height: 6px; border-radius: 3px;
+  background: rgba(255,255,255,0.08);
+  border: 1px solid var(--border);
+  overflow: hidden;
+}
+.wave-progress-fill {
+  height: 100%; width: 0%;
+  background: linear-gradient(90deg, #27AE60, #6fdc8c);
+  border-radius: 3px;
+  transition: width 0.25s ease-out;
+}
+.wave-progress-text {
+  font-family: var(--font-mono);
+  font-size: 0.68rem; color: var(--text-dim);
+  min-width: 46px; text-align: right;
+}
+
 /* ── 웨이브 버튼 준비 펄스 ─────────────────────────────── */
 @keyframes waveReady {
   0%, 100% { box-shadow: 0 0 0 0 rgba(39,174,96,0.45); }
@@ -889,8 +943,10 @@ html, body { width: 100%; height: 100%; overflow: hidden; background: var(--bg);
   z-index: 100;
   overflow-y: auto;
   padding: 1.5rem 1rem;
+  animation: overlayBackdropIn 0.25s ease-out;
 }
 .overlay.hidden { display: none; }
+@keyframes overlayBackdropIn { from { opacity: 0; } to { opacity: 1; } }
 
 /* 오버레이 내부 박스는 자연 높이 사용, 최대 100vh 제한 */
 .overlay-box {
@@ -968,9 +1024,8 @@ kbd {
 
 /* ── SVG Map Elements ─────────────────────────────────── */
 .hex-cell { cursor: pointer; transition: opacity 0.15s; }
-.hex-cell:hover .hex-bg { opacity: 0.8; }
-.hex-cell.placeable .hex-bg { stroke: #3a3a5a; }
-.hex-cell.path-cell .hex-bg { fill: #1a1a30; stroke: #252540; }
+.hex-cell:hover .hex-bg { opacity: 0.85; }
+/* fill/stroke는 MapRenderer가 맵 테마별로 SVG 속성에 직접 지정 — CSS로 덮지 않음 */
 .hex-cell.selected-cell .hex-bg { stroke: var(--gold); stroke-width: 2; }
 
 .enemy-unit { pointer-events: none; will-change: transform; }
@@ -3063,32 +3118,37 @@ kbd {
 .victory-banner { box-shadow: 0 0 75px rgba(212,175,55,0.65); }
 .act-clear-banner { box-shadow: 0 0 48px rgba(80,180,255,0.38); }
 
-/* ── QW#2: Enemy Enrage Rim Glow ────────────────────────── */
+/* ── QW#2: Enemy Enrage Rim Glow ──────────────────────────
+   .enemy-enraged는 내부 래퍼(.enemy-anim)에 붙는다 — 루트에는 금지 */
 @keyframes enragedPulse {
-  from { transform: scale(1.0); opacity: 0.88; }
+  from { transform: scale(1.0);  opacity: 0.85; }
   to   { transform: scale(1.06); opacity: 1.0; }
 }
 .enemy-enraged { animation: enragedPulse 0.52s ease-in-out infinite alternate; }
 
-/* ── 적 아이들 애니메이션 (GPU cheap properties) ── */
+/* ── 적 아이들 애니메이션 ──────────────────────────────
+   ⚠️ 이 클래스들은 위치와 분리된 내부 래퍼 <g class="enemy-anim">에만 붙는다.
+   루트 <g class="enemy-unit">에는 transform 애니메이션 절대 금지 —
+   SVG에서 CSS transform은 transform *속성*(translate 위치)을 통째로 덮어써서
+   모든 적이 맵 원점 (0,0)에 겹쳐 렌더되는 치명적 버그가 발생한다. */
 @keyframes enemyBob {
-  0%, 100% { opacity: 0.90; transform: scale(1.0); }
-  50%       { opacity: 1.0;  transform: scale(1.03); }
+  0%, 100% { opacity: 0.92; transform: translateY(0); }
+  50%       { opacity: 1.0;  transform: translateY(-1.5px); }
 }
 @keyframes enemyBobFast {
-  0%, 100% { opacity: 0.88; transform: scale(1.0); }
-  50%       { opacity: 1.0;  transform: scale(1.04); }
+  0%, 100% { opacity: 0.88; transform: translateY(0); }
+  50%       { opacity: 1.0;  transform: translateY(-2px); }
 }
 @keyframes enemyPulseGlow {
   0%, 100% { opacity: 0.85; }
   50%       { opacity: 1.0; }
 }
 @keyframes enemyWisp {
-  0%, 100% { opacity: 0.75; transform: scale(0.97); }
+  0%, 100% { opacity: 0.70; transform: scale(0.97); }
   50%       { opacity: 1.0;  transform: scale(1.0); }
 }
 @keyframes enemyHeavy {
-  0%, 100% { opacity: 0.88; transform: scale(0.98); }
+  0%, 100% { opacity: 0.90; transform: scale(0.985); }
   50%       { opacity: 1.0;  transform: scale(1.0); }
 }
 
@@ -3431,6 +3491,23 @@ kbd {
 }
 
 /* ── Screen Shake ────────────────────────────────────────── */
+/* 일시정지 메뉴 — 화면 효과 토글 */
+.pause-fx-toggle {
+  display: flex; align-items: center; gap: 8px;
+  margin: 10px 0 4px; padding: 6px 4px;
+  font-size: 0.85rem; color: var(--text-dim);
+  cursor: pointer; user-select: none;
+}
+.pause-fx-toggle input { accent-color: var(--gold); width: 15px; height: 15px; cursor: pointer; }
+.pause-fx-toggle:hover span { color: var(--text); }
+
+/* ── 화면 효과 줄이기 (사진과민성 배려) ──────────────────
+   body.fx-reduced 상태에서 전체 화면 플래시/흔들림 억제 */
+.fx-reduced #app.boss-slain,
+.fx-reduced #map-area.screen-flash-gold,
+.fx-reduced #map-area.screen-flash-phase2,
+.fx-reduced .screen-shake { animation: none !important; }
+
 @keyframes screenShake {
   0%, 100% { transform: translate(0, 0); }
   15%  { transform: translate(-3px,  1px); }

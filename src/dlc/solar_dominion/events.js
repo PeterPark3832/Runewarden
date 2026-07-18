@@ -188,4 +188,96 @@ export const SOLAR_EVENTS = {
       dlc: 'solar_dominion',
     },
   ],
+  zh: [
+    {
+      id: 'solar_oracle', title: '太阳神谕', icon: '☀️',
+      flavor: '一位燃烧的先知从热浪中现身，向你展示辉耀毁灭的幻象。',
+      choices: [
+        { label: '接受幻象', desc: '将1张史诗太阳卡牌加入牌组', effect: { type: 'add_cards', count: 1, rarity: 'rare' } },
+        { label: '拒绝',     desc: '+14金币',                    effect: { type: 'gold', amount: 14 } },
+      ],
+      dlc: 'solar_dominion',
+    },
+    {
+      id: 'sunfire_cache', title: '烈阳宝箱', icon: '🔥',
+      flavor: '一只华美的黄金宝箱散发着灼人热浪。其中的财富足以改变一切。',
+      choices: [
+        { label: '夺取财富', desc: '+28金币，失去1点要塞核心生命值', effect: { type: 'cursed_gold', amount: 28, nexusDmg: 1 } },
+        { label: '转身离开', desc: '+14金币（安全）',                 effect: { type: 'gold', amount: 14 } },
+      ],
+      dlc: 'solar_dominion',
+    },
+    {
+      id: 'holy_shrine', title: '神圣祭坛', icon: '⛪',
+      flavor: '一座辉耀的祭坛因古老之光而搏动。它的祝福温暖而无条件。',
+      choices: [
+        { label: '祈求治愈', desc: '恢复1点要塞核心生命值',   effect: { type: 'heal_nexus', amount: 1 } },
+        { label: '领受知识', desc: '将1张罕见卡牌加入牌组',   effect: { type: 'add_cards', count: 1, rarity: 'uncommon' } },
+      ],
+      dlc: 'solar_dominion',
+    },
+    {
+      id: 'radiant_merchant', title: '辉耀商人', icon: '🏺',
+      flavor: '一位身披金袍的商人现身，货物在永恒的阳光下熠熠生辉。',
+      choices: [
+        { label: '浏览货物', desc: '获得2张随机罕见卡牌', effect: { type: 'add_cards', count: 2, rarity: 'uncommon' } },
+        { label: '购买补给', desc: '+20金币',              effect: { type: 'gold', amount: 20 } },
+      ],
+      dlc: 'solar_dominion',
+    },
+    {
+      id: 'solar_revelation', title: '太阳启示', icon: '🌅',
+      flavor: '黎明以骇人的清晰破晓——你看见了凡人从未描绘过的战局之路。',
+      choices: [
+        { label: '抓住幻象', desc: '将1张史诗卡牌加入牌组', effect: { type: 'add_cards', count: 1, rarity: 'rare' } },
+        { label: '静心凝神', desc: '将1张罕见卡牌加入牌组', effect: { type: 'add_cards', count: 1, rarity: 'uncommon' } },
+      ],
+      dlc: 'solar_dominion',
+    },
+    {
+      id: 'blinding_gale', title: '炫目狂风', icon: '💨',
+      flavor: '太阳之风呼啸着席卷战场，令进军的敌军阵脚大乱。',
+      choices: [
+        { label: '引导狂风', desc: '下一波敌人移动速度−30%', effect: { type: 'slow_next_wave', amount: 0.30 } },
+        { label: '岿然不动', desc: '+10金币',                 effect: { type: 'gold', amount: 10 } },
+      ],
+      dlc: 'solar_dominion',
+    },
+    {
+      id: 'solar_tribute', title: '太阳贡品', icon: '💛',
+      flavor: '太阳索要献祭。慷慨奉献，它必以数倍回报。',
+      choices: [
+        { label: '献上贡品', desc: '+30金币，失去1点要塞核心生命值', effect: { type: 'cursed_gold', amount: 30, nexusDmg: 1 } },
+        { label: '献出卡牌', desc: '移除1张随机卡牌→+22金币',        effect: { type: 'remove_random_add_gold', amount: 22 } },
+      ],
+      dlc: 'solar_dominion',
+    },
+    {
+      id: 'dawn_epiphany', title: '黎明顿悟', icon: '🌄',
+      flavor: '黎明的第一缕光照亮了以金色火焰书写的失传战术。',
+      choices: [
+        { label: '解读火焰', desc: '将2张普通卡牌加入牌组', effect: { type: 'add_cards', count: 2, rarity: 'common' } },
+        { label: '拥抱太阳', desc: '将1张史诗卡牌加入牌组', effect: { type: 'add_cards', count: 1, rarity: 'rare' } },
+      ],
+      dlc: 'solar_dominion',
+    },
+    {
+      id: 'invest_gold', title: '黄金投资', icon: '📈',
+      flavor: '一位太阳银行家提出替你钱生钱——连本带利。',
+      choices: [
+        { label: '投资10金币', desc: '花费10g→下一波清除后获得18g', effect: { type: 'invest_gold', cost: 10, returnAmount: 18 } },
+        { label: '跳过',       desc: '立即+8金币',                   effect: { type: 'gold', amount: 8 } },
+      ],
+      dlc: 'solar_dominion',
+    },
+    {
+      id: 'solar_resonance', title: '太阳共鸣', icon: '🔆',
+      flavor: '太阳能量浸透你的防御塔，短暂增幅它们的毁灭性火力。',
+      choices: [
+        { label: '引导共鸣',   desc: '下一波所有防御塔伤害+20%', effect: { type: 'temp_dmg_bonus', mult: 1.20, waves: 1 } },
+        { label: '储存能量',   desc: '将2张普通卡牌加入牌组',    effect: { type: 'add_cards', count: 2, rarity: 'common' } },
+      ],
+      dlc: 'solar_dominion',
+    },
+  ],
 };

@@ -15,7 +15,7 @@ A **Tower Defense × Deck Building × Roguelike** hybrid — every card you play
 
 Runewarden fuses three genres into one tight loop:
 
-- **Deck Building** — Construct your spell deck from 60+ cards across runs
+- **Deck Building** — Construct your spell deck from 89 base cards (182 with DLC)
 - **Tower Defense** — Place and upgrade towers on a hex grid to stop enemy waves
 - **Roguelike** — No two runs are the same. Every choice is permanent.
 
@@ -31,17 +31,25 @@ Runewarden fuses three genres into one tight loop:
 
 ## Key Features
 
-### 🏰 6 Unique Towers
+### 🏰 12 Base Towers (24 with DLC)
 | Tower | Ability |
 |-------|---------|
-| 🏹 Archer Tower | Fast attack, long range |
+| 🏹 Archer Tower | Fast attack, long range, anti-air |
 | 💣 Cannon Tower | High damage + AoE splash |
 | ❄️ Frost Mage | 45% slow on hit |
-| 🐉 Fire Drake | Burn DoT (11 DPS / 2.5s) |
-| ⚡ Tesla Coil | Chain lightning, 2 targets |
+| 🐉 Fire Drake | Burn DoT |
+| ⚡ Tesla Coil | Chain lightning |
 | 🌿 Druid Grove | +15% damage aura to adjacent towers |
+| 🧊 Glacial Sentinel | 65% slow, longest-range control |
+| 🎯 Ballista | Massive single-target damage, anti-air |
+| 🌨️ Frost Giant | AoE slow field |
+| 🔦 Marksman | Camo detection, extreme range, anti-air |
+| 🌑 Shadow Strike | Heavy single hits, anti-air |
+| 💀 Bone Archer | Very fast attack speed, anti-air |
 
-### 🃏 60 Cards (Base Game)
+Every tower has a distinct procedural SVG silhouette — DLC adds 12 more (Void Sentinel, Phantom Sniper, Crusader, Light Prism, Storm Ballista, Wind Anchor, …).
+
+### 🃏 89 Cards (Base Game) — 182 with DLC
 - **Common** · **Uncommon** · **Rare**
 - Buy, reroll, and remove cards between waves
 - Shop card rarity scales with in-run player level (Lv1–8)
@@ -50,7 +58,7 @@ Runewarden fuses three genres into one tight loop:
 ### 🗺️ Roguelike Structure
 After each wave, choose a node:
 - **Shop** — Buy cards, spend XP to level up, add card slots (8g)
-- **Event** — 10 random events with risk/reward tradeoffs
+- **Event** — 30 random events (61 with DLC) with risk/reward tradeoffs
 - **Rest Site** — Remove or forge a card from your deck
 - **Path Fork** — Choose your route after each Act boss
 
@@ -60,7 +68,7 @@ Earn XP by defeating enemies. Level up (Lv1–8) to:
 - Upgrade tower star level (★2 requires Lv3, ★3 requires Lv6)
 - Spend XP directly in shop for power boosts
 
-### ⚔️ 6 Wardens (Characters)
+### ⚔️ 7 Wardens (Characters)
 Each Warden starts with a unique deck and passive ability.
 
 | Warden | Style | Passive | Unlock |
@@ -71,6 +79,7 @@ Each Warden starts with a unique deck and passive ability.
 | 🌑 Shadow Warden | Sacrifice | +1 gold per card discarded at wave end | Rank 15 |
 | 👁️ Shadow Realm Warden | Dark | 10 kills → auto Shadow Beam | DLC 1 |
 | ☀️ Solar Warden | Radiant | 8 cost-2+ spells → auto Solar Beam | DLC 2 |
+| 🌀 Tempest Warden | Anti-air | Flying kills/groundings charge Thunderstrike | DLC 3 |
 
 ### 📈 Meta Progression
 - Warden Rank 1–20 (XP across runs)
@@ -91,14 +100,15 @@ Optional self-imposed handicaps that stack XP bonuses on completion.
 Stack multiple challenges to multiply XP rewards — e.g. Perfect Defense + Silence = **×1.75 XP**.
 
 ### 🎨 Visual Polish
+- **14 themed maps** — each with its own terrain palette, curved glowing enemy road, spawn portal, Nexus crystal, and procedurally scattered environment props (forests, void spikes, sun obelisks, storm shards)
+- Distinct procedural SVG silhouettes for all 24 towers, with rotating turrets on cannon-family towers
+- Flying enemies with animated flapping wings that fold when grounded
 - Floating damage numbers on every hit (color-coded by type)
-- Screen shake on Nexus hit and boss death
-- Color-grading + ambient occlusion vignette on the map
-- Enemy enrage rim glow (color-coded per type)
-- Hit-stop on boss/elite kills with impact flash burst
-- Nexus critical pulse when HP = 1
-- Wave-clear gold flash + HUD gold punch animation
-- Card shimmer effects and map theme art direction
+- Screen shake on Nexus hit and boss death; hit-stop on boss/elite kills
+- Element-colored death particles (fire / frost / lightning / shadow / solar)
+- Status effect badges, enemy enrage rim glow, boss entry cinematics
+- Card art zones per type, legendary shimmer, gold-highlighted stat numbers
+- Smooth screen fades and overlay transitions throughout
 
 ### 🏆 40 Steam Achievements
 Including warden-specific wins, challenge clears, synergy builds, and combat milestones.
@@ -164,11 +174,25 @@ Post-Wave 8 enemy HP scales an additional +12% per wave to force tower upgrades.
 
 ---
 
+## DLC 3 — Storm Imperium
+
+**Runewarden: Storm Imperium** (폭풍 제국) takes the fight to the sky:
+
+- Act 6 (8 additional waves, waves 32–39) with a storm-sky biome
+- **Flying enemies** — most towers can't touch them; deploy anti-air or force them down
+- **Grounding mechanic** — 50%+ slows and stuns drag flyers to the ground where every tower can hit them
+- 12 new enemies including the 2-phase **Tempest Sovereign** final boss (airborne phase 1, grounded rampage phase 2)
+- 4 new towers: Storm Ballista, Tempest Tower, Wind Anchor (grounding aura), Storm Conduit
+- 38 new cards and 15 new relics — thunderstrikes, wind shears, storm economy
+- 🌀 **Tempest Warden** — flying kills and groundings charge Storm Charge; 8 charges auto-cast Thunderstrike
+
+---
+
 ## Keyboard Shortcuts
 
 | Key | Action |
 |-----|--------|
-| `Space` | Start Wave |
+| `Space` / `Enter` | Start Wave |
 | `1`–`5` | Select / play card from hand |
 | `F` | Deselect card |
 | `Tab` | Toggle 2× speed (persists across waves) |
@@ -209,7 +233,7 @@ npm run dev
 # Run in production mode
 npm start
 
-# Run unit tests (197 tests across 7 files)
+# Run unit tests (221 tests across 8 files)
 npm test
 
 # Build Windows installer

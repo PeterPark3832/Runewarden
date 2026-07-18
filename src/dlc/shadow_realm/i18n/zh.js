@@ -64,4 +64,10 @@ export default {
   spell_void_collapse:    (pct, s)      => `虚空崩塌！所有敌人减速${pct}%，持续${s}秒。`,
   spell_void_grasp:       (s)           => `虚空掌握！所有敌人冰冻${s}秒。`,
   spell_phantom_strike:   (n, d)        => `幻影突袭！${n}个敌人各受到${d}点伤害。`,
+
+  // Act 4 클리어 보상 레전더리 (누락분 보충)
+  relic_void_sovereign:        '虚空主宰',
+  relic_void_sovereign_desc:   '所有防御塔伤害 +20%。通关第四章后解锁。',
+  relic_shadow_legacy:         '暗影传承',
+  relic_shadow_legacy_desc:    '暗影守护者：暗影充能 7 层即可触发（默认 10 层）。通关第四章后解锁。',
 };

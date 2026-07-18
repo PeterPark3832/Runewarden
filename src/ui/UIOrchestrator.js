@@ -4,7 +4,7 @@
 
 import { shared } from '../core/GameState.js';
 import { updateMenuRank } from './HUDUpdater.js';
-import { i18n }    from '../i18n/i18n.js';
+import { i18n, locText }    from '../i18n/i18n.js';
 import { audio, music } from '../systems/AudioSystem.js';
 import { WARDEN_DEFS } from '../data/wardens.js';
 import { DIFFICULTY_DEFS, getDifficultyById } from '../data/difficulty.js';
@@ -50,11 +50,11 @@ export function openWardenSelect() {
     const banner = document.createElement('div');
     banner.className = 'first-run-banner';
     banner.innerHTML = `
-      <div class="first-run-label">🔰 ${isKo ? '처음 플레이하시나요?' : 'First time?'}</div>
+      <div class="first-run-label">${i18n.t('first_run_label')}</div>
       <button class="btn-primary first-run-btn" id="btn-quick-start">
-        ▶ ${isKo ? '추천 설정으로 바로 시작' : 'Quick Start (Recommended)'}
+        ${i18n.t('first_run_btn')}
       </button>
-      <div class="first-run-sub">${isKo ? 'Iron Warden · Standard 난이도 · 최적 입문 설정' : 'Iron Warden · Standard · Best for beginners'}</div>
+      <div class="first-run-sub">${i18n.t('first_run_sub')}</div>
     `;
     const header = overlay.querySelector('.warden-select-header');
     if (header) header.after(banner);
@@ -96,11 +96,11 @@ export function openWardenSelect() {
       <div class="warden-card-head">
         <div class="warden-icon">${w.icon}</div>
         <div class="warden-head-text">
-          <div class="warden-name">${i18n.lang === 'ko' ? (w.nameKo ?? w.name) : w.name}</div>
+          <div class="warden-name">${locText(w, 'name')}</div>
           <div class="warden-title">${w.title}</div>
         </div>
       </div>
-      <div class="warden-tagline">${w.tagline}</div>
+      <div class="warden-tagline">${locText(w, 'tagline')}</div>
       <div class="warden-desc">${typeof w.desc === 'object' ? (w.desc[i18n.lang] ?? w.desc.en) : w.desc}</div>
       <div class="warden-stats">
         <div class="warden-stat">🪙<span class="warden-stat-val">${w.startGold}g</span></div>
@@ -303,7 +303,7 @@ export function openDeckView() {
   const renderGroup = (type, cards) => {
     if (!cards.length) return '';
     const items = cards.map(c => {
-      const name = isKo ? (c.nameKo || c.name) : c.name;
+      const name = locText(c, 'name');
       return `<div class="deck-card-item" data-rarity="${c.rarity}">${c.icon} ${name} <span class="deck-card-cost">${c.cost}g</span></div>`;
     }).join('');
     return `<div class="deck-section">
@@ -315,7 +315,7 @@ export function openDeckView() {
   overlay.innerHTML = `
     <div class="deck-view-box">
       <div class="deck-view-header">
-        <div class="deck-view-title">🃏 ${isKo ? '현재 덱' : 'Your Deck'} (${all.length})</div>
+        <div class="deck-view-title">🃏 ${i18n.t('deck_view_title')} (${all.length})</div>
         <div class="deck-view-piles">
           <span>${isKo ? '드로우' : 'Draw'}: ${cardSystem.drawPile.length}</span>
           &nbsp;|&nbsp;
@@ -506,11 +506,11 @@ function _buildCodexItem(unlock, currentRank) {
       ${isUnlocked ? '<div class="codex-unlock-glow"></div>' : ''}
       ${!isUnlocked ? '<span class="codex-lock-icon">🔒</span>' : ''}
       <div class="codex-item-icon">${unlock.icon}</div>
-      <div class="codex-item-name">${i18n.lang === 'ko' ? (unlock.titleKo || unlock.title) : unlock.title}</div>
+      <div class="codex-item-name">${locText(unlock, 'title')}</div>
       <div class="codex-item-rank ${isUnlocked ? 'unlocked-rank' : ''}">
         ${isUnlocked ? i18n.t('codex_unlocked', unlock.rank) : i18n.t('codex_locked', unlock.rank)}
       </div>
-      <div class="codex-item-desc">${i18n.lang === 'ko' ? (unlock.descKo || unlock.desc) : unlock.desc}</div>
+      <div class="codex-item-desc">${locText(unlock, 'desc')}</div>
     </div>
   `;
 }

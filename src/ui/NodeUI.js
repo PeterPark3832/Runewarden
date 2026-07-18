@@ -1,6 +1,6 @@
 // 웨이브 클리어 후 노드 선택 + 이벤트/휴식 UI
 import { getCardPool } from '../data/cards.js';
-import { i18n } from '../i18n/i18n.js';
+import { i18n, locText } from '../i18n/i18n.js';
 import { hasDLC } from '../systems/DLCRegistry.js';
 import { SHADOW_EVENTS } from '../dlc/shadow_realm/events.js';
 import { SOLAR_EVENTS }  from '../dlc/solar_dominion/events.js';
@@ -155,12 +155,12 @@ export class EventUI {
 
   open() {
     // 현재 언어의 이벤트 풀 — DLC 소유 여부로 필터링
-    const lang   = i18n.lang === 'ko' ? 'ko' : 'en';
+    const lang   = ['ko', 'zh'].includes(i18n.lang) ? i18n.lang : 'en';
     const events = [
       ...i18n.t('events'),
-      ...(hasDLC('shadow_realm')   ? SHADOW_EVENTS[lang] : []),
-      ...(hasDLC('solar_dominion') ? SOLAR_EVENTS[lang]  : []),
-      ...(hasDLC('storm_imperium') ? STORM_EVENTS[lang]  : []),
+      ...(hasDLC('shadow_realm')   ? (SHADOW_EVENTS[lang] ?? SHADOW_EVENTS.en) : []),
+      ...(hasDLC('solar_dominion') ? (SOLAR_EVENTS[lang] ?? SOLAR_EVENTS.en)  : []),
+      ...(hasDLC('storm_imperium') ? (STORM_EVENTS[lang] ?? STORM_EVENTS.en)  : []),
     ];
     const event  = events[Math.floor(Math.random() * events.length)];
     this.container.classList.remove('hidden');
@@ -290,7 +290,7 @@ export class RestUI {
       const el = document.createElement('div');
       el.className = 'rest-card-item';
       el.dataset.rarity = card.rarity;
-      const _rName = i18n.lang === 'ko' ? (card.nameKo || card.name) : card.name;
+      const _rName = locText(card, 'name');
       el.innerHTML = `
         <span class="rest-card-icon">${card.icon}</span>
         <span class="rest-card-name">${_rName}</span>
@@ -350,7 +350,7 @@ export class RestUI {
       const el = document.createElement('div');
       el.className = 'rest-card-item';
       el.dataset.rarity = card.rarity;
-      const _rName = i18n.lang === 'ko' ? (card.nameKo || card.name) : card.name;
+      const _rName = locText(card, 'name');
       const preview = this._forgePreview(card);
       el.innerHTML = `
         <span class="rest-card-icon">${card.icon}</span>

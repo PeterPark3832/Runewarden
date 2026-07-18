@@ -1,6 +1,7 @@
 /** Runewarden — 简体中文 (zh) */
 import dlcShadowZh from '../dlc/shadow_realm/i18n/zh.js';
 import dlcSolarZh  from '../dlc/solar_dominion/i18n/zh.js';
+import { dlcStormZh } from '../dlc/storm_imperium/i18n/zh.js';
 
 const _BASE_ZH = {
   // ── 主菜单 ───────────────────────────────────────────
@@ -40,6 +41,19 @@ const _BASE_ZH = {
   shop_title:     '守护者商店',
   shop_subtitle:  '选择卡牌加入你的牌组。',
   shop_reroll:    '🎲 重随',
+  first_run_label: '🔰 第一次游玩？',
+  first_run_btn: '▶ 快速开始（推荐）',
+  first_run_sub: '钢铁守护者 · 标准难度 · 新手最佳配置',
+  deck_view_title: '当前牌组',
+  summary_new_hint: '选择新守护者与难度',
+  summary_retry_btn: '⚡ 快速重开',
+  summary_retry_hint: '相同守护者与难度',
+  summary_hints_title: (n) => `💡 第 ${n} 波攻略提示`,
+  log_card_types_hint: '💡 召唤（放置塔）· 强化（升级塔）· 法术（立即生效）',
+  shop_key_buy: '购买',
+  shop_key_reroll: '重随',
+  shop_key_leave: '离开',
+  shop_add_card:  '🃏 卡牌 +1',
   shop_leave:     '离开商店 →',
   shop_rerolls_left: (n) => `剩余${n}次`,
   shop_no_rerolls:   '无法重随',
@@ -80,6 +94,7 @@ const _BASE_ZH = {
   pause_title:    '⚙️ 已暂停',
   btn_resume:     '▶ 继续',
   btn_how_pause:  '📖 游戏说明',
+  pause_reduced_fx: '✨ 减少屏幕震动与闪烁',
   btn_quit_menu:          '✕ 退出至主菜单',
   input_method_notice:    '仅支持键盘和鼠标——不支持手柄',
   vol_label:              '🔊 音量',
@@ -141,7 +156,7 @@ const _BASE_ZH = {
   howto_5:        '你有<b>要塞核心生命值</b>。全部耗尽则游戏局结束。',
   howto_6:        '⚡ <b>激怒</b> — 部分敌人（狂战士、虚空追猎者、巨像）在低血量时<b>速度大幅提升</b>。集火快速击杀！',
   howto_7:        '🛡️ <b>伤害减免</b> — 瘟疫携带者和幻影受到的伤害较低。需要多座防御塔协同，而非单点集中。',
-  howto_8:        '🧊 <b>减速免疫</b> — 重甲步兵、攻城兽和石石像鬼<b>无法被减速</b>。专注输出原始伤害。',
+  howto_8:        '🧊 <b>减速免疫</b> — 重甲步兵、攻城兽和石魔像<b>无法被减速</b>。专注输出原始伤害。',
 
   howto_shortcuts_title: '⌨️ 键盘快捷键',
   howto_shortcuts_body:  `
@@ -879,7 +894,7 @@ const _BASE_ZH = {
   codex_enemy_berserker:       '狂战士',
   codex_enemy_boss:            '铁甲',
   codex_enemy_void_titan:      '虚空泰坦',
-  codex_enemy_stone_golem:     '石石像鬼',
+  codex_enemy_stone_golem:     '石魔像',
   codex_enemy_necromancer:     '死灵法师',
   codex_enemy_plague_carrier:  '瘟疫携带者',
   codex_enemy_void_wraith:     '虚空幽灵',
@@ -899,4 +914,6 @@ const _BASE_ZH = {
 };
 
 // DLC翻译合并
-export default { ..._BASE_ZH, ...dlcShadowZh, ...dlcSolarZh };
+_BASE_ZH.hint_wave32_flying = '⚡ 飞行敌人来袭！部署风暴弩炮或狂风之塔，或用风锚将其击落。';
+
+export default { ..._BASE_ZH, ...dlcShadowZh, ...dlcSolarZh, ...dlcStormZh };

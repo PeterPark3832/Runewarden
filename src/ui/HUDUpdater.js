@@ -3,12 +3,13 @@
 // GameState.shared 를 통해 런타임 상태에 접근합니다.
 
 import { shared } from '../core/GameState.js';
-import { i18n }   from '../i18n/i18n.js';
+import { i18n, locText }   from '../i18n/i18n.js';
 import { PASSIVES } from '../data/wardens.js';
 import { TOWER_DEFS } from '../data/towers.js';
 import { MAX_RANK } from '../systems/MetaSystem.js';
 import { MAX_PLAYER_LEVEL, XP_THRESHOLDS } from '../systems/PlayerLevelSystem.js';
 import { ACT_SIZE } from '../config/constants.js';
+import { getCardArt } from './CardArt.js';
 
 const $ = id => document.getElementById(id);
 
@@ -75,7 +76,7 @@ export function updateHUD() {
       iconEl.textContent = w.icon;
       iconEl.title = `Passive: ${i18n.t(w.passiveKey)}`;
     }
-    if (nameEl) nameEl.textContent = w.name;
+    if (nameEl) nameEl.textContent = locText(w, 'name');
     const diffIcon = state.difficulty?.icon ?? '';
     if (actEl)  actEl.textContent  = `ACT ${actNum} ${diffIcon}`;
   }
@@ -110,8 +111,32 @@ export function updateHUD() {
   renderHand();
 }
 
+// ── 웨이브 진행률 바 (RAF 루프에서 호출 — DOM 쓰기는 변화 시에만) ──
+let _lastWaveProgKey = '';
+export function updateWaveProgress(prog) {
+  const box = $('wave-progress');
+  if (!box) return;
+  if (!prog || prog.total <= 0) {
+    if (_lastWaveProgKey !== 'off') {
+      box.classList.add('hidden');
+      _lastWaveProgKey = 'off';
+    }
+    return;
+  }
+  const key = `${prog.gone}/${prog.total}`;
+  if (key === _lastWaveProgKey) return;
+  _lastWaveProgKey = key;
+  box.classList.remove('hidden');
+  $('wave-progress-fill').style.width = ((prog.gone / prog.total) * 100).toFixed(1) + '%';
+  $('wave-progress-text').textContent = `${prog.gone} / ${prog.total}`;
+}
+
 // ── 카드 아트 SVG 생성 ─────────────────────────────────
 export function makeCardArtSVG(card) {
+  // 전용 일러스트가 등록된 카드는 우선 사용 (CardArt.js)
+  const custom = getCardArt(card);
+  if (custom) return custom;
+
   const W = 100, H = 50, cx = 50, cy = 25;
   const ic = card.icon ?? '◆';
   const hexPts = (r) => Array.from({ length: 6 }, (_, i) => {
@@ -142,6 +167,12 @@ export function makeCardArtSVG(card) {
   return `<svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg"><polygon points="${cx},${cy - 22} ${cx + 16},${cy} ${cx},${cy + 22} ${cx - 16},${cy}" fill="rgba(212,175,55,.10)" stroke="rgba(212,175,55,.40)" stroke-width="1.2"/><text x="${cx}" y="${cy + 8}" text-anchor="middle" font-size="20" opacity=".88">${ic}</text></svg>`;
 }
 
+// 카드 설명 내 수치 강조 — 숫자 토큰(+40%, 2g, 50 등)을 금색 볼드 span으로 감쌈
+export function emphasizeStats(text) {
+  if (!text) return text;
+  return String(text).replace(/([+\-−]?\d+(?:[.,]\d+)?(?:%|g\b)?)/g, '<span class="card-stat">$1</span>');
+}
+
 // ── 카드 핸드 렌더링 ──────────────────────────────────
 export function renderHand() {
   const { state, cardSystem } = shared;
@@ -167,9 +198,8 @@ export function renderHand() {
     const effectiveCost = Math.max(0, card.cost + surcharge - arcaneDiscount);
     const canAfford = effectiveCost <= state.gold;
     const isSelected = state.selectedCard?.uid === card.uid;
-    const isKo = i18n.lang === 'ko';
-    const cName = isKo ? (card.nameKo || card.name) : card.name;
-    const cDesc = isKo ? (card.descKo || card.desc) : card.desc;
+    const cName = locText(card, 'name');
+    const cDesc = locText(card, 'desc');
     const forgedBadge = card.forged ? ' <span class="forged-badge">⬆</span>' : '';
 
     const _cm = state.challengeMods;
@@ -197,7 +227,7 @@ export function renderHand() {
         <span class="card-cost">${isCurse ? '—' : (effectiveCost > 0 ? effectiveCost + 'g' : i18n.t('free').toUpperCase())}</span>
       </div>
       <div class="card-type-badge">${i18n.t('card_type_' + card.type) ?? card.type}${surcharge && !isCurse ? ' (' + i18n.t('card_surcharge_label') + ')' : ''}${isBanned ? ' 🚫' : ''}</div>
-      <div class="card-desc">${cDesc}</div>
+      <div class="card-desc">${emphasizeStats(cDesc)}</div>
     `;
 
     if ((canAfford || isSelected) && !isBanned && !isCurse) {
@@ -207,7 +237,7 @@ export function renderHand() {
   }
 
   if (cardSystem.hand.length === 0) {
-    container.innerHTML = `<div style="color:#555;font-size:0.8rem;padding:0.5rem;">${i18n.t('hand_empty')}</div>`;
+    container.innerHTML = `<div class="hand-empty">${i18n.t('hand_empty')}</div>`;
   }
 }
 

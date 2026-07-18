@@ -1,9 +1,9 @@
 // 웨이브 간 상점 UI
 import { CARD_DEFS } from '../data/cards.js';
-import { i18n } from '../i18n/i18n.js';
+import { i18n, locText } from '../i18n/i18n.js';
 import { weightedPickRarity, MAX_PLAYER_LEVEL } from '../systems/PlayerLevelSystem.js';
 import { shared } from '../core/GameState.js';
-import { makeCardArtSVG } from './HUDUpdater.js';
+import { makeCardArtSVG, emphasizeStats } from './HUDUpdater.js';
 
 const SHOP_SIZE    = 3;   // 카드 슬롯 수
 const REROLL_COST  = 2;
@@ -51,13 +51,13 @@ export class ShopUI {
             ${i18n.t('shop_reroll')} <span id="reroll-cost">(2g)</span>
             <span id="reroll-remaining" class="reroll-remain"></span>
           </button>
-          <button id="shop-add-card" class="btn-secondary shop-addcard-btn">카드+1 (8g)</button>
+          <button id="shop-add-card" class="btn-secondary shop-addcard-btn">${i18n.t('shop_add_card')} (8g)</button>
           <button id="shop-leave" class="btn-primary shop-leave-btn">
             ${i18n.t('shop_leave')}
           </button>
         </div>
         <div class="shop-shortcuts">
-          <kbd>1</kbd><kbd>2</kbd><kbd>3</kbd> Buy &nbsp;·&nbsp; <kbd>R</kbd> Reroll &nbsp;·&nbsp; <kbd>L</kbd> Leave
+          <kbd>1</kbd><kbd>2</kbd><kbd>3</kbd> ${i18n.t('shop_key_buy')} &nbsp;·&nbsp; <kbd>R</kbd> ${i18n.t('shop_key_reroll')} &nbsp;·&nbsp; <kbd>L</kbd> ${i18n.t('shop_key_leave')}
         </div>
       </div>
     `;
@@ -206,9 +206,8 @@ export class ShopUI {
       slot.dataset.rarity = card.rarity;
       card._effectiveCost = effectiveCost;  // 구매 시 사용
 
-      const _isKo = i18n.lang === 'ko';
-      const _cName = _isKo ? (card.nameKo || card.name) : card.name;
-      const _cDesc = _isKo ? (card.descKo || card.desc) : card.desc;
+      const _cName = locText(card, 'name');
+      const _cDesc = locText(card, 'desc');
       const _cType = i18n.t('card_type_' + card.type) ?? card.type;
       const rarityLabel = { common: 'C', uncommon: 'U', rare: 'R' };
       const rarityBadge = `<span class="rarity-badge rarity-badge--${card.rarity}">${rarityLabel[card.rarity] ?? card.rarity[0].toUpperCase()}</span>`;
@@ -226,7 +225,7 @@ export class ShopUI {
                 : ''}${effectiveCost > 0 ? effectiveCost + 'g' : i18n.t('free')}
             </div>
           </div>
-          <div class="shop-card-desc">${_cDesc}</div>
+          <div class="shop-card-desc">${emphasizeStats(_cDesc)}</div>
           <div class="shop-rarity-bar"></div>
         </div>
         <button class="btn-buy ${canAfford ? 'can-buy' : ''}" data-uid="${card.uid}">
@@ -257,7 +256,7 @@ export class ShopUI {
     this._renderCards();
     this._refreshGold();
     this._refreshRerollBtn();
-    const _bName = i18n.lang === 'ko' ? (card.nameKo || card.name) : card.name;
+    const _bName = locText(card, 'name');
     this.onLog(i18n.t('shop_bought', _bName), 'good');
   }
 
