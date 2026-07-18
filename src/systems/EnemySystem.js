@@ -1739,8 +1739,19 @@ export class EnemySystem {
       this.layer.appendChild(particle);
       setTimeout(() => document.getElementById(pid)?.remove(), Math.round(particleDur * 1000) + 10);
     }
-    // 보스/엘리트 사망 시 큰 방사형 플래시
-    if (isBig) this._spawnImpactFlash(cx, cy, e.color, true);
+    // 보스/엘리트 사망 시 큰 방사형 플래시 + 확장 충격파 링
+    if (isBig) {
+      this._spawnImpactFlash(cx, cy, e.color, true);
+      const ringColor = palette ? palette[0] : e.color;
+      const ring = svgEl('circle', {
+        cx: cx.toFixed(1), cy: cy.toFixed(1), r: e.size * 0.6,
+        fill: 'none', stroke: ringColor, 'stroke-width': 2.5, opacity: '0.85',
+        'pointer-events': 'none',
+        style: `transform-box: fill-box; transform-origin: center; animation: splashRing ${e.isBoss ? 0.55 : 0.4}s ease-out forwards`,
+      });
+      this.layer.appendChild(ring);
+      setTimeout(() => ring.remove(), e.isBoss ? 570 : 420);
+    }
     // 보스 사망 시 화면 플래시 + 라벨 팝
     if (e.isBoss) this._bossSlainfanfare(cx, cy, e);
 

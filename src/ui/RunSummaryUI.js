@@ -143,7 +143,7 @@ export class RunSummaryUI {
     const items = hints.map(h => `
       <div class="hint-item">
         <span class="hint-icon">${h.icon}</span>
-        <span class="hint-text">${isKo ? h.ko : h.en}</span>
+        <span class="hint-text">${isKo ? h.ko : i18n.lang === 'zh' ? (h.zh ?? h.en) : h.en}</span>
       </div>`).join('');
     return `<div class="summary-hints"><div class="summary-hints-title">${title}</div>${items}</div>`;
   }

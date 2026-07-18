@@ -609,7 +609,7 @@ function startRun() {
   audio.play('card_draw');
   renderHand();
   setWaveButton(i18n.t('btn_start_wave'), false);
-  log(`${warden.icon} ${i18n.t('log_run_start', warden.name)}`);
+  log(`${warden.icon} ${i18n.t('log_run_start', locText(warden, 'name'))}`);
   log(`${selectedMap.icon} ${selectedMap.name}  ${diff.icon} ${i18n.t('log_difficulty', i18n.t('diff_' + diff.id))}`, 'gold');
   if (shared.selectedAscension > 0) log(i18n.t('log_ascension', shared.selectedAscension), 'bad');
   log(`Passive: ${i18n.t(warden.passiveKey)}`, 'gold');

@@ -100,7 +100,7 @@ export function openWardenSelect() {
           <div class="warden-title">${w.title}</div>
         </div>
       </div>
-      <div class="warden-tagline">${w.tagline}</div>
+      <div class="warden-tagline">${locText(w, 'tagline')}</div>
       <div class="warden-desc">${typeof w.desc === 'object' ? (w.desc[i18n.lang] ?? w.desc.en) : w.desc}</div>
       <div class="warden-stats">
         <div class="warden-stat">🪙<span class="warden-stat-val">${w.startGold}g</span></div>

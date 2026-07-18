@@ -628,6 +628,21 @@ export class TowerSystem {
     g.style.animation = 'projFade 0.15s ease-out forwards';
     this.projectileLayer.appendChild(g);
     setTimeout(() => document.getElementById(id)?.remove(), 150);
+
+    // 명중 지점 소형 스파크 — 화살 계열 타워도 타격감 부여
+    const sid = `proj-${++this._projId}`;
+    const sg = svgEl('g', { id: sid, 'pointer-events': 'none' });
+    for (let i = 0; i < 3; i++) {
+      const a = Math.random() * Math.PI * 2, d = 4 + Math.random() * 6;
+      sg.appendChild(svgEl('line', {
+        x1: x2.toFixed(1), y1: y2.toFixed(1),
+        x2: (x2 + Math.cos(a) * d).toFixed(1), y2: (y2 + Math.sin(a) * d).toFixed(1),
+        stroke: color, 'stroke-width': 1.2, 'stroke-linecap': 'round', opacity: '0.9',
+      }));
+    }
+    sg.style.animation = 'projFade 0.18s ease-out forwards';
+    this.projectileLayer.appendChild(sg);
+    setTimeout(() => document.getElementById(sid)?.remove(), 190);
   }
 
   // ── 포탄 (Cannon) — transform 기반 이동 ──────────────

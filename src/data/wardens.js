@@ -49,6 +49,8 @@ const _BASE_WARDEN_DEFS = [
     accentBg:  'linear-gradient(135deg,#1a1a2e,#2a2a4a)',
     unlockRank: 0,
     tagline:   '"Steady hand. Steady mind."',
+    taglineKo: '"흔들리지 않는 손, 흔들리지 않는 마음."',
+    taglineZh: '"手稳，心亦稳。"',
     desc:      { en: 'Balanced start. A standard deck mixing summons, augments, and spells.', ko: '균형 잡힌 시작 조건. 소환·강화·주문이 고르게 구성된 표준 덱.', zh: '均衡的开局。召唤、强化与法术搭配均衡的标准牌组。' },
 
     // 시작 조건
@@ -86,6 +88,8 @@ const _BASE_WARDEN_DEFS = [
     accentBg:  'linear-gradient(135deg,#1a0505,#3a0a0a)',
     unlockRank: 5,
     tagline:   '"Strike first. Strike hard."',
+    taglineKo: '"먼저 쳐라. 강하게 쳐라."',
+    taglineZh: '"先发制人，全力出击。"',
     desc:      { en: 'Kill to earn. +1 gold per kill. Aggressive hand of 6 cards.', ko: '적을 처치할수록 강해진다. 적 처치 시 골드 +1. 빠른 핸드 6장으로 공격적 플레이.', zh: '以杀取财。每击杀 1 名敌人获得 1 金币。6 张手牌，主打进攻。' },
 
     // 시작 조건
@@ -121,6 +125,8 @@ const _BASE_WARDEN_DEFS = [
     accentBg:  'linear-gradient(135deg,#0d0520,#1a0a35)',
     unlockRank: 10,
     tagline:   '"Know when to act. And when to wait."',
+    taglineKo: '"움직일 때와 기다릴 때를 알라."',
+    taglineZh: '"知进退，明时机。"',
     desc:      { en: 'All spell costs -1. Dominate the battlefield through magic.', ko: '모든 주문 코스트 -1. 주문 중심 덱으로 마법으로 전장을 지배한다.', zh: '所有法术费用 -1。以魔法主宰战场。' },
 
     // 시작 조건
@@ -157,6 +163,8 @@ const _BASE_WARDEN_DEFS = [
     accentBg:  'linear-gradient(135deg,#0a0010,#1a0030)',
     unlockRank: 15,
     tagline:   '"Those who fear the dark have never wielded it."',
+    taglineKo: '"어둠을 두려워하는 자는 어둠을 휘둘러본 적이 없다."',
+    taglineZh: '"畏惧黑暗者，从未真正驾驭过它。"',
     desc:      {
       en: 'Discard for profit. Each card shed at wave end yields 1 gold. Large hand of 7, but Nexus is fragile.',
       ko: '카드를 버려 골드를 얻는다. 웨이브 종료 시 버린 카드마다 골드 +1. 핸드 7장이지만 넥서스가 취약하다.',
