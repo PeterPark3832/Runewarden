@@ -772,6 +772,19 @@ export class MapRenderer {
     const acc = def.accentColor;
     const sw  = 2;
 
+    // ── 공통 기단: 그림자 + 석재 플린스 (구조물 무게감) ──
+    g.appendChild(svgEl('ellipse', {
+      cx: x, cy: y + r * 0.82, rx: r * 1.02, ry: r * 0.34, fill: 'rgba(0,0,0,0.38)',
+    }));
+    g.appendChild(svgEl('polygon', {
+      points: this._polyPts(x, y + r * 0.42, r * 0.88, 6, -Math.PI / 6),
+      fill: 'rgba(18,16,32,0.92)', stroke: 'rgba(255,255,255,0.10)', 'stroke-width': 1,
+    }));
+    g.appendChild(svgEl('polygon', {
+      points: this._polyPts(x, y + r * 0.28, r * 0.78, 6, -Math.PI / 6),
+      fill: 'rgba(42,38,62,0.92)', stroke: acc, 'stroke-width': 0.6, opacity: '0.92',
+    }));
+
     // ── 형태 분기 ──────────────────────────────────────
     if (id === 'archer' || id === 'marksman' || id === 'bone_archer') {
       // 다이아몬드 (회전된 정사각형) — 빠른 단일 공격 계열
@@ -1014,6 +1027,12 @@ export class MapRenderer {
     });
     icon.textContent = def.icon;
     g.appendChild(icon);
+
+    // 좌상단 림 하이라이트 (은은한 입체감)
+    g.appendChild(svgEl('ellipse', {
+      cx: x - r * 0.32, cy: y - r * 0.40, rx: r * 0.34, ry: r * 0.15,
+      fill: '#fff', opacity: '0.10', transform: `rotate(-28, ${x}, ${y})`,
+    }));
 
     return g;
   }
