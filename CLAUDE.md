@@ -71,6 +71,13 @@ Wave clear auto-saves to `localStorage` key `rw_autosave`. Meta progression pers
 
 `EnemySystem._ensureWings()` adds flapping wing SVG paths to `def.flying` enemies. It runs on **both** the fresh-spawn and pool-reuse paths (pooled enemies previously lost their hover offset — keep it that way). `applyGrounding()` toggles the `wings-grounded` class (wings fold, animation pauses) and `_flyOffset` (−4px airborne, 0 grounded).
 
+### Art modules
+
+- `src/rendering/BossArt.js` — bespoke layered SVG illustrations for all 8 bosses (`drawBossArt(g, type, size)`, authored at nominal radius 30, scaled by `def.size`; gradient defs injected once into the root SVG). New bosses need an `ART` entry or they fall back to the plain body circle.
+- `src/ui/CardArt.js` — card art: 15 hand-authored scenes (`CARD_ART` by id) + a procedural composer covering every other card (theme backdrop from dlc/effect keywords × motif by card type, seeded per-card variation). `makeCardArtSVG()` (HUDUpdater) checks `getCardArt(card)` first; unregistered/failed cards fall back to legacy geometric patterns. New DLC cards get composed art automatically.
+- `EnemySystem FAMILY_GEAR` table — silhouette gear overlays (horns/helm/hood/spikes/fins/crown/plates/ears/antennae/wispTail) for regular enemies, drawn by `_addFamilyGear()` outside the body so eyes/badges stay clear. Add new enemy types to the table or they render without gear (bosses excluded — they use BossArt).
+- Towers get a common pedestal (shadow + stone plinth + rim highlight) in `_drawTowerShape` automatically.
+
 ### UI layer
 
 `src/ui/UIOrchestrator.js` manages screen visibility. `src/ui/HUDUpdater.js` owns `updateHUD()` and `renderHand()` — both are called frequently and read from `shared`. Each between-wave screen (Shop, Node, Event, Rest, Relic, RunSummary) is its own class that receives callbacks from GameEngine.
