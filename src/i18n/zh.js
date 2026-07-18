@@ -156,7 +156,7 @@ const _BASE_ZH = {
   howto_5:        '你有<b>要塞核心生命值</b>。全部耗尽则游戏局结束。',
   howto_6:        '⚡ <b>激怒</b> — 部分敌人（狂战士、虚空追猎者、巨像）在低血量时<b>速度大幅提升</b>。集火快速击杀！',
   howto_7:        '🛡️ <b>伤害减免</b> — 瘟疫携带者和幻影受到的伤害较低。需要多座防御塔协同，而非单点集中。',
-  howto_8:        '🧊 <b>减速免疫</b> — 重甲步兵、攻城兽和石石像鬼<b>无法被减速</b>。专注输出原始伤害。',
+  howto_8:        '🧊 <b>减速免疫</b> — 重甲步兵、攻城兽和石魔像<b>无法被减速</b>。专注输出原始伤害。',
 
   howto_shortcuts_title: '⌨️ 键盘快捷键',
   howto_shortcuts_body:  `
@@ -894,7 +894,7 @@ const _BASE_ZH = {
   codex_enemy_berserker:       '狂战士',
   codex_enemy_boss:            '铁甲',
   codex_enemy_void_titan:      '虚空泰坦',
-  codex_enemy_stone_golem:     '石石像鬼',
+  codex_enemy_stone_golem:     '石魔像',
   codex_enemy_necromancer:     '死灵法师',
   codex_enemy_plague_carrier:  '瘟疫携带者',
   codex_enemy_void_wraith:     '虚空幽灵',
