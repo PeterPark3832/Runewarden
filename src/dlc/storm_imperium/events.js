@@ -188,4 +188,96 @@ export const STORM_EVENTS = {
       dlc: 'storm_imperium',
     },
   ],
+  zh: [
+    {
+      id: 'storm_seer', title: '风暴先知', icon: '🔮',
+      flavor: '一位饱经风霜的先知自云端现身，向你展示即将来临的风暴幻象。',
+      choices: [
+        { label: '听从幻象', desc: '将1张史诗风暴卡牌加入牌组', effect: { type: 'add_cards', count: 1, rarity: 'rare' } },
+        { label: '置之不理', desc: '+14金币',                    effect: { type: 'gold', amount: 14 } },
+      ],
+      dlc: 'storm_imperium',
+    },
+    {
+      id: 'falling_drake', title: '坠落的风暴龙', icon: '🦅',
+      flavor: '一头受伤的风暴龙坠落在附近，护卫队四散而逃。',
+      choices: [
+        { label: '乘虚而入', desc: '下一波飞行敌人-2，+10金币', effect: { type: 'reduce_flying_wave', amount: 2, gold: 10 } },
+        { label: '救助伤龙', desc: '恢复1点要塞核心生命值',      effect: { type: 'heal_nexus', amount: 1 } },
+      ],
+      dlc: 'storm_imperium',
+    },
+    {
+      id: 'storm_cache', title: '风暴宝库', icon: '💰',
+      flavor: '一座被风暴摧残的宝库敞开着，财宝暴露在狂风之中。',
+      choices: [
+        { label: '夺取财宝', desc: '+28金币，要塞核心生命值-1', effect: { type: 'cursed_gold', amount: 28, nexusDmg: 1 } },
+        { label: '安全搬运', desc: '+14金币',                    effect: { type: 'gold', amount: 14 } },
+      ],
+      dlc: 'storm_imperium',
+    },
+    {
+      id: 'sky_oracle', title: '天空神谕', icon: '☁️',
+      flavor: '一位远古神谕者乘着风暴之风飘荡，传授被遗忘的风暴知识。',
+      choices: [
+        { label: '习得风暴之术', desc: '将2张罕见卡牌加入牌组', effect: { type: 'add_cards', count: 2, rarity: 'uncommon' } },
+        { label: '换取金币',     desc: '+20金币',                effect: { type: 'gold', amount: 20 } },
+      ],
+      dlc: 'storm_imperium',
+    },
+    {
+      id: 'lightning_baptism', title: '闪电洗礼', icon: '⚡',
+      flavor: '闪电击中你的防御塔，为它们注入原始的风暴能量。',
+      choices: [
+        { label: '引导之力', desc: '下一波所有防御塔伤害+25%', effect: { type: 'temp_dmg_bonus', mult: 1.25 } },
+        { label: '导入大地', desc: '恢复1点要塞核心生命值',     effect: { type: 'heal_nexus', amount: 1 } },
+      ],
+      dlc: 'storm_imperium',
+    },
+    {
+      id: 'storm_merchant', title: '风暴商人', icon: '🏪',
+      flavor: '一位旅行商人躲避狂风，急于交易风暴遗物。',
+      choices: [
+        { label: '浏览商品', desc: '将2张罕见卡牌加入牌组', effect: { type: 'add_cards', count: 2, rarity: 'uncommon' } },
+        { label: '购买补给', desc: '+20金币',                effect: { type: 'gold', amount: 20 } },
+      ],
+      dlc: 'storm_imperium',
+    },
+    {
+      id: 'sky_tribute', title: '天空贡品', icon: '🌩️',
+      flavor: '风暴索要贡品。缴纳通行费，否则失去通路。',
+      choices: [
+        { label: '缴纳通行费', desc: '+30金币，要塞核心生命值-1',     effect: { type: 'cursed_gold', amount: 30, nexusDmg: 1 } },
+        { label: '移除卡牌',   desc: '从牌组移除1张卡牌，+22金币', effect: { type: 'remove_card_gold', amount: 22 } },
+      ],
+      dlc: 'storm_imperium',
+    },
+    {
+      id: 'dawn_bolt', title: '破晓之雷', icon: '🌅',
+      flavor: '破晓的第一道闪电落下，为你的部队注入能量。',
+      choices: [
+        { label: '汲取能量', desc: '将2张普通卡牌加入牌组', effect: { type: 'add_cards', count: 2, rarity: 'common' } },
+        { label: '凝聚雷电', desc: '将1张史诗卡牌加入牌组', effect: { type: 'add_cards', count: 1, rarity: 'rare' } },
+      ],
+      dlc: 'storm_imperium',
+    },
+    {
+      id: 'storm_invest', title: '风暴投资', icon: '📈',
+      flavor: '一位风暴银行家提出一笔有风险但可能获利的交易。',
+      choices: [
+        { label: '投资',     desc: '现在支付10g → 通关下一波后获得18g', effect: { type: 'invest_gold', cost: 10, reward: 18 } },
+        { label: '稳妥收款', desc: '立即+8金币',                        effect: { type: 'gold', amount: 8 } },
+      ],
+      dlc: 'storm_imperium',
+    },
+    {
+      id: 'storm_resonance', title: '风暴共鸣', icon: '🌀',
+      flavor: '风暴能量在你的防线中共鸣，增幅其威力。',
+      choices: [
+        { label: '增幅防御塔', desc: '下一波所有防御塔伤害+20%', effect: { type: 'temp_dmg_bonus', mult: 1.20 } },
+        { label: '收集碎片',   desc: '将2张普通卡牌加入牌组',     effect: { type: 'add_cards', count: 2, rarity: 'common' } },
+      ],
+      dlc: 'storm_imperium',
+    },
+  ],
 };

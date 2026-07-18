@@ -116,7 +116,9 @@ node --input-type=module -e "import {CARD_DEFS} from './src/data/cards.js'; cons
 
 ### i18n
 
-`src/i18n/i18n.js` exports a singleton `i18n`. All UI strings go through `i18n.t('key', ...args)`. Languages: English (`en.js`), Korean (`ko.js`), Chinese Simplified (`zh.js`) — keep all three in sync when adding keys. Both Warden and card definitions carry parallel `name`/`nameKo` and `desc`/`descKo` fields; display code reads `i18n.lang === 'ko' ? nameKo : name`.
+`src/i18n/i18n.js` exports a singleton `i18n`. All UI strings go through `i18n.t('key', ...args)`. Languages: English (`en.js`), Korean (`ko.js`), Chinese Simplified (`zh.js`) — keep all three in sync when adding keys, including the per-DLC `src/dlc/*/i18n/{en,ko,zh}.js` files (merged into the main language objects).
+
+Data definitions (cards/towers/wardens/maps/codex) carry parallel `name`/`nameKo`/`nameZh`, `desc`/`descKo`/`descZh` fields (warden `desc` is an `{en, ko, zh}` object). Display code must use `locText(def, 'name')` from `i18n.js` — never hand-write `i18n.lang === 'ko' ? ... : ...` ternaries; `locText` falls back to English for missing translations. DLC event pools are `{en: [], ko: [], zh: []}` arrays resolved with an English fallback in NodeUI. New content needs all three languages (English fallback otherwise).
 
 ### Testing
 

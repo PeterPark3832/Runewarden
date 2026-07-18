@@ -19,15 +19,18 @@ export const SOLAR_WARDENS = [
     id:         'solar_dominion',
     name:       'Solar Warden',
     nameKo:     '태양의 워든',
+    nameZh:     '太阳守护者',
     title:      'The Radiant',
     icon:       '☀️',
     color:      '#F5C518',
     accentBg:   'linear-gradient(135deg, #1a0e00 0%, #2e1800 50%, #1a0e00 100%)',
     unlockRank: 0,
     tagline:    '"Light burns brightest at the moment of release."',
+    taglineZh:  '「光芒在释放的一瞬最为耀眼。」',
     desc: {
       en: 'Each spell cast (cost ≥ 2) charges Solar Energy. At 8 charges, a devastating Solar Beam auto-casts. Balanced starting conditions — master of radiant power.',
       ko: 'cost 2 이상 주문을 시전할 때마다 태양 에너지가 충전됩니다. 8회 충전 시 강력한 Solar Beam이 자동 시전됩니다. 균형 잡힌 시작 조건 — 빛의 지배자.',
+      zh: '每施放一次费用≥2的法术即可积累太阳能量。积累8层时，自动施放一道毁灭性的太阳射线。初始条件均衡——辉耀之力的主宰。',
     },
 
     startGold:  22,

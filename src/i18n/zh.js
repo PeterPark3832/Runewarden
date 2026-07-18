@@ -1,6 +1,7 @@
 /** Runewarden — 简体中文 (zh) */
 import dlcShadowZh from '../dlc/shadow_realm/i18n/zh.js';
 import dlcSolarZh  from '../dlc/solar_dominion/i18n/zh.js';
+import { dlcStormZh } from '../dlc/storm_imperium/i18n/zh.js';
 
 const _BASE_ZH = {
   // ── 主菜单 ───────────────────────────────────────────
@@ -913,4 +914,6 @@ const _BASE_ZH = {
 };
 
 // DLC翻译合并
-export default { ..._BASE_ZH, ...dlcShadowZh, ...dlcSolarZh };
+_BASE_ZH.hint_wave32_flying = '⚡ 飞行敌人来袭！部署风暴弩炮或狂风之塔，或用风锚将其击落。';
+
+export default { ..._BASE_ZH, ...dlcShadowZh, ...dlcSolarZh, ...dlcStormZh };

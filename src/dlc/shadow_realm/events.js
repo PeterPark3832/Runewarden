@@ -206,4 +206,105 @@ export const SHADOW_EVENTS = {
       dlc: 'shadow_realm',
     },
   ],
+  zh: [
+    {
+      id: 'shadow_oracle', title: '暗影神谕', icon: '🔮',
+      flavor: '一个由纯粹黑暗织成的存在，向你递来一缕禁忌之力。',
+      choices: [
+        { label: '接受知识', desc: '将1张史诗暗影卡牌加入牌组', effect: { type: 'add_cards', count: 1, rarity: 'rare' } },
+        { label: '拒绝',     desc: '+12金币',                    effect: { type: 'gold', amount: 12 } },
+      ],
+      dlc: 'shadow_realm',
+    },
+    {
+      id: 'void_rift', title: '虚空裂隙', icon: '🌀',
+      flavor: '现实的帷幕被撕开一道裂缝，所有穿过它的事物都会变慢。',
+      choices: [
+        { label: '驾驭裂隙', desc: '下一波敌人移动速度−30%', effect: { type: 'slow_next_wave', amount: 0.30 } },
+        { label: '封印裂隙', desc: '+8金币',                  effect: { type: 'gold', amount: 8 } },
+      ],
+      dlc: 'shadow_realm',
+    },
+    {
+      id: 'soul_bargain', title: '灵魂交易', icon: '💀',
+      flavor: '虚空低语着一桩黑暗的交易——即刻的力量，以鲜血为代价。',
+      choices: [
+        { label: '接受交易', desc: '+20金币，失去1点要塞核心生命值', effect: { type: 'cursed_gold', amount: 20, nexusDmg: 1 } },
+        { label: '拒绝',     desc: '+6金币',                          effect: { type: 'gold', amount: 6 } },
+      ],
+      dlc: 'shadow_realm',
+    },
+    {
+      id: 'phantom_merchant', title: '幻影商人', icon: '👻',
+      flavor: '一个幽灵般的身影凭空浮现，货物在两个世界之间闪烁不定。',
+      choices: [
+        { label: '购买货物', desc: '获得2张随机罕见卡牌', effect: { type: 'add_cards', count: 2, rarity: 'uncommon' } },
+        { label: '收下金币', desc: '+18金币',              effect: { type: 'gold', amount: 18 } },
+      ],
+      dlc: 'shadow_realm',
+    },
+    {
+      id: 'dark_epiphany', title: '黑暗顿悟', icon: '🌑',
+      flavor: '一条禁忌的真理烙进你的脑海。这份知识危险至极——却也无价。',
+      choices: [
+        { label: '拥抱幻象', desc: '将1张史诗卡牌加入牌组', effect: { type: 'add_cards', count: 1, rarity: 'rare' } },
+        { label: '压抑火焰', desc: '将1张罕见卡牌加入牌组', effect: { type: 'add_cards', count: 1, rarity: 'uncommon' } },
+      ],
+      dlc: 'shadow_realm',
+    },
+    {
+      id: 'corrupted_cache', title: '被腐化的宝箱', icon: '🗝️',
+      flavor: '一只被暗影玷污的宝箱满溢金币——但触碰它可能让你付出惨痛代价。',
+      choices: [
+        { label: '夺取宝箱', desc: '+25金币，失去1点要塞核心生命值', effect: { type: 'cursed_gold', amount: 25, nexusDmg: 1 } },
+        { label: '转身离开', desc: '+12金币（安全）',                 effect: { type: 'gold', amount: 12 } },
+      ],
+      dlc: 'shadow_realm',
+    },
+    {
+      id: 'shadow_shrine', title: '暗影祭坛', icon: '🕯️',
+      flavor: '一座古老的祭坛因残存的生命之力而搏动。它的祝福货真价实，尽管来路黑暗。',
+      choices: [
+        { label: '祈求复原', desc: '恢复1点要塞核心生命值', effect: { type: 'heal_nexus', amount: 1 } },
+        { label: '掠夺供品', desc: '获得1张罕见卡牌',        effect: { type: 'add_cards', count: 1, rarity: 'uncommon' } },
+      ],
+      dlc: 'shadow_realm',
+    },
+    {
+      id: 'void_resonance', title: '虚空共鸣', icon: '🔵',
+      flavor: '虚空能量充斥着空气，扭曲着穿行其间者的时间。',
+      choices: [
+        { label: '引导波动', desc: '下一波敌人减速25%+额外5秒准备时间', effect: { type: 'slow_next_wave', amount: 0.25 } },
+        { label: '汲取力量', desc: '获得2张随机普通卡牌',               effect: { type: 'add_cards', count: 2, rarity: 'common' } },
+      ],
+      dlc: 'shadow_realm',
+    },
+    {
+      id: 'death_offering', title: '死亡献祭', icon: '⚰️',
+      flavor: '暗影诸神索要贡品——献出弱者，虚空自会回报你。',
+      choices: [
+        { label: '献上祭品', desc: '从牌组移除1张随机卡牌→+20金币', effect: { type: 'remove_random_add_gold', amount: 20 } },
+        { label: '拒绝',     desc: '改为获得2张罕见卡牌',            effect: { type: 'add_cards', count: 2, rarity: 'uncommon' } },
+      ],
+      dlc: 'shadow_realm',
+    },
+    {
+      id: 'abyssal_vision', title: '深渊幻象', icon: '🌊',
+      flavor: '深渊回望着你——在它的深处，你瞥见了一座蕴藏毁灭之力的武库。',
+      choices: [
+        { label: '凝视深渊', desc: '获得1张史诗卡牌，失去1点要塞核心生命值', effect: { type: 'cursed_gold', amount: 0, nexusDmg: 1 } },
+        { label: '移开视线', desc: '+10金币',                                 effect: { type: 'gold', amount: 10 } },
+      ],
+      dlc: 'shadow_realm',
+    },
+    {
+      id: 'cursed_bargain', title: '被诅咒的契约', icon: '🩸',
+      flavor: '一个暗影中的身影向你许诺无穷的力量——代价则被编入你的牌组深处。',
+      choices: [
+        { label: '签下契约', desc: '+20金币+1张史诗卡牌——但"沉重负担"会进入你的牌组', effect: { type: 'cursed_bargain', curseCard: 'curse_dead_weight', gold: 20 } },
+        { label: '转身离去', desc: '+6金币（无附加条件）',                              effect: { type: 'gold', amount: 6 } },
+      ],
+      dlc: 'shadow_realm',
+    },
+  ],
 };

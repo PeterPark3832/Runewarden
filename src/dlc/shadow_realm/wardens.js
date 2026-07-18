@@ -17,15 +17,18 @@ export const SHADOW_WARDENS = [
   {
     id:         'shadow_realm',
     name:       'Shadow Realm Warden',
+    nameZh:     '暗影领域守护者',
     title:      'The Phantom',
     icon:       '👁️',
     color:      '#7B2FBE',
     accentBg:   'linear-gradient(135deg, #0d0020 0%, #1a0035 50%, #0d0020 100%)',
     unlockRank: 0,   // DLC 소유 시 바로 접근, isDlcOwned로 추가 체크
     tagline:    '"From the void, power."',
+    taglineZh:  '「力量，源自虚空。」',
     desc: {
       en: 'Each kill charges Shadow Energy. At 10 charges, a devastating shadow spell auto-casts. Low starting gold — master of the darkness.',
       ko: '처치할 때마다 그림자 에너지가 충전됩니다. 10회 충전 시 강력한 그림자 주문이 자동 시전됩니다. 시작 골드가 낮습니다 — 어둠의 지배자.',
+      zh: '每次击杀都会积累暗影能量。积累10层时，自动施放一道毁灭性的暗影法术。初始金币较低——黑暗的主宰。',
     },
 
     // 시작 조건
