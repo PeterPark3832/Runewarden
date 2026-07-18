@@ -39,12 +39,12 @@ Build your spell deck, summon towers, and survive endless waves.
 [list]
 [*] 웨이브 클리어 후 상점·이벤트·휴식 노드 선택
 [*] 카드 구매, 제거, 희귀 유물 획득
-[*] 10종 랜덤 이벤트 (황금 유물, 저주 계약, 적 약화...)
+[*] 30종 랜덤 이벤트 — DLC 포함 61종 (황금 유물, 저주 계약, 적 약화...)
 [/list]
 
 [b]덱빌딩 깊이[/b]
 [list]
-[*] 60종 카드 (Common / Uncommon / Rare)
+[*] 89종 카드 (Common / Uncommon / Rare) — DLC 포함 182종
 [*] 상점 리롤, 카드 제거로 덱 최적화
 [*] 웨이브 중 카드 플레이 가능 (골드 +1 추가 비용)
 [/list]
@@ -53,12 +53,13 @@ Build your spell deck, summon towers, and survive endless waves.
 
 [h2]콘텐츠[/h2]
 [list]
-[*] [b]6종 타워[/b]: Archer · Cannon · Frost Mage · Fire Drake (번 DoT) · Tesla Coil (체인 번개) · Druid Grove (슬로우 + 인접 버프)
-[*] [b]60종 카드[/b]: 소환 6 · 강화 10 · 주문 14
-[*] [b]5웨이브 Act 1[/b] — Wave 5: Ironclad 보스 (HP 700, 황금 글로우)
-[*] [b]5종 적[/b]: Grunt · Runner · Tank · Elite · Ironclad Boss
-[*] [b]메타 진행[/b]: Warden Rank 1~20, Codex 언락 9종, 영구 보너스
-[*] [b]Steam 업적[/b] 40개
+[*] [b]12종 기본 타워[/b] (DLC 포함 24종): Archer · Cannon · Frost Mage · Fire Drake · Tesla Coil · Druid Grove · Glacial Sentinel · Ballista · Frost Giant · Marksman · Shadow Strike · Bone Archer
+[*] [b]89종 기본 카드[/b] (DLC 포함 182종): 소환 / 강화 / 주문 / 저주
+[*] [b]기본 3개 Act, 15웨이브[/b] — DLC 3종 포함 시 6개 Act, 39웨이브
+[*] [b]54종 적[/b]: 방패병, 재생, 분열, 위장, 비행(DLC 3), 격노, 다단계 보스 등
+[*] [b]7명 워든[/b] · [b]73개 유물[/b] · [b]14개 테마 맵[/b] · [b]13종 챌린지[/b] · 어센션 I–V
+[*] [b]메타 진행[/b]: Warden Rank 1~20, Codex 언락, 영구 보너스
+[*] [b]Steam 업적[/b] 40개 · 영어/한국어/중국어 간체 지원
 [/list]
 
 [h2]게임의 차별점[/h2]

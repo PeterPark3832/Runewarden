@@ -11,8 +11,8 @@
 | Steam Deck CSS | ✅ 완료 | @media 1280px/800px + 1024px |
 | Steamworks SDK | ⏳ 미통합 | 아래 단계 참고 |
 | Steam 앱 ID | ⏳ 미확정 | 개발 테스트용 480 사용 중 |
-| DLC 기술 기반 | ✅ 완료 | `src/dlc/shadow_realm/` |
-| DLC App ID | ⏳ 미등록 | 기본 게임 App ID 취득 후 진행 |
+| DLC 기술 기반 | ✅ 완료 | `src/dlc/{shadow_realm, solar_dominion, storm_imperium}/` — 3종 코드 완성 |
+| DLC App ID | ⏳ 미등록 | 3종 모두 `steamAppId: 0` — 기본 게임 App ID 취득 후 발급 (출시 블로커) |
 
 ---
 
