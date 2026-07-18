@@ -105,3 +105,15 @@ class I18n {
 }
 
 export const i18n = new I18n();
+
+/**
+ * 데이터 정의 객체의 지역화 필드 반환.
+ * ko → fieldKo, zh → fieldZh, 그 외/미번역 → field(영어) 폴백.
+ * 예: locText(card, 'name'), locText(relic, 'desc')
+ */
+export function locText(obj, field = 'name') {
+  if (!obj) return '';
+  if (i18n.lang === 'ko') return obj[field + 'Ko'] ?? obj[field] ?? '';
+  if (i18n.lang === 'zh') return obj[field + 'Zh'] ?? obj[field] ?? '';
+  return obj[field] ?? '';
+}

@@ -1,6 +1,6 @@
 // 웨이브 간 상점 UI
 import { CARD_DEFS } from '../data/cards.js';
-import { i18n } from '../i18n/i18n.js';
+import { i18n, locText } from '../i18n/i18n.js';
 import { weightedPickRarity, MAX_PLAYER_LEVEL } from '../systems/PlayerLevelSystem.js';
 import { shared } from '../core/GameState.js';
 import { makeCardArtSVG, emphasizeStats } from './HUDUpdater.js';
@@ -206,9 +206,8 @@ export class ShopUI {
       slot.dataset.rarity = card.rarity;
       card._effectiveCost = effectiveCost;  // 구매 시 사용
 
-      const _isKo = i18n.lang === 'ko';
-      const _cName = _isKo ? (card.nameKo || card.name) : card.name;
-      const _cDesc = _isKo ? (card.descKo || card.desc) : card.desc;
+      const _cName = locText(card, 'name');
+      const _cDesc = locText(card, 'desc');
       const _cType = i18n.t('card_type_' + card.type) ?? card.type;
       const rarityLabel = { common: 'C', uncommon: 'U', rare: 'R' };
       const rarityBadge = `<span class="rarity-badge rarity-badge--${card.rarity}">${rarityLabel[card.rarity] ?? card.rarity[0].toUpperCase()}</span>`;
@@ -257,7 +256,7 @@ export class ShopUI {
     this._renderCards();
     this._refreshGold();
     this._refreshRerollBtn();
-    const _bName = i18n.lang === 'ko' ? (card.nameKo || card.name) : card.name;
+    const _bName = locText(card, 'name');
     this.onLog(i18n.t('shop_bought', _bName), 'good');
   }
 

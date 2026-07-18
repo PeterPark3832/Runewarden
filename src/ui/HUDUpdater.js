@@ -3,7 +3,7 @@
 // GameState.shared 를 통해 런타임 상태에 접근합니다.
 
 import { shared } from '../core/GameState.js';
-import { i18n }   from '../i18n/i18n.js';
+import { i18n, locText }   from '../i18n/i18n.js';
 import { PASSIVES } from '../data/wardens.js';
 import { TOWER_DEFS } from '../data/towers.js';
 import { MAX_RANK } from '../systems/MetaSystem.js';
@@ -76,7 +76,7 @@ export function updateHUD() {
       iconEl.textContent = w.icon;
       iconEl.title = `Passive: ${i18n.t(w.passiveKey)}`;
     }
-    if (nameEl) nameEl.textContent = w.name;
+    if (nameEl) nameEl.textContent = locText(w, 'name');
     const diffIcon = state.difficulty?.icon ?? '';
     if (actEl)  actEl.textContent  = `ACT ${actNum} ${diffIcon}`;
   }
@@ -198,9 +198,8 @@ export function renderHand() {
     const effectiveCost = Math.max(0, card.cost + surcharge - arcaneDiscount);
     const canAfford = effectiveCost <= state.gold;
     const isSelected = state.selectedCard?.uid === card.uid;
-    const isKo = i18n.lang === 'ko';
-    const cName = isKo ? (card.nameKo || card.name) : card.name;
-    const cDesc = isKo ? (card.descKo || card.desc) : card.desc;
+    const cName = locText(card, 'name');
+    const cDesc = locText(card, 'desc');
     const forgedBadge = card.forged ? ' <span class="forged-badge">⬆</span>' : '';
 
     const _cm = state.challengeMods;

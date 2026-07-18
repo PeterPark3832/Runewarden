@@ -1,6 +1,6 @@
 // 런 종료 요약 화면 — XP 바 애니메이션 + 언락 표시
 import { xpForLevel, MAX_RANK } from '../systems/MetaSystem.js';
-import { i18n } from '../i18n/i18n.js';
+import { i18n, locText } from '../i18n/i18n.js';
 import { getWaveHints } from '../data/waveHints.js';
 
 export class RunSummaryUI {
@@ -126,9 +126,9 @@ export class RunSummaryUI {
         <div class="summary-buttons">
           <div class="summary-btn-group">
             <button class="btn-primary" id="sum-continue">▶ ${i18n.t('btn_play_again')}</button>
-            <div class="summary-btn-hint">${i18n.lang === 'ko' ? '새 워든 &amp; 난이도 선택' : 'New warden &amp; difficulty'}</div>
+            <div class="summary-btn-hint">${i18n.t('summary_new_hint')}</div>
           </div>
-          ${this._onRetry ? `<div class="summary-btn-group"><button class="btn-secondary btn-retry-same" id="sum-retry">⚡ ${i18n.lang === 'ko' ? '동일 조건 재시작' : 'Quick Restart'}</button><div class="summary-btn-hint">${i18n.lang === 'ko' ? '같은 워든 &amp; 난이도' : 'Same warden &amp; difficulty'}</div></div>` : ''}
+          ${this._onRetry ? `<div class="summary-btn-group"><button class="btn-secondary btn-retry-same" id="sum-retry">${i18n.t('summary_retry_btn')}</button><div class="summary-btn-hint">${i18n.t('summary_retry_hint')}</div></div>` : ''}
           <div class="summary-btn-group"><button class="btn-secondary" id="sum-menu">${i18n.t('btn_main_menu')}</button><div class="summary-btn-hint">&nbsp;</div></div>
         </div>
       </div>
@@ -139,7 +139,7 @@ export class RunSummaryUI {
     const hints = getWaveHints(waveNum).slice(0, 2);
     if (!hints.length) return '';
     const isKo = i18n.lang === 'ko';
-    const title = isKo ? `💡 웨이브 ${waveNum} 공략 도움말` : `💡 Wave ${waveNum} Tips`;
+    const title = i18n.t('summary_hints_title', waveNum);
     const items = hints.map(h => `
       <div class="hint-item">
         <span class="hint-icon">${h.icon}</span>
@@ -264,9 +264,8 @@ export class RunSummaryUI {
       setTimeout(() => {
         const el = document.createElement('div');
         el.className = 'unlock-item';
-        const isKo = i18n.lang === 'ko';
-        const uTitle = isKo ? (unlock.titleKo || unlock.title) : unlock.title;
-        const uDesc  = isKo ? (unlock.descKo  || unlock.desc)  : unlock.desc;
+        const uTitle = locText(unlock, 'title');
+        const uDesc  = locText(unlock, 'desc');
         el.innerHTML = `
           <span class="unlock-icon">${unlock.icon}</span>
           <div class="unlock-info">

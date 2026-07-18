@@ -15,7 +15,7 @@ import { TOWER_DEFS } from '../data/towers.js';
 import { SteamSystem, STEAM_STATS } from '../systems/SteamSystem.js';
 import { TutorialUI }   from '../ui/TutorialUI.js';
 import { audio, music }  from '../systems/AudioSystem.js';
-import { i18n }          from '../i18n/i18n.js';
+import { i18n, locText } from '../i18n/i18n.js';
 import { RelicUI }       from '../ui/RelicUI.js';
 import { pickRandomRelics, RELIC_DEFS, RELIC_SYNERGIES } from '../data/relics.js';
 import { pickRandomMap, getMapById }   from '../data/maps.js';
@@ -616,11 +616,8 @@ function startRun() {
 
   // 초보자 카드 타입 힌트 (첫 2런까지만 표시)
   if (meta.runsPlayed <= 1 && TutorialUI.isDone()) {
-    const isKo = i18n.lang === 'ko';
     setTimeout(() => {
-      log(isKo
-        ? '💡 소환(타워 배치) · 강화(타워 업그레이드) · 주문(즉시 발동)'
-        : '💡 Summon (place tower) · Augment (upgrade tower) · Spell (instant)', 'gold');
+      log(i18n.t('log_card_types_hint'), 'gold');
     }, 1800);
   }
 
@@ -1891,7 +1888,7 @@ function onCardClick(card) {
   audio.play('card_select');
   state.selectedCard = { ...card, activeCost: cost };
   renderHand();
-  const _cName = i18n.lang === 'ko' ? (card.nameKo || card.name) : card.name;
+  const _cName = locText(card, 'name');
   log(card.type === 'summon' ? i18n.t('log_select_summon', _cName) : i18n.t('log_select_augment', _cName));
   tutorial?.triggerEvent('card_selected');
   if (card.type === 'summon') tutorial?.triggerEvent('card_selected_summon');
@@ -2009,7 +2006,7 @@ function updateSellPanel() {
   if (!t) { panel.classList.add('hidden'); return; }
 
   const sellValue = Math.floor((t.investedGold ?? 0) * 0.5);
-  const tName = i18n.lang === 'ko' ? (t.def.nameKo || t.def.name) : t.def.name;
+  const tName = locText(t.def, 'name');
   const starStr  = '★'.repeat(t.starLevel);
   const canUpg   = t.starLevel < 3;
   const upgCost  = t.starLevel * 5;
@@ -2056,7 +2053,7 @@ function onSellTower() {
   if (!t) { state.selectedTower = null; updateSellPanel(); return; }
 
   const sellValue = Math.floor((t.investedGold ?? 0) * 0.5);
-  const tName = i18n.lang === 'ko' ? (t.def.nameKo || t.def.name) : t.def.name;
+  const tName = locText(t.def, 'name');
   towerSystem.removeTower(col, row);
   renderer.removeTower(col, row);
   if (sellValue > 0) addGold(sellValue, null);
@@ -2166,7 +2163,7 @@ function _triggerSolarAutoSpell() {
   const card    = CARD_DEFS.find(c => c.id === spellId);
   if (!card) return;
 
-  const spellName = i18n.lang === 'ko' ? (card.nameKo || card.name) : card.name;
+  const spellName = locText(card, 'name');
   log(i18n.t('dlc_sd_log_auto_cast', spellName), 'gold');
   audio?.play('spell_cast');
   resolveSpell({ ...card.effect, _isAutocast: true });
@@ -2188,7 +2185,7 @@ function _triggerShadowAutoSpell() {
   const card    = CARD_DEFS.find(c => c.id === spellId);
   if (!card) return;
 
-  log(`👁️ ${i18n.t('dlc_sr_log_auto_cast', i18n.lang === 'ko' ? (card.nameKo || card.name) : card.name)}`, 'gold');
+  log(`👁️ ${i18n.t('dlc_sr_log_auto_cast', locText(card, 'name'))}`, 'gold');
   audio?.play('spell_cast');
   resolveSpell({ ...card.effect, _isAutocast: true });   // 무료 자동 발동 — 골드 소모 없음, 연쇄 차단
 }
@@ -2332,7 +2329,7 @@ $('btn-codex').addEventListener('click', openCodex);
 
   function _refreshDailyBtn() {
     const done = !!localStorage.getItem(doneKey);
-    const wardenName = i18n.lang === 'ko' ? (warden.nameKo ?? warden.name) : warden.name;
+    const wardenName = locText(warden, 'name');
     const diffLabel  = i18n.t('diff_' + diffId) ?? diffId;
     if (done) {
       btn.innerHTML = `<span>${i18n.t('daily_done')}</span><span class="btn-daily-sub">${dateStr}</span>`;
